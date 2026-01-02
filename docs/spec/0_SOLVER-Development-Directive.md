@@ -77,7 +77,7 @@ If you believe deviation is necessary:
 - Steps 4-10 (scaffold enums/stubs only)
 - Authentication/authorization
 - Multi-tenancy
-- External integrations beyond Claude API
+- External integrations beyond Claude API, OpenAI API, or Gemini API
 - Frontend UI (API-only for MVP)
 
 ---
@@ -168,7 +168,7 @@ The build is complete when all six gates pass. Reference: Doc 3 — Appendix A.
 
 | Slice | Deliverable | Doc Reference | Gate | Exit Criterion |
 |-------|-------------|---------------|------|----------------|
-| P5.1 | LLM adapter | Doc 3 — Observability (adapter pattern) | — | Claude calls work |
+| P5.1 | LLM adapter | Doc 3 — Observability (adapter pattern) | — | Claude, OpenAI, or Gemini calls work |
 | P5.2 | Step 1-3 prompts | Doc 1 (methodology), Doc 3 — Artifact Schemas | A, B | Prompts generate valid output |
 | P5.3 | Artifact storage | Doc 3 — Artifact Schemas, Core Tables | A, B | Packages validate against schema |
 | P5.4 | Traceability links | Doc 3 — Core Tables (traceability_links) | B | Links populated |

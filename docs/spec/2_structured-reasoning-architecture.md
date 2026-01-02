@@ -40,7 +40,7 @@ This specification defines a structured reasoning process for producing high-qua
 │                  Tracing / Debugging / Cost Tracking                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                              LLM LAYER                                       │
-│                            Claude API                                        │
+│                Claude API, OpenAI API, or Gemini API                        │
 │                      Agent Reasoning / Generation                           │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1240,7 +1240,7 @@ Abandonment requires:
 | Orchestration | LangGraph | State machine, interrupt gates, step sequencing |
 | Persistence | PostgreSQL + pgvector | Checkpoints, messages, audit, embeddings |
 | Observability | LangSmith/Langfuse | Tracing, debugging, cost tracking |
-| LLM | Claude API | Agent reasoning and generation |
+| LLM | Claude API, OpenAI API, or Gemini API | Agent reasoning and generation |
 
 ### 9.2 Interface Specifications
 
@@ -1250,7 +1250,7 @@ Abandonment requires:
 | IP-002 | API | Frontend | SSE | Streaming responses, state updates |
 | IP-003 | API | LangGraph | Python API | Graph invocation, interrupts |
 | IP-004 | LangGraph | PostgreSQL | PostgresSaver | Checkpoints, state |
-| IP-005 | LangGraph | Claude | Claude API | Prompts, completions |
+| IP-005 | LangGraph | Claude/OpenAI/Gemini | Claude API, OpenAI API, or Gemini API | Prompts, completions |
 | IP-006 | System | Observability | SDK | Traces, metrics |
 
 ### 9.3 SSE Event Types
@@ -1315,7 +1315,7 @@ Frontend (Next.js)
 API Layer (FastAPI) ──────► PostgreSQL (checkpoint)
     │
     ▼
-Orchestration (LangGraph) ──► Claude API
+Orchestration (LangGraph) ──► Claude API, OpenAI API, or Gemini API
     │
     ▼
 Response ───────► PostgreSQL (state sync)
@@ -1382,7 +1382,7 @@ The system is designed for stateless LLM interaction; reasoning is made auditabl
 | TC-002 | FastAPI for API | Async support, OpenAPI generation |
 | TC-003 | LangGraph 1.0+ for orchestration | Checkpointing, interrupt support |
 | TC-004 | PostgreSQL for persistence | JSONB, pgvector, PostgresSaver |
-| TC-005 | Claude API for LLM | Agent reasoning capability |
+| TC-005 | Claude API, OpenAI API, or Gemini API for LLM | Agent reasoning capability |
 
 ---
 

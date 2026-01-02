@@ -23,7 +23,7 @@ git init
 
 ### 2. Prime Your Agent
 
-When you start your AI coding agent session (Claude Code, Cursor, Aider, etc.), paste this as your first message:
+When you start your AI coding agent session (Gemini Code Assist, Claude Code, Cursor, Aider, etc.), paste this as your first message:
 
 ```
 Read docs/spec/0_SOLVER-Development-Directive.md in full. This is your authoritative operating manual.

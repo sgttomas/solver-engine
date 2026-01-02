@@ -42,7 +42,7 @@ However, this methodology currently exists only as **abstract specification**. T
 
 **SOLVER** is the concrete software implementation of Instance 0. It is a **Reasoning Engine** that:
 
-- Orchestrates an LLM (Claude) through the 10-step workflow
+- Orchestrates an LLM (Claude, OpenAI, or Gemini) through the 10-step workflow
 - Enforces that no step advances without explicit human validation
 - Persists all state, artifacts, and decisions for full auditability
 - Provides real-time streaming UI for human oversight
@@ -141,7 +141,7 @@ graph TB
     end
     
     subgraph LLM["LLM Layer"]
-        CLAUDE[Claude API]
+        CLAUDE[Claude API, OpenAI API, or Gemini API]
     end
     
     User((User)) <--> FE
@@ -184,7 +184,7 @@ sequenceDiagram
     participant F as Frontend
     participant A as FastAPI
     participant G as LangGraph
-    participant C as Claude
+    participant C as Claude/OpenAI/Gemini
     participant P as PostgreSQL
     
     U->>F: Submit problem
@@ -1714,8 +1714,16 @@ class Settings(BaseSettings):
         return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
     
     # Anthropic
-    anthropic_api_key: str
+    anthropic_api_key: Optional[str] = None
     anthropic_model: str = "claude-sonnet-4-20250514"
+
+    # OpenAI
+    openai_api_key: Optional[str] = None
+    openai_model: str = "gpt-4o"
+
+    # Google
+    google_api_key: Optional[str] = None
+    google_model: str = "gemini-1.5-pro"
     
     # Observability
     observability_provider: Optional[str] = None  # "langsmith" or "langfuse"
@@ -1767,6 +1775,8 @@ services:
     environment:
       POSTGRES_HOST: postgres
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
     ports:
       - "8000:8000"
     depends_on:
@@ -1802,7 +1812,7 @@ These items are intentionally NOT addressed in this MVP:
 | Steps 4-10 | Scaffolded | Enums defined, nodes stubbed |
 | Scaling | Deferred | No performance targets |
 | Retention/compliance | Deferred | Audit log exists but no retention policy |
-| Multi-LLM | Deferred | Claude only; adapter interface supports expansion |
+| Multi-LLM | Deferred | Single LLM only (Claude, OpenAI, or Gemini); adapter interface supports expansion |
 
 ---
 
