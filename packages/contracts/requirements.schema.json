@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://solver.dev/schemas/requirements.schema.json",
+  "title": "RequirementsPackage",
+  "description": "Step 2 output schema per Doc 3 Section 5.3",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": true
+}

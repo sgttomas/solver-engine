@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://solver.dev/schemas/problem_definition.schema.json",
+  "title": "ProblemDefinitionPackage",
+  "description": "Step 1 output schema per Doc 3 Section 5.2",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": true
+}

@@ -65,3 +65,33 @@ runs/
 # Ignore working and issued docs
 docs/Working/
 docs/Issued/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+htmlcov/
+*.cover
+.hypothesis/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json

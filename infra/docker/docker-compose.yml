@@ -1,0 +1,50 @@
+# SOLVER Docker Compose - Doc 3 §13
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: solver-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-solver}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-solver}
+      POSTGRES_DB: ${POSTGRES_DB:-solver}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - solver_data:/var/lib/postgresql/data
+      - ../db/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-solver}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile
+    container_name: solver-api
+    env_file:
+      - ../../apps/api/.env
+    environment:
+      # Override for Docker networking
+      POSTGRES_HOST: db
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # web:
+  #   # Commented out - MVP is API-only per Doc 0
+  #   # Will be enabled in future phase
+  #   build:
+  #     context: ../../apps/web
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - api
+
+volumes:
+  solver_data:

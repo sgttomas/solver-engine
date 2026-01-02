@@ -1,0 +1,22 @@
+# Instance 0 - Universal Methodology Pack
+# Per Doc 2 Section 11.1
+
+name: instance_0
+version: "1.0.0"
+description: "Universal methodology defining the 10-step structured reasoning process"
+core_schema_version: "1.0"
+parent_instance: null  # Instance 0 has no parent
+
+schemas:
+  # Step schemas defined in packages/contracts/
+  step_1: problem_definition.schema.json
+  step_2: requirements.schema.json
+  step_3: objectives.schema.json
+
+validations:
+  # Custom validation rules - stub
+  custom_rules: []
+
+templates:
+  # Methodology seeds - stub
+  methodology_seeds: {}
