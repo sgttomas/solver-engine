@@ -61,3 +61,7 @@ Thumbs.db
 
 # Ignore runtime data and test runs
 runs/
+
+# Ignore working and issued docs
+docs/Working/
+docs/Issued/
