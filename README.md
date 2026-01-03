@@ -356,15 +356,15 @@ SOLVER prioritizes **correctness over speed**:
 
 ## Status
 
-**Phase:** P2 Persistence complete, P3 Orchestration next
+**Phase:** P3 Orchestration complete, P4 API next
 
 | Phase | Status | Description |
 |-------|--------|-------------|
 | P1 Foundation | Complete | Directory structure, Docker, database schema |
 | P2 Persistence | Complete | SQLAlchemy models, repositories, checkpoint adapter |
-| P3 Orchestration | Planned | LangGraph state machine, interrupt handling |
-| P4 LLM | Planned | Claude/OpenAI integration, prompt templates |
-| P5 API | Planned | REST endpoints, SSE streaming |
+| P3 Orchestration | Complete | LangGraph state machine, interrupt/resume, orchestration tests |
+| P4 API | Next | REST endpoints, SSE streaming |
+| P5 LLM | Planned | Claude/OpenAI integration, prompt templates |
 | P6 Integration | Planned | End-to-end testing, gate verification |
 
 **MVP Focus:** Steps 1–3 with two-pass workflow, persistence, gates, streaming, and auditability

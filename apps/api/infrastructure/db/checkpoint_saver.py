@@ -431,10 +431,34 @@ class SolverCheckpointSaver(BaseCheckpointSaver[str]):
 
         Stores the entire checkpoint dict directly since we don't have
         a separate checkpoint_blobs table.
+
+        Handles dataclass and enum serialization for JSONB compatibility.
         """
-        # Store the full checkpoint structure
-        # channel_values are stored inline (no blob separation)
-        return dict(checkpoint)
+        import dataclasses
+        from datetime import datetime
+        from enum import Enum
+
+        def make_serializable(obj: Any) -> Any:
+            """Recursively convert objects to JSON-serializable types."""
+            if obj is None:
+                return None
+            if isinstance(obj, (str, int, float, bool)):
+                return obj
+            if isinstance(obj, Enum):
+                return obj.value
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+                return {k: make_serializable(v) for k, v in dataclasses.asdict(obj).items()}
+            if isinstance(obj, dict):
+                return {k: make_serializable(v) for k, v in obj.items()}
+            if isinstance(obj, (list, tuple)):
+                return [make_serializable(item) for item in obj]
+            # Fallback: try to convert to string
+            return str(obj)
+
+        # Store the full checkpoint structure with serialized values
+        return make_serializable(dict(checkpoint))
 
     def _deserialize_checkpoint(self, data: dict[str, Any]) -> Checkpoint:
         """Deserialize a checkpoint from JSONB storage."""

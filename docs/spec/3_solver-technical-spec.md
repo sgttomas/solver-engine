@@ -1355,30 +1355,40 @@ async def review_node(state: WorkflowState) -> WorkflowState:
     return state
 
 async def process_decision_node(state: WorkflowState) -> WorkflowState:
+    """Process human decision. Does NOT clear human_decision here.
+
+    Note: human_decision is cleared in target nodes (advance_node,
+    structure_node, validate_node) per DECISIONS.md P3.3 deviation.
+    Clearing here would break route_after_decision which runs AFTER
+    this node and needs to read human_decision for routing.
+    """
     if state.human_decision == HumanAction.APPROVE:
         state.step_state.status = StepStatus.APPROVED
         state.step_state.phase = StepPhase.COMPLETE
         state.step_state.completed_at = datetime.utcnow()
-        
+
     elif state.human_decision == HumanAction.REJECT:
         state.step_state.status = StepStatus.REVISION_REQUESTED
         state.step_state.human_feedback = state.human_feedback
         state.step_state.phase = StepPhase.STRUCTURING
-        
+
     elif state.human_decision == HumanAction.MODIFY:
         if state.human_modifications:
             state.step_state.output.update(state.human_modifications)
         state.step_state.phase = StepPhase.VALIDATING
-    
-    # Clear for next iteration
-    state.human_decision = None
-    state.human_feedback = None
-    state.human_modifications = None
-    
+
+    # Note: human_decision cleared in target nodes, not here
+    # See docs/DECISIONS.md P3.3 for rationale
+
     return state
 
 async def advance_node(state: WorkflowState) -> WorkflowState:
     """Advance to next step."""
+    # Clear human_decision (approve path cleanup per DECISIONS.md P3.3)
+    state.human_decision = None
+    state.human_feedback = None
+    state.human_modifications = None
+
     # Store artifact
     step_key = state.current_step.value
     if state.current_pass == PassType.DEFINITION:

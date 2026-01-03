@@ -50,6 +50,10 @@ Work only on the assigned slice. For each slice:
 - Never advance workflow state without explicit approval action.
 - Do not implement Steps 4–10 (stubs only if explicitly requested).
 
+## Orchestration Note
+
+- LangGraph checkpoint restores yield dicts; normalize with `ensure_workflow_state`/`ensure_step_state` in `apps/api/domain/state.py` before node logic.
+
 ## Methodology Caching Note
 
 - Hypothesis: caching V3 methodology docs for well-defined problem types
