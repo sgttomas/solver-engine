@@ -25,17 +25,11 @@ Deviations require approval and entry in `docs/DECISIONS.md`.
 
 ## Current Status
 
-**P1 Foundation:** Complete
-**P2 Persistence:** Complete
-**P3 Orchestration:** Complete
-**P4 API:** Next
-
-| Slice | Deliverable | Status |
-|-------|-------------|--------|
-| P3.1 | State Models | ✅ Complete |
-| P3.2 | Graph Definition | ✅ Complete |
-| P3.3 | Node Implementations | ✅ Complete |
-| P3.4 | Interrupt/Resume (Gates C+D) | ✅ Complete |
+**P1 Foundation:** ✅ Complete
+**P2 Persistence:** ✅ Complete
+**P3 Orchestration:** ✅ Complete
+**P4 API:** ✅ Complete
+**P5 Content:** Next
 
 ### Key Context
 
@@ -44,7 +38,9 @@ Deviations require approval and entry in `docs/DECISIONS.md`.
 - **Flat layout:** `apps/api/infrastructure/db/` (not `apps/api/src/solver_api/`)
 - **Custom checkpoint saver:** Uses `SolverCheckpointSaver` instead of `langgraph-checkpoint-postgres.PostgresSaver` due to schema incompatibility (see `docs/DECISIONS.md`)
 - **State coercion:** Use `coerce_state(state)` at start of nodes to handle dict/string deserialization from checkpoints
-- **Resume from interrupt:** Use `as_node="review"` in `aupdate_state()` to tell LangGraph the update completes the review node
+- **Resume from interrupt:** Use `as_node="review"` or `as_node="elicit"` in `aupdate_state()` to tell LangGraph which node completed
+- **Graph singleton:** Module-level graph in `routes/workflows.py`; checkpointer manages sessions, `thread_id` provides isolation
+- **DB sync:** `workflow_service.sync_db_from_state()` syncs DB from graph execution results
 
 ---
 
@@ -52,13 +48,14 @@ Deviations require approval and entry in `docs/DECISIONS.md`.
 
 ```
 apps/api/
-├── domain/           # Pure domain models
-├── application/      # Use cases, orchestration
+├── domain/           # Pure domain models (state.py)
+├── application/      # Use cases (workflow_service.py)
+├── orchestration/    # LangGraph graph + nodes
 ├── infrastructure/   # DB, LLM adapters
 │   └── db/
-│       ├── models/   # SQLAlchemy models (P2.1)
-│       └── repositories/  # Repository pattern (P2.2)
-├── api/              # REST routes
+│       ├── models/   # SQLAlchemy models
+│       └── repositories/  # Repository pattern
+├── routes/           # FastAPI routes (workflows.py)
 └── config.py         # Settings (pydantic-settings)
 
 infra/db/migrations/  # Alembic migrations
@@ -113,8 +110,9 @@ make format           # Format code
 | Let LLM control state | Only API calls advance gates |
 | Assume schema fields | Check migration file |
 | Use PostgresSaver directly | Use `SolverCheckpointSaver` (schema mismatch) |
-| Call `aupdate_state` without `as_node` | Specify `as_node="review"` when resuming from interrupt |
+| Call `aupdate_state` without `as_node` | Use `as_node="review"` or `as_node="elicit"` |
 | Assume state has proper types after resume | Use `coerce_state(state)` in nodes |
+| Wire `message` action to graph | Keep DB-only (Gate C: no state change) |
 
 ---
 

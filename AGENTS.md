@@ -54,6 +54,11 @@ Work only on the assigned slice. For each slice:
 
 - LangGraph checkpoint restores yield dicts; normalize with `ensure_workflow_state`/`ensure_step_state` in `apps/api/domain/state.py` before node logic.
 
+## API Wiring Note
+
+- Use the cached graph singleton (`get_graph()` in `apps/api/routes/workflows.py`) instead of per-request graph construction.
+- When resuming from review, pass `as_node="review"` in `graph.aupdate_state(...)` (see interrupt/resume tests).
+
 ## Methodology Caching Note
 
 - Hypothesis: caching V3 methodology docs for well-defined problem types

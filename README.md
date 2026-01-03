@@ -203,8 +203,9 @@ All endpoints under `/api/v1`.
 | POST | `/workflows/{id}/actions/approve` | Approve gate |
 | POST | `/workflows/{id}/actions/revise` | Request revision with feedback |
 | POST | `/workflows/{id}/actions/message` | Comment without state change |
-| GET | `/workflows/{id}/history` | Artifacts + audit trail |
-| GET | `/workflows/{id}/staleness` | Staleness report |
+| POST | `/workflows/{id}/actions/clarify` | Submit clarification answers |
+
+Endpoints listed here are currently implemented. See `docs/spec/3_solver-technical-spec.md` for additional planned endpoints (history, traceability).
 
 ### SSE Stream
 
@@ -212,16 +213,18 @@ All endpoints under `/api/v1`.
 
 ```
 workflow.started        Workflow execution began
-step.started           Step execution began  
+step.started           Step execution began
+step.awaiting_clarification Needs user input
+step.awaiting_review   Ready for human approval
 artifact.delta         Streaming output chunk
 artifact.final         Final artifact ready
-step.awaiting_review   Ready for human approval
 step.approved          Step approved
 step.revision_requested Revision requested
-artifact.stale         Artifact marked stale
 workflow.completed     Workflow finished
 error                  Error occurred
 ```
+
+Note: The stream currently emits an initial state snapshot and keep-alive events; live event emission during graph execution will be expanded in later phases.
 
 ---
 
@@ -265,9 +268,11 @@ make migrate
 # Verify database
 docker exec solver-db psql -U solver -d solver -c "\dt"
 # → 10 tables (9 schema + alembic_version)
-```
 
-> **Note:** API endpoints are not yet implemented. See [Status](#status) for current progress.
+# Start API server
+make dev-api
+# → API available at http://localhost:8000
+```
 
 ---
 
@@ -356,16 +361,16 @@ SOLVER prioritizes **correctness over speed**:
 
 ## Status
 
-**Phase:** P3 Orchestration complete, P4 API next
+**Phase:** P4 API complete, P5 Content Generation next
 
 | Phase | Status | Description |
 |-------|--------|-------------|
-| P1 Foundation | Complete | Directory structure, Docker, database schema |
-| P2 Persistence | Complete | SQLAlchemy models, repositories, checkpoint adapter |
-| P3 Orchestration | Complete | LangGraph state machine, interrupt/resume, orchestration tests |
-| P4 API | Next | REST endpoints, SSE streaming |
-| P5 LLM | Planned | Claude/OpenAI integration, prompt templates |
-| P6 Integration | Planned | End-to-end testing, gate verification |
+| P1 Foundation | ✅ Complete | Directory structure, Docker, database schema |
+| P2 Persistence | ✅ Complete | SQLAlchemy models, repositories, checkpoint adapter |
+| P3 Orchestration | ✅ Complete | LangGraph state machine, interrupt/resume |
+| P4 API | ✅ Complete | REST endpoints, SSE streaming, graph wiring |
+| P5 Content | Next | LLM adapter, prompts, artifact storage |
+| P6 Verification | Planned | End-to-end gate testing |
 
 **MVP Focus:** Steps 1–3 with two-pass workflow, persistence, gates, streaming, and auditability
 

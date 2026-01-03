@@ -5,6 +5,8 @@ SOLVER API - Main FastAPI Application Entry Point
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from routes.workflows import router as workflows_router
+
 app = FastAPI(
     title="SOLVER API",
     description="Structured Reasoning Workflow Engine",
@@ -21,6 +23,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register routers
+app.include_router(workflows_router, prefix="/api/v1")
 
 
 @app.get("/health")
