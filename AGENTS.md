@@ -44,6 +44,7 @@ Work only on the assigned slice. For each slice:
 ## Non-Negotiables
 
 - Do not invent new architecture or paths.
+- Do not reintroduce a `src/` layout under `apps/api` (flat layout per Doc 3 §11).
 - Do not skip gates; verify with the required commands.
 - No hidden chain-of-thought; provide reviewable, traceable rationale only.
 - Never advance workflow state without explicit approval action.
@@ -63,6 +64,7 @@ Work only on the assigned slice. For each slice:
 - Prefer patch-style edits with minimal diffs.
 - Keep changes small and reversible.
 - Avoid network access or installs without approval.
+- Docker Compose file lives at `infra/docker/docker-compose.yml`.
 
 ## Key References
 

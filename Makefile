@@ -86,7 +86,7 @@ dev:
 
 dev-api:
 	@echo "Starting API server..."
-	cd apps/api && uvicorn solver_api.main:app --reload --host 0.0.0.0 --port 8000
+	cd apps/api && uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 dev-web:
 	@echo "Starting Next.js dev server..."
@@ -121,7 +121,7 @@ test-e2e:
 
 test-coverage:
 	@echo "Running tests with coverage..."
-	cd apps/api && pytest tests/ --cov=solver_api --cov-report=html --cov-report=term
+	cd apps/api && pytest tests/ --cov=. --cov-report=html --cov-report=term
 	@echo "✓ Coverage report generated in apps/api/htmlcov/index.html"
 
 # ============================================================================
@@ -133,8 +133,8 @@ lint: lint-api
 
 lint-api:
 	@echo "Linting Python code..."
-	cd apps/api && ruff check src/ tests/
-	cd apps/api && mypy src/solver_api
+	cd apps/api && ruff check . tests/
+	cd apps/api && mypy .
 
 lint-web:
 	@echo "Linting TypeScript code..."
@@ -145,8 +145,8 @@ format: format-api
 
 format-api:
 	@echo "Formatting Python code..."
-	cd apps/api && ruff format src/ tests/
-	cd apps/api && ruff check --fix src/ tests/
+	cd apps/api && ruff format . tests/
+	cd apps/api && ruff check --fix . tests/
 
 format-web:
 	@echo "Formatting TypeScript code..."
@@ -154,7 +154,7 @@ format-web:
 
 typecheck:
 	@echo "Running type checks..."
-	cd apps/api && mypy src/solver_api
+	cd apps/api && mypy .
 	@echo "✓ Type checking passed"
 
 # ============================================================================

@@ -166,15 +166,17 @@ solver-engine/
 │   │   ├── domain/             # Pure domain models
 │   │   ├── application/        # Use cases / services
 │   │   ├── infrastructure/     # DB, LLM adapters
-│   │   └── api/                # REST routes
+│   │   └── routes/             # REST routes
 │   └── web/                    # Next.js frontend (future)
 ├── packages/
 │   ├── contracts/              # Shared schemas
 │   └── instance_packs/
 │       └── instance_0/         # Seed methodology pack
 ├── infra/
-│   ├── docker-compose.yml
-│   └── db/migrations/
+│   ├── docker/
+│   │   └── docker-compose.yml
+│   └── db/
+│       └── migrations/
 ├── tests/
 │   ├── unit/
 │   ├── integration/
@@ -248,34 +250,21 @@ MVP is complete when all gates pass:
 ```bash
 # Clone and configure
 git clone <repo-url> && cd solver-engine
-cp .env.example .env
-# Add ANTHROPIC_API_KEY, OPENAI_API_KEY, or GOOGLE_API_KEY to .env
+cp apps/api/.env.example apps/api/.env
+# Add ANTHROPIC_API_KEY, OPENAI_API_KEY, or GOOGLE_API_KEY to apps/api/.env
 
-# Start services
-docker-compose up -d
+# Start database
+docker compose -f infra/docker/docker-compose.yml up -d
 
 # Run migrations
 make migrate
 
-# Verify
-curl http://localhost:8000/health
-# → {"status": "ok", "database": "connected"}
+# Verify database
+docker exec solver-db psql -U solver -d solver -c "\dt"
+# → 10 tables (9 schema + alembic_version)
 ```
 
-### Create a Workflow
-
-```bash
-# Create
-curl -X POST http://localhost:8000/api/v1/workflows \
-  -H "Content-Type: application/json" \
-  -d '{"problem": "Design a notification system", "instance_id": 1}'
-
-# Stream events
-curl -N http://localhost:8000/api/v1/workflows/{id}/stream
-
-# Approve step
-curl -X POST http://localhost:8000/api/v1/workflows/{id}/actions/approve
-```
+> **Note:** API endpoints are not yet implemented. See [Status](#status) for current progress.
 
 ---
 
@@ -314,7 +303,7 @@ Work proceeds in **small slices**, each ending with:
 
 ```bash
 cd apps/api
-pip install -r requirements.txt
+pip install -e ".[dev]"
 make test    # Run tests
 make lint    # Run linting
 make dev     # Start dev server
@@ -364,9 +353,18 @@ SOLVER prioritizes **correctness over speed**:
 
 ## Status
 
-**Current:** Design complete, implementation in progress
+**Phase:** P1 Foundation complete, P2 Persistence in progress
 
-**Focus:** Steps 1–3 with two-pass workflow, persistence, gates, streaming, and auditability
+| Phase | Status | Description |
+|-------|--------|-------------|
+| P1 Foundation | Complete | Directory structure, Docker, database schema |
+| P2 Persistence | In Progress | SQLAlchemy models, repositories, checkpoint adapter |
+| P3 Orchestration | Planned | LangGraph state machine, interrupt handling |
+| P4 LLM | Planned | Claude/OpenAI integration, prompt templates |
+| P5 API | Planned | REST endpoints, SSE streaming |
+| P6 Integration | Planned | End-to-end testing, gate verification |
+
+**MVP Focus:** Steps 1–3 with two-pass workflow, persistence, gates, streaming, and auditability
 
 ---
 
