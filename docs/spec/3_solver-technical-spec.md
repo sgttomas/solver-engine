@@ -1140,13 +1140,15 @@ class WorkflowState:
 
 ### 8.2 Graph Definition
 
+Note: Decision #5 in `docs/DECISIONS.md` replaces `PostgresSaver` with `SolverCheckpointSaver` due to checkpoint schema incompatibility.
+
 ```python
 # backend/orchestration/graph.py
 """LangGraph workflow definition."""
 
 from typing import Literal
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.postgres import PostgresSaver
+from infrastructure.db.checkpoint_saver import SolverCheckpointSaver
 from langgraph.types import interrupt
 
 from domain.state import (
@@ -1154,7 +1156,7 @@ from domain.state import (
     HumanAction, GatePolicy, STEP_NUMBERS
 )
 
-def create_graph(checkpointer: PostgresSaver) -> StateGraph:
+def create_graph(checkpointer: SolverCheckpointSaver) -> StateGraph:
     """Create the SOLVER workflow graph."""
     
     graph = StateGraph(WorkflowState)
@@ -1863,7 +1865,7 @@ curl http://localhost:8000/health
 **Tasks:**
 1. Implement `create_graph()` function (Section 8.2)
 2. Implement all node functions (Section 8.4)
-3. Configure PostgresSaver for checkpointing
+3. Configure SolverCheckpointSaver for checkpointing (Decision #5)
 4. Implement mock LLM adapter (returns canned responses)
 5. Verify: Graph can execute Step 1 and pause at review gate
 
@@ -2075,7 +2077,7 @@ async def test_resume_from_checkpoint():
     original_artifacts = pre_restart.artifacts.copy()
     
     # Simulate restart: Create new graph instance
-    new_checkpointer = PostgresSaver.from_conn_string(DATABASE_URL)
+    new_checkpointer = SolverCheckpointSaver.from_conn_string(DATABASE_URL)
     new_graph = create_graph(new_checkpointer)
     
     # Resume

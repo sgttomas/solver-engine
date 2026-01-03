@@ -166,6 +166,7 @@ solver-engine/
 │   │   ├── domain/             # Pure domain models
 │   │   ├── application/        # Use cases / services
 │   │   ├── infrastructure/     # DB, LLM adapters
+│   │   ├── tests/              # API tests (pytest)
 │   │   └── routes/             # REST routes
 │   └── web/                    # Next.js frontend (future)
 ├── packages/
@@ -185,6 +186,8 @@ solver-engine/
 ```
 
 ---
+
+Checkpoint persistence uses a custom saver aligned to the current schema; see `docs/DECISIONS.md` (Decision #5).
 
 ## API Overview
 
@@ -353,12 +356,12 @@ SOLVER prioritizes **correctness over speed**:
 
 ## Status
 
-**Phase:** P1 Foundation complete, P2 Persistence in progress
+**Phase:** P2 Persistence complete, P3 Orchestration next
 
 | Phase | Status | Description |
 |-------|--------|-------------|
 | P1 Foundation | Complete | Directory structure, Docker, database schema |
-| P2 Persistence | In Progress | SQLAlchemy models, repositories, checkpoint adapter |
+| P2 Persistence | Complete | SQLAlchemy models, repositories, checkpoint adapter |
 | P3 Orchestration | Planned | LangGraph state machine, interrupt handling |
 | P4 LLM | Planned | Claude/OpenAI integration, prompt templates |
 | P5 API | Planned | REST endpoints, SSE streaming |

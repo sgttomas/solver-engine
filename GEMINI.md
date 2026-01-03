@@ -24,15 +24,16 @@ This document provides a persistent overview of the SOLVER project for AI-driven
 - **Traceability:** Mandatory links from Step 1 → Step 2 → Step 3.
 - **Architecture:** Strict flat layout at `apps/api/`. Do NOT use `src/` directory.
 
-## Current Session Context (Phase 2 Focus)
+## Current Session Context (Phase 3 Focus)
 - **Phase 1 (Foundation):** Complete.
-    - Directory structure is flat (`apps/api/`).
-    - Docker running with `pgvector` and `api`.
-    - Database schema applied via Alembic (Raw SQL).
-- **Phase 2 (Persistence):** In Progress.
-    - Goal: Satisfy Gate D (Restart/Resume).
-    - Focus: SQLAlchemy models, Repository layer, Checkpoint adapter.
-    - Constraint: Models must map to existing Raw SQL schema (no new migrations).
+    - Flat layout (`apps/api/`), Docker/DB running, Schema applied.
+- **Phase 2 (Persistence):** Complete.
+    - SQLAlchemy models match `001_initial_schema.py`.
+    - Async Repositories implemented (No-Commit pattern).
+    - **Decision 005:** Custom `DatabaseCheckpointer` adapter implemented (using JSONB serialization).
+- **Phase 3 (Orchestration):** In Progress.
+    - Goal: Satisfy Gate C (Gating Enforced).
+    - Focus: Pydantic state models, LangGraph definition, Step nodes, Interrupt logic.
 
 ## Acceptance Gates (Success Criteria)
 - **Gate A:** Methodology exists (36 docs for Steps 1-3).
@@ -44,8 +45,8 @@ This document provides a persistent overview of the SOLVER project for AI-driven
 
 ## Build Sequence (P1-P6)
 1. **P1: Foundation** (Structure, Docker, DB Schema) ✅
-2. **P2: Persistence** (SQLAlchemy models, Repositories, Checkpoints) 🚧
-3. **P3: Orchestration** (Pydantic state, Graph definition, Interrupts)
+2. **P2: Persistence** (SQLAlchemy models, Repositories, Checkpoints) ✅
+3. **P3: Orchestration** (Pydantic state, Graph definition, Interrupts) 🚧
 4. **P4: API Layer** (FastAPI endpoints, SSE, Wiring)
 5. **P5: Content Generation** (LLM adapter, Prompts, Traceability)
 6. **P6: Verification** (Gate tests)

@@ -26,19 +26,21 @@ Deviations require approval and entry in `docs/DECISIONS.md`.
 ## Current Status
 
 **P1 Foundation:** Complete
-**P2 Persistence:** In Progress
+**P2 Persistence:** Complete
+**P3 Orchestration:** Next
 
-| Slice | Deliverable | Exit Criterion |
-|-------|-------------|----------------|
-| P2.1 | SQLAlchemy Models | Models import without error |
-| P2.2 | Repository Layer | Unit tests pass (mocked DB) |
-| P2.3 | Checkpoint Adapter | LangGraph saver round-trips |
+| Slice | Deliverable | Status |
+|-------|-------------|--------|
+| P2.1 | SQLAlchemy Models | ✅ Complete |
+| P2.2 | Repository Layer | ✅ Complete |
+| P2.3 | Checkpoint Adapter | ✅ Complete |
 
-### Key Context for P2
+### Key Context
 
 - **Schema is authoritative:** `infra/db/migrations/versions/001_initial_schema.py` defines the database. Models must match exactly.
 - **Config location:** `apps/api/config.py` (not `apps/api/config/settings.py` — that was deleted)
 - **Flat layout:** `apps/api/infrastructure/db/` (not `apps/api/src/solver_api/`)
+- **Custom checkpoint saver:** Uses `SolverCheckpointSaver` instead of `langgraph-checkpoint-postgres.PostgresSaver` due to schema incompatibility (see `docs/DECISIONS.md`)
 
 ---
 
@@ -106,7 +108,7 @@ make format           # Format code
 | Create `apps/api/src/` nesting | Use flat `apps/api/` layout |
 | Let LLM control state | Only API calls advance gates |
 | Assume schema fields | Check migration file |
-| Create new migrations for P2 | Map to existing tables |
+| Use PostgresSaver directly | Use `SolverCheckpointSaver` (schema mismatch) |
 
 ---
 

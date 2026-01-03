@@ -73,3 +73,4 @@ Work only on the assigned slice. For each slice:
 - `docs/spec/1_meta-prompt-structured-reasoning.md` — methodology rules
 - `docs/spec/2_structured-reasoning-architecture.md` — system boundaries
 - `docs/spec/3_solver-technical-spec.md` — exact schemas and endpoints
+- `docs/DECISIONS.md` — approved deviations from spec (must be respected)
