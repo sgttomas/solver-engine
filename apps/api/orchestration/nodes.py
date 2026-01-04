@@ -484,22 +484,36 @@ async def advance_node(state: WorkflowState) -> WorkflowState:
     # Determine next position (MVP: Steps 1-3 only)
     current_num = STEP_NUMBERS[state.current_step]
 
-    if current_num < 3:
+    # Check if workflow complete (Step 3 Pass 2 approved)
+    workflow_complete = (
+        current_num == 3
+        and state.current_pass == PassType.EXECUTION
+    )
+
+    if workflow_complete:
+        # Keep step_state as-is with APPROVED status for is_workflow_complete check
+        # Don't reset - this signals workflow completion to the graph
+        pass
+    elif current_num < 3:
         # Advance to next step within same pass
         next_step = [k for k, v in STEP_NUMBERS.items() if v == current_num + 1][0]
         state.current_step = next_step
-    elif state.current_pass == PassType.DEFINITION:
+        # Reset step state for new step
+        state.step_state = StepState(
+            step_name=state.current_step,
+            step_number=STEP_NUMBERS[state.current_step],
+            pass_type=state.current_pass,
+        )
+    else:
         # End of Pass 1 Step 3 → Pass 2 Step 1
         state.current_pass = PassType.EXECUTION
         state.current_step = StepName.PROBLEM_DEFINITION
-    # else: workflow complete (handled by graph edge)
-
-    # Reset step state for new step
-    state.step_state = StepState(
-        step_name=state.current_step,
-        step_number=STEP_NUMBERS[state.current_step],
-        pass_type=state.current_pass,
-    )
+        # Reset step state for new step
+        state.step_state = StepState(
+            step_name=state.current_step,
+            step_number=STEP_NUMBERS[state.current_step],
+            pass_type=state.current_pass,
+        )
 
     state.updated_at = datetime.utcnow()
     return state

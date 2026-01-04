@@ -1270,6 +1270,8 @@ The SSE stream (IP-002) delivers typed events to the frontend. Event names follo
 | `artifact.final` | Final artifact ready | `{ "artifact_id": "..." }` | Show completion, enable next action |
 | `error` | Error occurred | `{ "code": "...", "message": "..." }` | Display error |
 
+Note: In MVP, `artifact.delta` events are emitted post-execution using synthetic chunks (see `docs/DECISIONS.md`, 2026-01-04, P6.5).
+
 **SSE Message Format:**
 
 ```

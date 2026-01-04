@@ -22,3 +22,15 @@ docs/spec/0_SOLVER-Development-Directive.md.
 **Document:** docs/spec/3_solver-technical-spec.md §9 API Endpoints; Appendix A (Gate B)
 **Reason:** Scope reduction for current release; storage is in place, but the read API and Gate B tooling will ship in a later phase (P6.2+).
 **Approved by:** Architect
+
+## 2026-01-04 - P6.4
+**Deviation:** Gate D mid-step recovery is not tested; restart/resume verification only covers awaiting_review checkpoints.
+**Document:** docs/spec/3_solver-technical-spec.md Appendix A (Gate D)
+**Reason:** LangGraph checkpoints at interrupt boundaries; deterministic mid-step recovery tests are brittle and non-deterministic in current harness.
+**Approved by:** Architect
+
+## 2026-01-04 - P6.5
+**Deviation:** SSE `artifact.delta` events are emitted post-execution with synthetic chunks rather than true real-time streaming during generation.
+**Document:** docs/spec/3_solver-technical-spec.md §9.2 SSE Event Types; Appendix A (Gate E)
+**Reason:** MVP implements deterministic SSE sequence at API boundaries; true streaming during LLM generation is deferred.
+**Approved by:** Architect

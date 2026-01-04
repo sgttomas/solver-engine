@@ -2077,6 +2077,8 @@ THEN:
   - Conversation history is preserved
 ```
 
+**Note:** Current verification focuses on awaiting_review checkpoints; mid-step recovery is not exercised in P6.4. See `docs/DECISIONS.md` (2026-01-04, P6.4).
+
 **Test Code:**
 ```python
 async def test_resume_from_checkpoint():
@@ -2124,6 +2126,8 @@ THEN I receive:
   7. step.started (step=2)
   ...
 ```
+
+**Note:** MVP emits `artifact.delta` after graph completion using synthetic chunks rather than true real-time streaming during LLM generation. See `docs/DECISIONS.md` (2026-01-04, P6.5).
 
 **Test Code:**
 ```python

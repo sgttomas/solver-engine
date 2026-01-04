@@ -50,6 +50,7 @@ Work only on the assigned slice. For each slice:
 - Never advance workflow state without explicit approval action.
 - Do not implement Steps 4–10 (stubs only if explicitly requested).
 - Do not implement deferred items listed in `docs/DECISIONS.md` unless explicitly assigned.
+- If a gate scenario is only partially met, log the deviation in `docs/DECISIONS.md` and add a brief note in the relevant spec section.
 
 ## Orchestration Note
 

@@ -602,8 +602,20 @@ class WorkflowService:
             self._session.add(step_execution)
             await self._session.flush()  # Get step_execution.id
 
+        # P6.6: Capture IN_PROGRESS transition for audit trail (Gate F)
+        # If transitioning from NOT_STARTED to a later status, add intermediate
+        # IN_PROGRESS state to ensure audit captures the full transition chain.
+        final_status = StepStatus(step_state.status.value)
+        if (
+            step_execution.status == StepStatus.NOT_STARTED
+            and final_status not in (StepStatus.NOT_STARTED, StepStatus.IN_PROGRESS)
+        ):
+            step_execution.status = StepStatus.IN_PROGRESS
+            step_execution.phase = StepPhase.RECEIVED  # Initial phase (not analyzing yet)
+            await self._session.flush()  # Trigger audit: NOT_STARTED -> IN_PROGRESS
+
         # Update step execution fields from graph state
-        step_execution.status = StepStatus(step_state.status.value)
+        step_execution.status = final_status
         step_execution.phase = StepPhase(step_state.phase.value)
 
         if step_state.started_at:

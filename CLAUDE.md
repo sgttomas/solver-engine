@@ -30,7 +30,7 @@ Deviations require approval and entry in `docs/DECISIONS.md`.
 **P3 Orchestration:** ✅ Complete
 **P4 API:** ✅ Complete
 **P5 Content:** ✅ Complete
-**P6 Verification:** 🔄 In Progress (Gate C ✓, Gate D ✓, Gate E ✓)
+**P6 Verification:** ✅ Complete (Gate C ✓, Gate D ✓, Gate E ✓, Gate F ✓)
 
 ### Key Context
 
@@ -98,6 +98,15 @@ make dev-api          # Start API server
 make test             # Run tests
 make lint             # Run linting
 make format           # Format code
+
+# Gate Verification
+make test-gates       # Gate C (gating enforced)
+make test-recovery    # Gate D (restart/resume)
+make e2e              # Gate E (API + SSE)
+
+# Gate F Audit Verification
+python tools/complete_workflow.py                    # Create fully-approved workflow
+python tools/verify_audit.py --workflow-id $ID      # Verify audit trail
 ```
 
 ---

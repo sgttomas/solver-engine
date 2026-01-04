@@ -241,6 +241,8 @@ MVP is complete when all gates pass:
 | **E** | API + SSE works | Full interactive flow (UI optional) |
 | **F** | Audit complete | Timeline reconstructable from audit_log |
 
+Approved deviations from gate scenarios (if any) are recorded in `docs/DECISIONS.md`.
+
 ---
 
 ## Quick Start
@@ -361,7 +363,7 @@ SOLVER prioritizes **correctness over speed**:
 
 ## Status
 
-**Phase:** P6 Verification in progress
+**Phase:** P6 Verification complete (MVP gates satisfied)
 
 | Phase | Status | Description |
 |-------|--------|-------------|
@@ -370,7 +372,7 @@ SOLVER prioritizes **correctness over speed**:
 | P3 Orchestration | ✅ Complete | LangGraph state machine, interrupt/resume |
 | P4 API | ✅ Complete | REST endpoints, SSE streaming, graph wiring |
 | P5 Content | ✅ Complete | Artifact storage, schema validation, traceability |
-| P6 Verification | 🔄 In Progress | Gate C ✓, Gate D ✓, Gate E ✓ |
+| P6 Verification | ✅ Complete | Gate C ✓, Gate D ✓, Gate E ✓, Gate F ✓ |
 
 **MVP Focus:** Steps 1–3 with two-pass workflow, persistence, gates, streaming, and auditability
 
