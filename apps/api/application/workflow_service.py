@@ -7,13 +7,15 @@ P4.2: DB-only action endpoints (approve/revise/message/clarify).
 Graph integration deferred to P4.4.
 """
 
+import logging
 from datetime import datetime
-from typing import Optional
-from uuid import uuid4
+from typing import Any, Optional
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from infrastructure.db.models import (
+    Artifact,
     Workflow,
     StepExecution,
     Instance,
@@ -31,6 +33,11 @@ from infrastructure.db.repositories.step_execution import StepExecutionRepositor
 from infrastructure.db.repositories.instance import InstanceRepository
 from infrastructure.db.repositories.message import MessageRepository
 from infrastructure.db.repositories.audit import AuditLogRepository
+from infrastructure.db.repositories.artifact import ArtifactRepository
+from application.artifact_service import ArtifactService
+
+
+logger = logging.getLogger(__name__)
 
 
 class WorkflowNotFoundError(Exception):
@@ -81,6 +88,8 @@ class WorkflowService:
         self._instance_repo = InstanceRepository(session)
         self._message_repo = MessageRepository(session)
         self._audit_repo = AuditLogRepository(session)
+        self._artifact_repo = ArtifactRepository(session)
+        self._artifact_service = ArtifactService(session)
 
     async def create_workflow(
         self,
@@ -610,3 +619,112 @@ class WorkflowService:
             step_execution.validation_warnings = step_state.validation_result.warnings
 
         await self._session.flush()
+
+        # P5.3: Sync artifacts from state (scan-based persistence)
+        artifact_results = await self.sync_artifacts_from_state(
+            workflow_db_id=workflow.id,
+            workflow_external_id=workflow.workflow_id,
+            instance_id=str(workflow.instance_id),
+            state=state,
+        )
+
+        # Update latest_artifact_id for any newly persisted artifacts
+        # Results are keyed by (pass_type, step_key) to avoid ambiguity
+        for (result_pass_type, step_key), artifact_id in artifact_results.items():
+            step_name_enum = StepName(step_key)
+
+            step_exec = await self._step_repo.get_by_composite(
+                workflow_id=workflow.id,
+                pass_type=result_pass_type,
+                step_name=step_name_enum,
+            )
+            if step_exec:
+                step_exec.latest_artifact_id = artifact_id
+
+        await self._session.flush()
+
+    async def sync_artifacts_from_state(
+        self,
+        workflow_db_id: UUID,
+        workflow_external_id: str,
+        instance_id: str,
+        state: Any,
+    ) -> dict[tuple[PassType, str], UUID]:
+        """Scan state dictionaries and persist any missing artifacts.
+
+        Scan-based persistence per plan:
+        - Scans state.methodology for Pass 1 docs needing persistence
+        - Scans state.artifacts for Pass 2 packages needing persistence
+        - Idempotent: skips artifacts that already exist or haven't changed
+
+        Args:
+            workflow_db_id: Database workflow UUID.
+            workflow_external_id: External workflow ID string.
+            instance_id: Instance ID string.
+            state: WorkflowState from graph execution.
+
+        Returns:
+            Dict mapping (pass_type, step_key) to latest artifact_id created/updated.
+        """
+        from domain.state import StepName as DomainStepName
+
+        result: dict[tuple[PassType, str], UUID] = {}
+
+        # Pass 1: Scan state.methodology for missing docs
+        for step_key, methodology_output in state.methodology.items():
+            step_name = DomainStepName(step_key)
+
+            # Check if docs already persisted (idempotent)
+            existing = await self._artifact_repo.list_methodology_docs(
+                workflow_id=workflow_db_id,
+                step_name=step_name,
+            )
+
+            # 12 docs per step (4 doc_types × 3 versions)
+            if len(existing) < 12:
+                logger.info(
+                    f"Persisting methodology docs for {step_key} "
+                    f"({len(existing)}/12 exist)"
+                )
+                artifacts = await self._artifact_service.store_methodology_docs(
+                    workflow_id=workflow_db_id,
+                    step_name=step_name,
+                    methodology_output=methodology_output,
+                )
+                if artifacts:
+                    # Return V3 detailed_procedure as latest
+                    result[(PassType.DEFINITION, step_key)] = artifacts[-1].id
+
+        # Pass 2: Scan state.artifacts for approved steps needing persistence
+        for step_key, package_content in state.artifacts.items():
+            step_name = DomainStepName(step_key)
+
+            # Only persist if step is approved (check step_executions table)
+            step_exec = await self._step_repo.get_by_composite(
+                workflow_id=workflow_db_id,
+                pass_type=PassType.EXECUTION,
+                step_name=step_name,
+            )
+
+            if step_exec and step_exec.status == StepStatus.APPROVED:
+                # Let store_step_package handle idempotency via content comparison
+                # It will return existing artifact if content unchanged, or create
+                # new revision if content changed (e.g., after modify action)
+                logger.info(f"Syncing step package for {step_key}")
+                try:
+                    artifact = await self._artifact_service.store_step_package(
+                        workflow_id=workflow_db_id,
+                        instance_id=instance_id,
+                        workflow_external_id=workflow_external_id,
+                        step_name=step_name,
+                        package_content=package_content,
+                        validate=True,
+                    )
+                    result[(PassType.EXECUTION, step_key)] = artifact.id
+                except Exception as e:
+                    logger.error(
+                        f"Failed to persist step package for {step_key}: {e}"
+                    )
+                    # Continue with other artifacts even if one fails
+
+        return result

@@ -1255,54 +1255,63 @@ Abandonment requires:
 
 ### 9.3 SSE Event Types
 
-The SSE stream (IP-002) delivers typed events to the frontend:
+The SSE stream (IP-002) delivers typed events to the frontend. Event names follow semantic conventions per Doc 3 §9.2:
 
 | Event Type | Purpose | Payload | Frontend Action |
 |------------|---------|---------|-----------------|
-| `text_delta` | LLM token streaming | `{ "delta": "..." }` | Append to response display |
-| `status_update` | Workflow state change | `{ "status": "...", "phase": "...", "step": N }` | Update progress indicator |
-| `interrupt` | Gate activation | `{ "type": "clarification" \| "review", "payload": {...} }` | Show gate UI |
+| `workflow.started` | Workflow execution began | `{ "workflow_id": "..." }` | Show workflow active |
+| `workflow.completed` | Workflow finished | `{ "workflow_id": "..." }` | Show completion state |
+| `step.started` | Step execution began | `{ "step_number": N, "step_name": "...", "pass_type": "..." }` | Update progress indicator |
+| `step.awaiting_clarification` | Step needs user input | `{ "questions": [...] }` | Show clarification dialog |
+| `step.awaiting_review` | Step output ready for approval | `{ "output": {...}, "validation": {...} }` | Show review dialog |
+| `step.approved` | Step approved by human | `{ "step_number": N }` | Update step status |
+| `step.revision_requested` | Step revision requested | `{ "feedback": "..." }` | Show revision in progress |
+| `artifact.delta` | Streaming output chunk | `{ "delta": "..." }` | Append to response display |
+| `artifact.final` | Final artifact ready | `{ "artifact_id": "..." }` | Show completion, enable next action |
 | `error` | Error occurred | `{ "code": "...", "message": "..." }` | Display error |
-| `complete` | Step/workflow complete | `{ "artifact_id": "..." }` | Show completion, enable next action |
 
 **SSE Message Format:**
 
 ```
-event: text_delta
+event: step.started
+data: {"step_number": 1, "step_name": "problem_definition", "pass_type": "definition"}
+
+event: artifact.delta
 data: {"delta": "The system shall"}
 
-event: text_delta  
+event: artifact.delta
 data: {"delta": " provide..."}
 
-event: status_update
-data: {"status": "in_progress", "phase": "structuring", "step": 2}
+event: artifact.final
+data: {"artifact_id": "art_abc123"}
 
-event: interrupt
-data: {"type": "review", "payload": {"output": {...}, "validation": {...}}}
+event: step.awaiting_review
+data: {"output": {...}, "validation": {"passed": true}}
 ```
 
 **Frontend Handling:**
 
 ```typescript
-const eventSource = new EventSource(`/workflow/${workflowId}/stream`);
+const eventSource = new EventSource(`/workflows/${workflowId}/stream`);
 
-eventSource.addEventListener('text_delta', (e) => {
+eventSource.addEventListener('artifact.delta', (e) => {
   const { delta } = JSON.parse(e.data);
   appendToResponse(delta);
 });
 
-eventSource.addEventListener('status_update', (e) => {
-  const { status, phase, step } = JSON.parse(e.data);
-  updateProgressIndicator(status, phase, step);
+eventSource.addEventListener('step.started', (e) => {
+  const { step_number, step_name, pass_type } = JSON.parse(e.data);
+  updateProgressIndicator(step_number, step_name, pass_type);
 });
 
-eventSource.addEventListener('interrupt', (e) => {
-  const { type, payload } = JSON.parse(e.data);
-  if (type === 'clarification') {
-    showClarificationDialog(payload.questions);
-  } else if (type === 'review') {
-    showReviewDialog(payload.output, payload.validation);
-  }
+eventSource.addEventListener('step.awaiting_clarification', (e) => {
+  const { questions } = JSON.parse(e.data);
+  showClarificationDialog(questions);
+});
+
+eventSource.addEventListener('step.awaiting_review', (e) => {
+  const { output, validation } = JSON.parse(e.data);
+  showReviewDialog(output, validation);
 });
 ```
 
@@ -1621,11 +1630,16 @@ DELETE /workflow/{id}               Abandon workflow
 ### 13.9 SSE Event Types
 
 ```
-text_delta:     LLM token streaming
-status_update:  Workflow state change
-interrupt:      Gate activation (clarification or review)
-error:          Error occurred
-complete:       Step or workflow complete
+workflow.started:              Workflow execution began
+workflow.completed:            Workflow finished
+step.started:                  Step execution began
+step.awaiting_clarification:   Step needs user input
+step.awaiting_review:          Step output ready for approval
+step.approved:                 Step approved by human
+step.revision_requested:       Step revision requested
+artifact.delta:                Streaming output chunk
+artifact.final:                Final artifact ready
+error:                         Error occurred
 ```
 
 ---

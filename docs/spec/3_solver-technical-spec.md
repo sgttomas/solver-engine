@@ -1011,7 +1011,7 @@ FOR EACH ROW EXECUTE FUNCTION record_step_audit();
 ### 8.1 State Models
 
 ```python
-# backend/domain/state.py
+# apps/api/domain/state.py
 """Domain models - no external dependencies."""
 
 from enum import Enum
@@ -1143,7 +1143,7 @@ class WorkflowState:
 Note: Decision #5 in `docs/DECISIONS.md` replaces `PostgresSaver` with `SolverCheckpointSaver` due to checkpoint schema incompatibility.
 
 ```python
-# backend/orchestration/graph.py
+# apps/api/orchestration/graph.py
 """LangGraph workflow definition."""
 
 from typing import Literal
@@ -1262,7 +1262,7 @@ flowchart TD
 ### 8.4 Node Implementations
 
 ```python
-# backend/orchestration/nodes.py
+# apps/api/orchestration/nodes.py
 """LangGraph node implementations."""
 
 from datetime import datetime
@@ -1429,7 +1429,7 @@ async def advance_node(state: WorkflowState) -> WorkflowState:
 All endpoints under `/api/v1`.
 
 ```python
-# backend/api/routes/workflows.py
+# apps/api/routes/workflows.py
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 
@@ -1589,7 +1589,7 @@ class SSEPayload:
 ### 10.2 Adapter Interface
 
 ```python
-# backend/infrastructure/observability.py
+# apps/api/infrastructure/observability.py
 from abc import ABC, abstractmethod
 
 class ObservabilityAdapter(ABC):
@@ -1729,14 +1729,17 @@ class Settings(BaseSettings):
     anthropic_api_key: Optional[str] = None
     anthropic_model: str = "claude-sonnet-4-20250514"
 
-    # OpenAI
+    # OpenAI (P5.1: Uses Responses API at /v1/responses, not Chat Completions)
     openai_api_key: Optional[str] = None
-    openai_model: str = "gpt-4o"
+    openai_model: str = "gpt-5.2"
 
     # Google
     google_api_key: Optional[str] = None
     google_model: str = "gemini-1.5-pro"
-    
+
+    # Default LLM provider
+    default_llm_provider: str = "openai"
+
     # Observability
     observability_provider: Optional[str] = None  # "langsmith" or "langfuse"
     langsmith_api_key: Optional[str] = None

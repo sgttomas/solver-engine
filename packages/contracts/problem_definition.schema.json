@@ -2,8 +2,340 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://solver.dev/schemas/problem_definition.schema.json",
   "title": "ProblemDefinitionPackage",
-  "description": "Step 1 output schema per Doc 3 Section 5.2",
+  "description": "Step 1 output schema per Doc 3 Section 5.1",
   "type": "object",
-  "properties": {},
-  "additionalProperties": true
+  "required": [
+    "package_id",
+    "workflow_id",
+    "instance_id",
+    "step_number",
+    "version",
+    "created_at",
+    "title",
+    "canonical_problem_definition",
+    "stakeholders",
+    "constraints",
+    "scope",
+    "success_criteria"
+  ],
+  "properties": {
+    "package_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this package (equals artifact row UUID)"
+    },
+    "workflow_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "External workflow ID"
+    },
+    "instance_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Instance ID from workflow record"
+    },
+    "step_number": {
+      "type": "integer",
+      "const": 1,
+      "description": "Step number (always 1 for Problem Definition)"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Revision number (starts at 1)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Problem title"
+    },
+    "canonical_problem_definition": {
+      "type": "object",
+      "required": ["statement"],
+      "properties": {
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Core problem statement"
+        },
+        "interpretation_notes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Notes on problem interpretation"
+        }
+      },
+      "additionalProperties": false
+    },
+    "background": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Background context"
+    },
+    "stakeholders": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name_or_group", "role", "needs", "concerns", "impact"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^SH-\\d{3}$",
+            "description": "Stakeholder ID (SH-001, SH-002, ...)"
+          },
+          "name_or_group": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "type": "string",
+            "minLength": 1
+          },
+          "needs": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "concerns": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "impact": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "description": "Identified stakeholders"
+    },
+    "constraints": {
+      "type": "object",
+      "required": ["hard", "soft"],
+      "properties": {
+        "hard": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "statement", "rationale"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^HC-\\d{3}$",
+                "description": "Hard constraint ID (HC-001, HC-002, ...)"
+              },
+              "statement": { "type": "string", "minLength": 1 },
+              "rationale": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          },
+          "description": "Hard constraints (non-negotiable)"
+        },
+        "soft": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "statement", "rationale"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^SC-\\d{3}$",
+                "description": "Soft constraint ID (SC-001, SC-002, ...)"
+              },
+              "statement": { "type": "string", "minLength": 1 },
+              "rationale": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          },
+          "description": "Soft constraints (negotiable)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "scope": {
+      "type": "object",
+      "required": ["in", "out"],
+      "properties": {
+        "in": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "item"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^IN-\\d{3}$",
+                "description": "In-scope ID (IN-001, IN-002, ...)"
+              },
+              "item": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          },
+          "description": "Items in scope"
+        },
+        "out": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "item", "rationale"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^OUT-\\d{3}$",
+                "description": "Out-of-scope ID (OUT-001, OUT-002, ...)"
+              },
+              "item": { "type": "string", "minLength": 1 },
+              "rationale": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          },
+          "description": "Items out of scope"
+        }
+      },
+      "additionalProperties": false
+    },
+    "success_criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "metric_or_signal", "target", "how_verified"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^CRT-\\d{3}$",
+            "description": "Success criterion ID (CRT-001, CRT-002, ...)"
+          },
+          "metric_or_signal": { "type": "string", "minLength": 1 },
+          "target": { "type": "string", "minLength": 1 },
+          "how_verified": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "description": "Success criteria for problem resolution"
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "statement", "rationale", "risk_if_wrong"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^ASM-\\d{3}$",
+            "description": "Assumption ID (ASM-001, ASM-002, ...)"
+          },
+          "statement": { "type": "string", "minLength": 1 },
+          "rationale": { "type": "string", "minLength": 1 },
+          "risk_if_wrong": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      },
+      "description": "Operating assumptions"
+    },
+    "open_questions": {
+      "type": "object",
+      "properties": {
+        "required_to_proceed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "question"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^OQ-\\d{3}$",
+                "description": "Open question ID (OQ-001, OQ-002, ...)"
+              },
+              "question": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          },
+          "description": "Questions that must be answered to proceed"
+        },
+        "nice_to_have": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Questions that would be helpful but not blocking"
+        }
+      },
+      "additionalProperties": false
+    },
+    "integration_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "components"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^IP-\\d{3}$",
+            "description": "Integration point ID (IP-001, IP-002, ...)"
+          },
+          "description": { "type": "string", "minLength": 1 },
+          "components": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Integration points with other systems"
+    },
+    "software_extension": {
+      "type": "object",
+      "description": "Instance 1 software-specific extension",
+      "properties": {
+        "baseline_commitments": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "system_actors": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "execution_semantics": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "state_model_notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "interfaces": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "persistence_observability": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "step2_handoff": {
+      "type": "object",
+      "description": "Handoff context for Step 2",
+      "properties": {
+        "requirement_themes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "nfr_watchouts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dependencies_to_capture": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
 }

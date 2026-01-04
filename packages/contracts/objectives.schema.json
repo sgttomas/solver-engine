@@ -2,8 +2,376 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://solver.dev/schemas/objectives.schema.json",
   "title": "ObjectivesPackage",
-  "description": "Step 3 output schema per Doc 3 Section 5.4",
+  "description": "Step 3 output schema per Doc 3 Section 5.3",
   "type": "object",
-  "properties": {},
-  "additionalProperties": true
+  "required": [
+    "package_id",
+    "workflow_id",
+    "instance_id",
+    "step_number",
+    "version",
+    "created_at",
+    "overview",
+    "objectives",
+    "success_framework",
+    "trace_map"
+  ],
+  "properties": {
+    "package_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this package (equals artifact row UUID)"
+    },
+    "workflow_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "External workflow ID"
+    },
+    "instance_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Instance ID from workflow record"
+    },
+    "step_number": {
+      "type": "integer",
+      "const": 3,
+      "description": "Step number (always 3 for Objectives)"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Revision number (starts at 1)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp"
+    },
+    "overview": {
+      "type": "object",
+      "required": ["intent", "measurement_principles", "boundaries", "total_objectives", "consolidation_ratio"],
+      "properties": {
+        "intent": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Intent of the objectives"
+        },
+        "measurement_principles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Principles for measuring success"
+        },
+        "boundaries": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Objective boundaries"
+        },
+        "total_objectives": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total count of objectives"
+        },
+        "consolidation_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Ratio of requirements to objectives"
+        }
+      },
+      "additionalProperties": false
+    },
+    "objectives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "category", "tier", "statement", "rationale", "owner_type", "linked_requirements", "consolidated", "success_criteria", "component", "acceptance_criteria"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^(CAP|QUAL|COMP|INTF)-\\d{3}$",
+            "description": "Objective ID (CAP-001, QUAL-001, COMP-001, INTF-001)"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["CAP", "QUAL", "COMP", "INTF"],
+            "description": "Objective category: Capability, Quality, Compliance, Interface"
+          },
+          "tier": {
+            "type": "string",
+            "enum": ["primary", "secondary", "tertiary"],
+            "description": "Objective tier based on linked requirement priorities"
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Objective statement (X is achieved)"
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why this objective matters"
+          },
+          "owner_type": {
+            "type": "string",
+            "enum": ["process", "user", "system"],
+            "description": "Type of owner responsible"
+          },
+          "linked_requirements": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^(FR|NFR|CR|IR)-\\d{3}$" },
+            "description": "Requirements this objective derives from"
+          },
+          "consolidated": {
+            "type": "boolean",
+            "description": "Whether this consolidates multiple requirements"
+          },
+          "success_criteria": {
+            "type": "object",
+            "required": ["definition", "verification"],
+            "properties": {
+              "definition": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Definition of success"
+              },
+              "verification": {
+                "type": "object",
+                "required": ["method", "description", "evidence_artifacts"],
+                "properties": {
+                  "method": {
+                    "type": "string",
+                    "enum": ["demonstration", "test", "inspection", "analysis"],
+                    "description": "Verification method"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "How to verify"
+                  },
+                  "evidence_artifacts": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Required evidence artifacts"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "metric": {
+                "type": ["string", "null"],
+                "description": "Quantitative metric if applicable"
+              },
+              "threshold": {
+                "type": ["string", "null"],
+                "description": "Success threshold if metric exists"
+              }
+            },
+            "additionalProperties": false
+          },
+          "component": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Affected technology components"
+          },
+          "acceptance_criteria": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^CRT-\\d{3}$" },
+            "description": "Links to Step 1 success criteria"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "description": "List of objectives"
+    },
+    "success_framework": {
+      "type": "object",
+      "required": ["minimum_viable", "target", "aspirational"],
+      "properties": {
+        "minimum_viable": {
+          "type": "object",
+          "required": ["description", "objectives", "requirement_coverage"],
+          "properties": {
+            "description": {
+              "type": "string",
+              "description": "What minimum viable means"
+            },
+            "objectives": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^(CAP|QUAL|COMP|INTF)-\\d{3}$" },
+              "description": "Primary objective IDs"
+            },
+            "requirement_coverage": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^(FR|NFR|CR|IR)-\\d{3}$" },
+              "description": "Requirements covered at this level"
+            }
+          },
+          "additionalProperties": false
+        },
+        "target": {
+          "type": "object",
+          "required": ["description", "objectives", "requirement_coverage"],
+          "properties": {
+            "description": {
+              "type": "string",
+              "description": "What target success means"
+            },
+            "objectives": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^(CAP|QUAL|COMP|INTF)-\\d{3}$" },
+              "description": "Primary + secondary objective IDs"
+            },
+            "requirement_coverage": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^(FR|NFR|CR|IR)-\\d{3}$" },
+              "description": "Requirements covered at this level"
+            }
+          },
+          "additionalProperties": false
+        },
+        "aspirational": {
+          "type": "object",
+          "required": ["description", "objectives", "requirement_coverage"],
+          "properties": {
+            "description": {
+              "type": "string",
+              "description": "What aspirational success means"
+            },
+            "objectives": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^(CAP|QUAL|COMP|INTF)-\\d{3}$" },
+              "description": "All objective IDs"
+            },
+            "requirement_coverage": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^(FR|NFR|CR|IR)-\\d{3}$" },
+              "description": "Requirements covered at this level"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "trace_map": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["objective_id", "requirement_ids", "consolidated"],
+        "properties": {
+          "objective_id": {
+            "type": "string",
+            "pattern": "^(CAP|QUAL|COMP|INTF)-\\d{3}$",
+            "description": "Objective ID"
+          },
+          "requirement_ids": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^(FR|NFR|CR|IR)-\\d{3}$" },
+            "description": "Requirements mapped to this objective"
+          },
+          "consolidated": {
+            "type": "boolean",
+            "description": "Whether multiple requirements were consolidated"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Step 2 → Step 3 traceability"
+    },
+    "backward_trace": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["requirement_id", "objective_id"],
+        "properties": {
+          "requirement_id": {
+            "type": "string",
+            "pattern": "^(FR|NFR|CR|IR)-\\d{3}$",
+            "description": "Requirement ID"
+          },
+          "objective_id": {
+            "type": "string",
+            "pattern": "^(CAP|QUAL|COMP|INTF)-\\d{3}$",
+            "description": "Objective that covers this requirement"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Requirement → Objective reverse lookup"
+    },
+    "risks_tradeoffs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["risk", "related_objectives", "related_requirements", "monitoring_signal", "mitigation_hint"],
+        "properties": {
+          "risk": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Description of the risk"
+          },
+          "related_objectives": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^(CAP|QUAL|COMP|INTF)-\\d{3}$" },
+            "description": "Objectives affected by this risk"
+          },
+          "related_requirements": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^(FR|NFR|CR|IR)-\\d{3}$" },
+            "description": "Requirements affected by this risk"
+          },
+          "monitoring_signal": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Signal to monitor for this risk"
+          },
+          "mitigation_hint": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Hint for mitigating this risk"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Identified risks and tradeoffs"
+    },
+    "open_questions": {
+      "type": "object",
+      "properties": {
+        "required_to_finalize": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Questions that must be answered to finalize"
+        },
+        "deferred": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Questions deferred to later"
+        }
+      },
+      "additionalProperties": false
+    },
+    "step4_handoff": {
+      "type": "object",
+      "description": "Handoff context for Step 4",
+      "properties": {
+        "sequencing_notes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Notes on verification sequencing"
+        },
+        "acceptance_gates": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Acceptance gates to define"
+        },
+        "dependencies_to_plan": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Dependencies to plan for"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
 }

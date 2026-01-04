@@ -2,8 +2,295 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://solver.dev/schemas/requirements.schema.json",
   "title": "RequirementsPackage",
-  "description": "Step 2 output schema per Doc 3 Section 5.3",
+  "description": "Step 2 output schema per Doc 3 Section 5.2",
   "type": "object",
-  "properties": {},
-  "additionalProperties": true
+  "required": [
+    "package_id",
+    "workflow_id",
+    "instance_id",
+    "step_number",
+    "version",
+    "created_at",
+    "overview",
+    "requirements",
+    "coverage_map"
+  ],
+  "properties": {
+    "package_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this package (equals artifact row UUID)"
+    },
+    "workflow_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "External workflow ID"
+    },
+    "instance_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Instance ID from workflow record"
+    },
+    "step_number": {
+      "type": "integer",
+      "const": 2,
+      "description": "Step number (always 2 for Requirements)"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Revision number (starts at 1)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp"
+    },
+    "overview": {
+      "type": "object",
+      "required": ["summary", "boundaries", "total_requirements", "priority_distribution"],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Summary of requirements analysis"
+        },
+        "boundaries": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Requirement boundaries"
+        },
+        "total_requirements": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total count of requirements"
+        },
+        "priority_distribution": {
+          "type": "object",
+          "required": ["must", "should", "could"],
+          "properties": {
+            "must": { "type": "integer", "minimum": 0 },
+            "should": { "type": "integer", "minimum": 0 },
+            "could": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false,
+          "description": "Count of requirements by priority"
+        }
+      },
+      "additionalProperties": false
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "category", "priority", "statement", "rationale", "source", "component", "testability", "trace"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^(FR|NFR|CR|IR)-\\d{3}$",
+            "description": "Requirement ID (FR-001, NFR-001, CR-001, IR-001)"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["FR", "NFR", "CR", "IR"],
+            "description": "Requirement category: Functional, Non-Functional, Constraint, Interface"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["must", "should", "could"],
+            "description": "MoSCoW priority"
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Requirement statement"
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why this requirement exists"
+          },
+          "source": {
+            "type": "object",
+            "required": ["type", "id", "aspect"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["stakeholder", "constraint", "scope", "success_criterion", "assumption", "integration_point"],
+                "description": "Source type from Step 1"
+              },
+              "id": {
+                "type": "string",
+                "description": "Reference to Step 1 element (SH-xxx, HC-xxx, etc.)"
+              },
+              "aspect": {
+                "type": "string",
+                "description": "Specific aspect (need, concern, item, etc.)"
+              }
+            },
+            "additionalProperties": false
+          },
+          "component": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Affected technology components"
+          },
+          "testability": {
+            "type": "object",
+            "required": ["method", "description"],
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": ["demonstration", "test", "inspection", "analysis"],
+                "description": "Verification method"
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "description": "How to verify"
+              }
+            },
+            "additionalProperties": false
+          },
+          "trace": {
+            "type": "object",
+            "properties": {
+              "stakeholders": {
+                "type": "array",
+                "items": { "type": "string", "pattern": "^SH-\\d{3}$" },
+                "description": "Linked stakeholder IDs"
+              },
+              "constraints": {
+                "type": "array",
+                "items": { "type": "string", "pattern": "^(HC|SC)-\\d{3}$" },
+                "description": "Linked constraint IDs"
+              },
+              "scope_in": {
+                "type": "array",
+                "items": { "type": "string", "pattern": "^IN-\\d{3}$" },
+                "description": "Linked in-scope IDs"
+              },
+              "success_criteria": {
+                "type": "array",
+                "items": { "type": "string", "pattern": "^CRT-\\d{3}$" },
+                "description": "Linked success criterion IDs"
+              },
+              "integration_points": {
+                "type": "array",
+                "items": { "type": "string", "pattern": "^IP-\\d{3}$" },
+                "description": "Linked integration point IDs"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Traceability links to Step 1 elements"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "description": "List of requirements"
+    },
+    "coverage_map": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_type", "source_id", "requirement_ids", "coverage_note"],
+        "properties": {
+          "source_type": {
+            "type": "string",
+            "description": "Type of Step 1 element (stakeholder, constraint, scope, etc.)"
+          },
+          "source_id": {
+            "type": "string",
+            "description": "Step 1 element ID"
+          },
+          "requirement_ids": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^(FR|NFR|CR|IR)-\\d{3}$" },
+            "description": "Requirements covering this source"
+          },
+          "coverage_note": {
+            "type": "string",
+            "description": "Note on coverage quality"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Step 1 → Step 2 traceability coverage"
+    },
+    "conflicts_tradeoffs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["conflict", "impacted_requirement_ids", "proposed_resolution"],
+        "properties": {
+          "conflict": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Description of the conflict"
+          },
+          "impacted_requirement_ids": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^(FR|NFR|CR|IR)-\\d{3}$" },
+            "description": "Requirements affected by this conflict"
+          },
+          "proposed_resolution": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Proposed way to resolve"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Identified conflicts and tradeoffs"
+    },
+    "open_questions": {
+      "type": "object",
+      "properties": {
+        "required_to_finalize": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Questions that must be answered to finalize"
+        },
+        "deferred": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Questions deferred to later"
+        }
+      },
+      "additionalProperties": false
+    },
+    "step3_handoff": {
+      "type": "object",
+      "description": "Handoff context for Step 3",
+      "properties": {
+        "objective_mapping_rules": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Rules for mapping requirements to objectives"
+        },
+        "objective_seeds": {
+          "type": "object",
+          "properties": {
+            "primary_from_must": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "secondary_from_should": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "tertiary_from_could": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false,
+          "description": "Objective seeds by priority tier"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
 }
