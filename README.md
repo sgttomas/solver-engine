@@ -224,7 +224,7 @@ workflow.completed     Workflow finished
 error                  Error occurred
 ```
 
-Note: The stream currently emits an initial state snapshot and keep-alive events; live event emission during graph execution will be expanded in later phases.
+Events are emitted via an in-memory EventBroker with backlog replay for late-connecting clients.
 
 ---
 
@@ -321,7 +321,7 @@ make dev     # Start dev server
 
 ```bash
 make test              # Unit tests
-make e2e               # End-to-end gate checks
+make e2e               # End-to-end gate checks (starts local SSE server; requires database running)
 make test-gates        # Gate enforcement tests
 make test-recovery     # Restart/resume tests
 python tools/validate_schemas.py   # Schema validation
@@ -361,7 +361,7 @@ SOLVER prioritizes **correctness over speed**:
 
 ## Status
 
-**Phase:** P5 Content Generation in progress
+**Phase:** P6 Verification in progress
 
 | Phase | Status | Description |
 |-------|--------|-------------|
@@ -369,8 +369,8 @@ SOLVER prioritizes **correctness over speed**:
 | P2 Persistence | ✅ Complete | SQLAlchemy models, repositories, checkpoint adapter |
 | P3 Orchestration | ✅ Complete | LangGraph state machine, interrupt/resume |
 | P4 API | ✅ Complete | REST endpoints, SSE streaming, graph wiring |
-| P5 Content | 🔄 In Progress | Artifact storage, schema validation, traceability link persistence (read/verification tooling deferred) |
-| P6 Verification | Planned | End-to-end gate testing |
+| P5 Content | ✅ Complete | Artifact storage, schema validation, traceability |
+| P6 Verification | 🔄 In Progress | Gate C ✓, Gate D ✓, Gate E ✓ |
 
 **MVP Focus:** Steps 1–3 with two-pass workflow, persistence, gates, streaming, and auditability
 

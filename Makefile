@@ -4,7 +4,7 @@
 # Task runner for development, testing, and deployment
 # Use: make <target>
 
-.PHONY: help install clean test lint format dev build docker-up docker-down migrate test-gates
+.PHONY: help install clean test lint format dev build docker-up docker-down migrate test-gates test-recovery e2e
 
 # Default target - show help
 help:
@@ -29,6 +29,8 @@ help:
 	@echo "  make test-integration - Run integration tests only"
 	@echo "  make test-e2e       - Run end-to-end tests"
 	@echo "  make test-gates     - Run Gate C tests (gating enforcement)"
+	@echo "  make test-recovery  - Run Gate D tests (restart/recovery)"
+	@echo "  make e2e            - Run Gate E tests (API + SSE flow)"
 	@echo "  make test-coverage  - Run tests with coverage report"
 	@echo ""
 	@echo "Code Quality:"
@@ -124,6 +126,16 @@ test-gates:
 	@echo "Running Gate C tests (gating enforcement)..."
 	PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/integration/test_gate_c.py -v
 	@echo "✓ Gate C tests passed"
+
+test-recovery:
+	@echo "Running Gate D tests (restart/recovery)..."
+	PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/integration/test_gate_d.py -v
+	@echo "✓ Gate D tests passed"
+
+e2e:
+	@echo "Running Gate E tests (API + SSE flow)..."
+	PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/e2e/test_gate_e.py -v
+	@echo "✓ Gate E tests passed"
 
 test-coverage:
 	@echo "Running tests with coverage..."

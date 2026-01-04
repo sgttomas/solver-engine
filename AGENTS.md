@@ -75,6 +75,7 @@ Work only on the assigned slice. For each slice:
 - Keep changes small and reversible.
 - Avoid network access or installs without approval.
 - Docker Compose file lives at `infra/docker/docker-compose.yml`.
+- `make e2e` requires a running database (see `README.md`).
 
 ## Key References
 

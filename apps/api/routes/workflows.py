@@ -25,6 +25,7 @@ from application.workflow_service import (
     InstanceNotFoundError,
     InvalidStateError,
 )
+from application.event_stream import get_event_broker, SSEEvent, HEARTBEAT_EVENT
 from infrastructure.postgres import get_session, async_session_factory
 from infrastructure.db.checkpoint_saver import SolverCheckpointSaver
 from orchestration.graph import create_graph
@@ -45,15 +46,32 @@ router = APIRouter(prefix="/workflows", tags=["workflows"])
 # P4.4: Graph Singleton (LangGraph standard pattern)
 # =============================================================================
 
-# Module-level singleton - checkpointer manages its own sessions,
-# thread_id in config provides per-workflow isolation
-_checkpointer = SolverCheckpointSaver(async_session_factory)
-_graph = create_graph(_checkpointer)
+# Lazy initialization to ensure graph is created in correct event loop context
+_checkpointer = None
+_graph = None
 
 
 def get_graph():
-    """Return cached graph instance."""
+    """Get or create cached graph instance.
+
+    Uses lazy initialization to ensure creation happens in correct
+    event loop context for async operations.
+    """
+    global _checkpointer, _graph
+    if _graph is None:
+        _checkpointer = SolverCheckpointSaver(async_session_factory)
+        _graph = create_graph(_checkpointer)
     return _graph
+
+
+def reset_graph():
+    """Reset graph singleton (for testing).
+
+    Forces re-creation of graph on next get_graph() call.
+    """
+    global _checkpointer, _graph
+    _checkpointer = None
+    _graph = None
 
 
 # =============================================================================
@@ -99,6 +117,108 @@ def format_sse_comment(comment: str) -> str:
     Per SSE spec: lines starting with : are comments.
     """
     return f": {comment}\n\n"
+
+
+# =============================================================================
+# P6.5: Event Emission Helpers (Gate E SSE compliance)
+# =============================================================================
+
+
+def chunk_string(s: str, num_chunks: int) -> list:
+    """Split string into approximately equal chunks.
+
+    Args:
+        s: String to split.
+        num_chunks: Number of chunks to create.
+
+    Returns:
+        List of string chunks.
+    """
+    if not s or num_chunks <= 0:
+        return [s] if s else []
+    chunk_size = max(1, len(s) // num_chunks)
+    chunks = []
+    for i in range(0, len(s), chunk_size):
+        chunks.append(s[i : i + chunk_size])
+    # Merge last small chunk if needed
+    if len(chunks) > num_chunks and chunks:
+        chunks[-2] = chunks[-2] + chunks[-1]
+        chunks.pop()
+    return chunks
+
+
+def build_sse_payload(
+    workflow,
+    step_execution,
+    event_type: str = None,
+    data: dict = None,
+    artifact_id: str = None,
+) -> tuple:
+    """Build SSE payload aligned with STATUS_TO_EVENT mapping.
+
+    Args:
+        workflow: Workflow DB model.
+        step_execution: StepExecution DB model (may be None).
+        event_type: Override event type (optional).
+        data: Additional data to include (optional).
+        artifact_id: Artifact ID for artifact events (optional).
+
+    Returns:
+        Tuple of (resolved_event_type, payload_dict).
+    """
+    status = step_execution.status.value if step_execution else None
+    phase = step_execution.phase.value if step_execution else None
+
+    # Use STATUS_TO_EVENT for step-state events when no override
+    resolved_event = event_type or STATUS_TO_EVENT.get(status, "step.started")
+
+    payload = {
+        "event_id": str(uuid4()),
+        "event_type": resolved_event,
+        "workflow_id": workflow.workflow_id,
+        "instance_id": str(workflow.instance_id),
+        "pass_type": workflow.current_pass.value,
+        "step_number": workflow.current_step_number,
+        "step_name": workflow.current_step.value,
+        "timestamp": datetime.utcnow().isoformat(),
+        "artifact_id": artifact_id,
+        "data": {},
+    }
+
+    # Include status/phase for step events
+    if status is not None:
+        payload["data"]["status"] = status
+    if phase is not None:
+        payload["data"]["phase"] = phase
+
+    # Merge additional data
+    if data:
+        payload["data"].update(data)
+
+    return resolved_event, payload
+
+
+async def emit_event(
+    workflow,
+    step_execution,
+    event_type: str = None,
+    data: dict = None,
+    artifact_id: str = None,
+) -> None:
+    """Emit SSE event to broker.
+
+    Args:
+        workflow: Workflow DB model.
+        step_execution: StepExecution DB model (may be None).
+        event_type: Override event type (optional).
+        data: Additional data to include (optional).
+        artifact_id: Artifact ID for artifact events (optional).
+    """
+    broker = get_event_broker()
+    resolved_type, payload = build_sse_payload(
+        workflow, step_execution, event_type, data, artifact_id
+    )
+    await broker.publish(workflow.workflow_id, SSEEvent(resolved_type, payload))
 
 
 # =============================================================================
@@ -264,6 +384,10 @@ async def create_workflow(
                 domain=request.domain,
             )
 
+        # P6.5: Emit SSE events before graph invocation
+        await emit_event(workflow, step_execution, "workflow.started")
+        await emit_event(workflow, step_execution, "step.started")
+
         # P4.4: Invoke graph with initial state
         graph = get_graph()
         config = {"configurable": {"thread_id": workflow.thread_id}}
@@ -291,8 +415,28 @@ async def create_workflow(
         async with session.begin():
             await service.sync_db_from_state(workflow.workflow_id, result)
 
-        # Reload for response
+        # Reload for response (force refresh from DB to get updated status/phase)
+        # Note: expire_on_commit=False means identity map has stale objects
         workflow, step_execution = await service.get_workflow(workflow.workflow_id)
+        await session.refresh(workflow)
+        if step_execution:
+            await session.refresh(step_execution)
+
+        # P6.5: Emit SSE events after graph completion
+        # Synthetic artifact.delta events (chunk output)
+        step_state_data = result.get("step_state", {})
+        output = step_state_data.get("output") if isinstance(step_state_data, dict) else None
+        if output:
+            output_str = json.dumps(output)
+            for i, chunk in enumerate(chunk_string(output_str, 3)):
+                await emit_event(
+                    workflow, step_execution, "artifact.delta",
+                    {"delta": chunk, "index": i}
+                )
+        await emit_event(workflow, step_execution, "artifact.final")
+        # Final step state event (uses STATUS_TO_EVENT mapping)
+        await emit_event(workflow, step_execution)
+
         return build_workflow_response(workflow, step_execution)
 
     except InstanceNotFoundError as e:
@@ -395,6 +539,9 @@ async def approve_step(
                 actor_id=request.actor_id,
             )
 
+        # P6.5: Emit step.approved event
+        await emit_event(workflow, step_execution, "step.approved")
+
         # P4.4: Update graph state and resume
         graph = get_graph()
         config = {"configurable": {"thread_id": workflow.thread_id}}
@@ -411,8 +558,29 @@ async def approve_step(
         async with session.begin():
             await service.sync_db_from_state(workflow_id, result)
 
-        # Reload for response
+        # Reload for response (force refresh from DB to get updated status/phase)
+        # Note: expire_on_commit=False means identity map has stale objects
         workflow, step_execution = await service.get_workflow(workflow_id)
+        await session.refresh(workflow)
+        if step_execution:
+            await session.refresh(step_execution)
+
+        # P6.5: Emit SSE events for new step
+        await emit_event(workflow, step_execution, "step.started")
+        # Synthetic artifact.delta events (chunk output)
+        step_state_data = result.get("step_state", {})
+        output = step_state_data.get("output") if isinstance(step_state_data, dict) else None
+        if output:
+            output_str = json.dumps(output)
+            for i, chunk in enumerate(chunk_string(output_str, 3)):
+                await emit_event(
+                    workflow, step_execution, "artifact.delta",
+                    {"delta": chunk, "index": i}
+                )
+        await emit_event(workflow, step_execution, "artifact.final")
+        # Final step state event (uses STATUS_TO_EVENT mapping)
+        await emit_event(workflow, step_execution)
+
         return build_workflow_response(workflow, step_execution)
 
     except WorkflowNotFoundError:
@@ -591,10 +759,9 @@ async def stream_workflow(
 ):
     """SSE stream for real-time events.
 
-    Gate E: Must support full interactive flow.
+    Gate E: Supports full interactive flow via EventBroker.
 
-    P4.3: Returns current state snapshot + heartbeat.
-    P4.4 will add real-time event streaming during graph execution.
+    P6.5: Streams from EventBroker with backlog replay for late-connecting clients.
     """
     # Validate workflow exists BEFORE starting stream
     service = WorkflowService(session)
@@ -606,33 +773,18 @@ async def stream_workflow(
             detail=f"Workflow not found: {workflow_id}",
         )
 
+    broker = get_event_broker()
+
     async def event_generator():
         try:
-            # Yield initial state snapshot
-            if step_execution:
-                event_type = STATUS_TO_EVENT.get(
-                    step_execution.status.value, "step.started"
-                )
-                payload = {
-                    "event_id": str(uuid4()),
-                    "event_type": event_type,
-                    "workflow_id": workflow.workflow_id,
-                    "instance_id": str(workflow.instance_id),
-                    "pass_type": workflow.current_pass.value,
-                    "step_number": workflow.current_step_number,
-                    "step_name": workflow.current_step.value,
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "data": {
-                        "status": step_execution.status.value,
-                        "phase": step_execution.phase.value,
-                    },
-                }
-                yield format_sse_event(event_type, payload)
-
-            # Heartbeat loop (P4.4 will add event queue here)
-            while True:
-                await asyncio.sleep(15)
-                yield format_sse_comment("keep-alive")
+            # Subscribe to broker - yields backlog first, then live events
+            # Use 5s timeout for heartbeats (keeps tests fast, production responsive)
+            async for event in broker.subscribe(workflow_id, timeout=5.0):
+                # Handle heartbeat events as SSE comments (not data events)
+                if event is HEARTBEAT_EVENT or event.event_type == "__heartbeat__":
+                    yield format_sse_comment("keep-alive")
+                else:
+                    yield format_sse_event(event.event_type, event.payload)
 
         except asyncio.CancelledError:
             # Client disconnected - clean shutdown
