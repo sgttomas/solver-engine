@@ -361,7 +361,7 @@ SOLVER prioritizes **correctness over speed**:
 
 ## Status
 
-**Phase:** P4 API complete, P5 Content Generation next
+**Phase:** P5 Content Generation in progress
 
 | Phase | Status | Description |
 |-------|--------|-------------|
@@ -369,10 +369,12 @@ SOLVER prioritizes **correctness over speed**:
 | P2 Persistence | ✅ Complete | SQLAlchemy models, repositories, checkpoint adapter |
 | P3 Orchestration | ✅ Complete | LangGraph state machine, interrupt/resume |
 | P4 API | ✅ Complete | REST endpoints, SSE streaming, graph wiring |
-| P5 Content | Next | LLM adapter, prompts, artifact storage |
+| P5 Content | 🔄 In Progress | Artifact storage, schema validation, traceability link persistence (read/verification tooling deferred) |
 | P6 Verification | Planned | End-to-end gate testing |
 
 **MVP Focus:** Steps 1–3 with two-pass workflow, persistence, gates, streaming, and auditability
+
+Deferred items are tracked in `docs/DECISIONS.md`.
 
 ---
 

@@ -35,6 +35,10 @@ from infrastructure.db.repositories.message import MessageRepository
 from infrastructure.db.repositories.audit import AuditLogRepository
 from infrastructure.db.repositories.artifact import ArtifactRepository
 from application.artifact_service import ArtifactService
+from application.traceability_service import (
+    TraceabilityService,
+    TraceabilityExtractionError,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -90,6 +94,7 @@ class WorkflowService:
         self._audit_repo = AuditLogRepository(session)
         self._artifact_repo = ArtifactRepository(session)
         self._artifact_service = ArtifactService(session)
+        self._traceability_service = TraceabilityService(session)
 
     async def create_workflow(
         self,
@@ -721,10 +726,24 @@ class WorkflowService:
                         validate=True,
                     )
                     result[(PassType.EXECUTION, step_key)] = artifact.id
+
+                    # P5.4: Extract and persist traceability links
+                    # Use artifact.content_jsonb which has injected metadata
+                    await self._traceability_service.extract_and_persist_links(
+                        workflow_id=workflow_db_id,
+                        step_name=step_name,
+                        package_content=artifact.content_jsonb,
+                    )
+                    logger.info(f"Extracted traceability links for {step_key}")
+
+                except TraceabilityExtractionError as e:
+                    logger.error(f"Traceability extraction failed for {step_key}: {e}")
+                    raise  # Fail sync - Gate B requirement
+
                 except Exception as e:
                     logger.error(
                         f"Failed to persist step package for {step_key}: {e}"
                     )
-                    # Continue with other artifacts even if one fails
+                    raise  # Don't silently continue
 
         return result

@@ -25,7 +25,7 @@ This document provides a persistent overview of the SOLVER project for AI-driven
 - **Traceability:** Mandatory links from Step 1 → Step 2 → Step 3.
 - **Architecture:** Strict flat layout at `apps/api/`. Do NOT use `src/` directory.
 
-## Current Session Context (Phase 5 Focus)
+## Current Session Context (Phase 6 Focus)
 - **Phase 1 (Foundation):** Complete.
     - Flat layout (`apps/api/`), Docker/DB running, Schema applied.
 - **Phase 2 (Persistence):** Complete.
@@ -37,13 +37,18 @@ This document provides a persistent overview of the SOLVER project for AI-driven
     - **P4.2 Actions:** Approve/Revise/Message/Clarify endpoints (Audit aware).
     - **P4.3 SSE:** Streaming infrastructure (Snapshot on connect + Heartbeat).
     - **P4.4 Wiring:** Connected API to LangGraph execution (Singleton Graph, Audit Polling for SSE).
-- **Phase 5 (Content Generation):** Next.
-    - Goal: Implement LLM Adapter and Prompts for Methodology V1-V3.
-    - Focus: Satisfy Gates A & B (Methodology and Artifact generation).
+- **Phase 5 (Content Generation):** Complete.
+    - **P5.1 Adapter:** `OpenAIResponsesAdapter` (httpx, gpt-5.2).
+    - **P5.2 Prompts:** V1→V3 Methodology generation + JSON-only Pass 2.
+    - **P5.3 Storage:** `ArtifactService` with `jsonschema` validation and scan-based persistence.
+    - **P5.4 Traceability:** `TraceabilityService` extracting from `coverage_map` with replace semantics.
+- **Phase 6 (Verification):** Next.
+    - Goal: Run acceptance tests to close all Gates.
+    - Focus: Prove Methodology (Gate A) and Traceability (Gate B).
 
 ## Acceptance Gates (Success Criteria)
-- **Gate A:** Methodology exists (36 docs for Steps 1-3).
-- **Gate B:** Packages with valid schemas and traceability traces.
+- **Gate A:** Methodology exists (36 docs for Steps 1-3). 🚧 (Implemented)
+- **Gate B:** Packages with valid schemas and traceability traces. 🚧 (Implemented)
 - **Gate C:** Gating enforced (cannot bypass via message). ✅
 - **Gate D:** Restart/resume works (state survives kill). ✅
 - **Gate E:** API + SSE flow works (interactive review flow supported). ✅
@@ -54,8 +59,8 @@ This document provides a persistent overview of the SOLVER project for AI-driven
 2. **P2: Persistence** (SQLAlchemy models, Repositories, Checkpoints) ✅
 3. **P3: Orchestration** (Pydantic state, Graph definition, Interrupts) ✅
 4. **P4: API Layer** (FastAPI endpoints, SSE, Wiring) ✅
-5. **P5: Content Generation** (LLM adapter, Prompts, Traceability) 🚧
-6. **P6: Verification** (Gate tests)
+5. **P5: Content Generation** (LLM adapter, Prompts, Traceability) ✅
+6. **P6: Verification** (Gate tests) 🚧
 
 ## Verification Standard
 | Command | Purpose |
@@ -64,7 +69,9 @@ This document provides a persistent overview of the SOLVER project for AI-driven
 | `make test-gates` | Gate enforcement |
 | `make test-recovery` | Restart/resume tests |
 | `make migrate` | Run DB migrations (via Alembic) |
-| `python tools/validate_schemas.py` | Artifact validation |
+| `python tools/validate_schemas.py` | Artifact validation (Gate B) |
+| `python tools/verify_methodology.py` | Methodology check (Gate A) |
+| `python tools/verify_traces.py` | Traceability check (Gate B) |
 | `pytest apps/api/tests/integration` | Integration tests (Orchestration & API) |
 
 ## File Boundaries

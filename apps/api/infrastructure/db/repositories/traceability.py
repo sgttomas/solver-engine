@@ -7,7 +7,7 @@ Provides data access for forward/backward trace links.
 from typing import Optional, List
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from infrastructure.db.models import TraceabilityLink
@@ -122,3 +122,27 @@ class TraceabilityLinkRepository(BaseRepository[TraceabilityLink]):
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def delete_for_step(
+        self,
+        workflow_id: UUID,
+        to_step: int,
+    ) -> int:
+        """Delete all links targeting a specific step.
+
+        Used for replace semantics: delete old links before inserting new ones
+        from the latest approved package revision.
+
+        Args:
+            workflow_id: Workflow UUID
+            to_step: Target step number (2 or 3)
+
+        Returns:
+            Number of deleted rows
+        """
+        stmt = delete(TraceabilityLink).where(
+            TraceabilityLink.workflow_id == workflow_id,
+            TraceabilityLink.to_step == to_step,
+        )
+        result = await self._session.execute(stmt)
+        return result.rowcount

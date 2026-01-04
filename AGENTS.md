@@ -49,6 +49,7 @@ Work only on the assigned slice. For each slice:
 - No hidden chain-of-thought; provide reviewable, traceable rationale only.
 - Never advance workflow state without explicit approval action.
 - Do not implement Steps 4–10 (stubs only if explicitly requested).
+- Do not implement deferred items listed in `docs/DECISIONS.md` unless explicitly assigned.
 
 ## Orchestration Note
 
