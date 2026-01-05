@@ -26,7 +26,7 @@ Legacy docs in `docs/legacy/` are not authoritative.
 | `0_SOLVER-Development-Directive.md` | `5_SOLVER-Development-Directive-v1.5.md` |
 | `1_meta-prompt-structured-reasoning.md` | (retained in legacy; methodology source) |
 | `2_structured-reasoning-architecture.md` | `3_SOLVER-Architectural-Contract-v3.4.md` |
-| `3_solver-technical-spec.md` | `4_solver-technical-spec-V2.7.3.md` |
+| `3_solver-technical-spec.md` | `4_solver-technical-spec-V2.8.0.md` |
 
 **New Documents:**
 - `0_Document-Type-Specifications-v2.1.md` — Governance framework

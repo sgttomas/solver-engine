@@ -20,7 +20,7 @@ Read in this order:
 1. `docs/spec/0_Document-Type-Specifications-v2.1.md` — Governance framework
 2. `docs/spec/2_SOLVER-Design-Intent-v1.1.md` — Why² (principles, rationale)
 3. `docs/spec/3_SOLVER-Architectural-Contract-v3.4.md` — Why (invariants, R1–R19)
-4. `docs/spec/4_solver-technical-spec-V2.7.3.md` — What (schemas, APIs)
+4. `docs/spec/4_solver-technical-spec-V2.8.0.md` — What (schemas, APIs)
 5. `docs/spec/5_SOLVER-Development-Directive-v1.5.md` — How (phases, packages, gates)
 6. `docs/spec/6_SOLVER-Change-Management-v1.2.md` — Process (change control)
 
@@ -30,7 +30,7 @@ Note: `docs/spec/1_SOLVER-README.md` is project orientation (read after repo REA
 
 The following docs in `docs/legacy/` are superseded but retained for historical context:
 - `0_SOLVER-Development-Directive.md` → superseded by `5_SOLVER-Development-Directive`
-- `1_meta-prompt-structured-reasoning.md` → methodology source (still valid for reasoning)
+- `1_meta-prompt-structured-reasoning.md` → superseded by `docs/spec/4_solver-technical-spec-V2.8.0.md` Appendix D (historical only)
 - `2_structured-reasoning-architecture.md` → superseded by `3_SOLVER-Architectural-Contract`
 - `3_solver-technical-spec.md` → superseded by `4_solver-technical-spec`
 
@@ -48,21 +48,21 @@ From Document-Type-Specifications v2.1, two hierarchies govern:
 If a deviation is needed, use the deviation protocol in
 `docs/spec/6_SOLVER-Change-Management-v1.2.md` and log it in `docs/DECISIONS.md`.
 
-## Execution Protocol (Slices)
+## Execution Protocol (Packages)
 
-Work only on the assigned slice. For each slice:
+Work only on the assigned package. For each package:
 
 1) Provide a short plan:
    - Files to create/modify
    - 3–5 bullet approach summary
    - Up to 3 questions if blocked
 2) Wait for approval
-3) Implement only the approved slice
+3) Implement only the approved package
 4) End with:
    - Changed files list
    - Commands run + results
    - Gate(s) satisfied
-   - Next slice plan
+   - Next package plan
 
 ## Non-Negotiables
 
@@ -108,7 +108,7 @@ Work only on the assigned slice. For each slice:
 
 - `README.md` — project overview and API summary
 - `docs/spec/3_SOLVER-Architectural-Contract-v3.4.md` — invariants and reliability rules (R1–R19)
-- `docs/spec/4_solver-technical-spec-V2.7.3.md` — exact schemas and endpoints
+- `docs/spec/4_solver-technical-spec-V2.8.0.md` — exact schemas and endpoints (Appendix D is normative methodology)
 - `docs/spec/5_SOLVER-Development-Directive-v1.5.md` — phases, packages, gates
-- `docs/legacy/1_meta-prompt-structured-reasoning.md` — methodology rules (still valid)
+- `docs/legacy/1_meta-prompt-structured-reasoning.md` — historical context only
 - `docs/DECISIONS.md` — approved deviations from spec (must be respected)

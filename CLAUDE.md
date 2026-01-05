@@ -8,6 +8,17 @@
 
 ---
 
+## Governance Status
+
+**Specification Freeze:** `FROZEN` (baseline: `spec-freeze-v1.0`)
+- All freeze gates F0-F4 passed
+- See `docs/spec/FREEZE-RECORD.md` for manifest and hashes
+- Semantic changes require exiting freeze first (see Change Management §3.5)
+
+**Legacy Documents:** `docs/legacy/` contains archived backend-only docs. Do not cite for implementation — use `docs/spec/` only.
+
+---
+
 ## Authority Stack (CRITICAL)
 
 Two hierarchies govern (from Document-Type-Specifications v2.1):
@@ -22,9 +33,10 @@ Two hierarchies govern (from Document-Type-Specifications v2.1):
 | # | Document | Role |
 |---|----------|------|
 | 0 | `0_Document-Type-Specifications-v2.1.md` | Governance framework |
+| 1 | `1_SOLVER-README.md` | Project orientation |
 | 2 | `2_SOLVER-Design-Intent-v1.1.md` | Why² — Design rationale |
 | 3 | `3_SOLVER-Architectural-Contract-v3.4.md` | Why — Invariants, R1–R19 |
-| 4 | `4_solver-technical-spec-V2.7.3.md` | What — Schemas, endpoints |
+| 4 | `4_solver-technical-spec-V2.8.0.md` | What — Schemas, endpoints, Appendix D (Methodology) |
 | 5 | `5_SOLVER-Development-Directive-v1.5.md` | How — Phases, packages, gates |
 | 6 | `6_SOLVER-Change-Management-v1.2.md` | Process — Change control |
 
@@ -36,12 +48,21 @@ Deviations require approval and entry in `docs/DECISIONS.md` per Change Manageme
 
 ## Current Status
 
-**P1 Foundation:** ✅ Complete
-**P2 Persistence:** ✅ Complete
-**P3 Orchestration:** ✅ Complete
-**P4 API:** ✅ Complete
-**P5 Content:** ✅ Complete
-**P6 Verification:** ✅ Complete (Gate C ✓, Gate D ✓, Gate E ✓, Gate F ✓)
+### Backend (Phases 1-5): ✅ Complete
+
+| Phase | Status | Gates |
+|-------|--------|-------|
+| P1 Foundation | ✅ | α1, α2 |
+| P2 Persistence | ✅ | β1, β2a, β5, β6a |
+| P3 Orchestration | ✅ | α3 |
+| P4 API | ✅ | β2, β3 |
+| P5 Runner | ✅ | β4 |
+
+**Acceptance Gates Passed:** C (gating enforced), D (restart/resume), E (API + SSE), F (audit trail)
+
+### Frontend (Phase 6): 🔜 Next
+
+Packages 6.1–6.6 implement frontend with reliability invariants from Contract §13-14 (R1-R19).
 
 ### Key Context
 
@@ -72,7 +93,9 @@ apps/api/
 └── config.py         # Settings (pydantic-settings)
 
 infra/db/migrations/  # Alembic migrations
-docs/spec/            # Authority documents
+docs/spec/            # Authority documents (FROZEN)
+docs/spec/FREEZE-RECORD.md  # Freeze baseline manifest
+docs/legacy/          # Archived backend-only docs (do not cite)
 ```
 
 ---
@@ -82,7 +105,7 @@ docs/spec/            # Authority documents
 ### Before Starting
 
 1. Read `docs/spec/5_SOLVER-Development-Directive-v1.5.md` for your package/slice
-2. Read relevant sections of Technical Spec (`docs/spec/4_solver-technical-spec-V2.7.3.md`)
+2. Read relevant sections of Technical Spec (`docs/spec/4_solver-technical-spec-V2.8.0.md`)
 3. Check existing code before creating new files
 
 ### Working on a Slice

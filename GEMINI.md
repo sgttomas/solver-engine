@@ -12,7 +12,7 @@ A deterministic supervisor for stochastic agents, optimizing for rigor, traceabi
 | Document | Domain | Role |
 |----------|--------|------|
 | `docs/spec/3_SOLVER-Architectural-Contract-v3.4.md` | **CONTRACT** | Invariants, R1-R19 rules, Replay logic |
-| `docs/spec/4_solver-technical-spec-V2.7.3.md` | **SPEC** | Schemas, Endpoints, Tables |
+| `docs/spec/4_solver-technical-spec-V2.8.0.md` | **SPEC** | Schemas, Endpoints, Tables |
 | `docs/spec/5_SOLVER-Development-Directive-v1.5.md` | **DIRECTIVE** | Build phases, Gate criteria |
 
 **Rule:** Contract wins. If code conflicts with Contract, code is wrong.

@@ -161,7 +161,7 @@ solver-engine/
 │       ├── 1_SOLVER-README.md                      # Project orientation
 │       ├── 2_SOLVER-Design-Intent-v1.1.md          # Why² — Design rationale
 │       ├── 3_SOLVER-Architectural-Contract-v3.4.md # Why — Invariants
-│       ├── 4_solver-technical-spec-V2.7.3.md       # What — Schemas, endpoints
+│       ├── 4_solver-technical-spec-V2.8.0.md       # What — Schemas, endpoints
 │       ├── 5_SOLVER-Development-Directive-v1.5.md  # How — Phases, gates
 │       └── 6_SOLVER-Change-Management-v1.2.md      # Process — Change control
 ├── apps/
@@ -212,7 +212,7 @@ All endpoints under `/api/v1`.
 | POST | `/workflows/{id}/actions/acknowledge-stale` | Acknowledge stale items |
 | POST | `/workflows/{id}/actions/re-execute` | Re-execute stale step (stub) |
 
-Endpoints listed here are currently implemented. See `docs/spec/4_solver-technical-spec-V2.7.3.md` for additional planned endpoints (history, traceability).
+Endpoints listed here are currently implemented. See `docs/spec/4_solver-technical-spec-V2.8.0.md` for additional planned endpoints (history, traceability).
 
 ### SSE Stream
 
@@ -357,7 +357,7 @@ SOLVER prioritizes **correctness over speed**:
 | [SOLVER README](docs/spec/1_SOLVER-README.md) | Project orientation |
 | [Design Intent](docs/spec/2_SOLVER-Design-Intent-v1.1.md) | Why² — Design rationale |
 | [Architectural Contract](docs/spec/3_SOLVER-Architectural-Contract-v3.4.md) | Why — Invariants, constraints |
-| [Technical Spec](docs/spec/4_solver-technical-spec-V2.7.3.md) | What — Schemas, endpoints |
+| [Technical Spec](docs/spec/4_solver-technical-spec-V2.8.0.md) | What — Schemas, endpoints |
 | [Development Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.md) | How — Phases, packages, gates |
 
 ---
