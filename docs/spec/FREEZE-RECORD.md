@@ -2,8 +2,8 @@
 
 **Freeze Status:** FROZEN
 **Freeze Date:** 2026-01-05
-**Baseline Identifier:** `spec-freeze-v2.0`
-**Git Commit:** `1a34ebd37097dbb2eea7d27a9f14815b770a9154`
+**Baseline Identifier:** `spec-freeze-v2.0.1`
+**Git Commit:** `6fbd991943e0370ab8492846f84783bee5c8fed6`
 
 ---
 
@@ -11,14 +11,14 @@
 
 | Document | Version | SHA-256 |
 |----------|---------|---------|
-| `README.md` | unversioned | `b0453395516516cd42384db065051cb0f8ca2ef19d196d2fc9fbc361f7dcc69c` |
+| `README.md` | unversioned | `fcff45055f7bd9a2742d044d0b048ec69ce583acae94758d844ee0bf8de89da7` |
 | `0_Document-Type-Specifications-v2.1.1.md` | v2.1.1 | `261208f34c5119d52213c0d39877ff61fc68e6bba21510c3c88a57f1f1cb86d5` |
-| `1_SOLVER-README-v1.0.md` | v1.0 | `349e72941acc42e24f3f087352113fa7963cf712d4a5342f8f931dd0929c6354` |
+| `1_SOLVER-README-v1.0.md` | v1.0 | `b83569cb1dd5a495067e56a3e457f9e89ec25ea43f669505eced4013b8b39dae` |
 | `2_SOLVER-Design-Intent-v1.1.md` | v1.1 | `2eacabe1ec3c335d017c0804e7d5d0ff98b6c72dd580feb5364f83b8961cc53b` |
 | `3_SOLVER-Architectural-Contract-v3.4.md` | v3.4 | `f58c1bf057e4361d516ea93de689cf774005bb530d9fdb9344304a6ab1e1254e` |
 | `4_SOLVER-Technical-Spec-V2.8.0.md` | V2.8.0 | `dd777cfa6970f4c2014411f78b292a1d9e5f9b3bc297fdc0a2ffa38fd0992d82` |
 | `5_SOLVER-Development-Directive-v1.5.md` | v1.5 | `8e76d33d02252675dab81837c916ab5307f458aaff30ef916c190f531f1e2909` |
-| `6_SOLVER-Change-Management-v2.0.md` | v2.0 | `106a520c69ef17bbcdc62096756ab7333ffd5eb965aca4b54780694c5e4fffa7` |
+| `6_SOLVER-Change-Management-v2.0.1.md` | v2.0.1 | `1b6b563654d1bdde915e7e5fbb3bccee79abf32145b92a717ba1bd117b45a853` |
 
 ---
 
@@ -33,7 +33,7 @@
 - [x] SOLVER-Architectural-Contract-v3.4.md exists, version matches manifest
 - [x] 4_SOLVER-Technical-Spec-V2.8.0.md exists, version matches manifest
 - [x] SOLVER-Development-Directive-v1.5.md exists, version matches manifest
-- [x] SOLVER-Change-Management-v2.0.md exists, version matches manifest
+- [x] SOLVER-Change-Management-v2.0.1.md exists, version matches manifest
 
 **Result:** PASS
 **Reviewer:** Codex (AI Assistant)
@@ -77,7 +77,7 @@
 
 ### F4: Baseline Recorded ✓
 
-- [x] Git commit SHA recorded: `1a34ebd37097dbb2eea7d27a9f14815b770a9154`
+- [x] Git commit SHA recorded: `6fbd991943e0370ab8492846f84783bee5c8fed6`
 - [x] FREEZE-RECORD.md created with all required fields
 - [x] SHA-256 hash computed for each governed document in the canonical set (FREEZE-RECORD.md excluded)
 - [x] Timestamp recorded
@@ -91,7 +91,7 @@
 
 ## Freeze Behavior
 
-Per Change Management v2.0 §3.4:
+Per Change Management v2.0.1 §3.4:
 
 | Change Type | Allowed During Freeze | Process |
 |-------------|----------------------|---------|
@@ -114,4 +114,4 @@ To exit freeze state:
 
 ---
 
-*SOLVER Specification Freeze Record v2.0*
+*SOLVER Specification Freeze Record v2.0.1*
