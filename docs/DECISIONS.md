@@ -1,7 +1,44 @@
 # Architecture Decisions Log
 
 This log records approved deviations from specification documents per
-docs/spec/0_SOLVER-Development-Directive.md.
+`docs/spec/6_SOLVER-Change-Management-v1.2.md`.
+
+---
+
+## 2026-01-04 - Governance Transition: Unified Specification Set
+
+**Context:** Backend (Phases 1–5) was built against partial specification set (Docs 0–3).
+A comprehensive unified specification set (Docs 0–6) has been issued covering both
+backend and frontend as one system.
+
+**Action Taken:**
+- Legacy docs moved to `docs/legacy/` (retained for reference)
+- Unified docs installed to `docs/spec/` (now authoritative)
+- Repository references updated (AGENTS.md, CLAUDE.md, README.md)
+
+**Authority:** Unified docs in `docs/spec/` are now the single source of truth.
+Legacy docs in `docs/legacy/` are not authoritative.
+
+**Document Mapping:**
+
+| Old (Legacy) | New (Authoritative) |
+|--------------|---------------------|
+| `0_SOLVER-Development-Directive.md` | `5_SOLVER-Development-Directive-v1.5.md` |
+| `1_meta-prompt-structured-reasoning.md` | (retained in legacy; methodology source) |
+| `2_structured-reasoning-architecture.md` | `3_SOLVER-Architectural-Contract-v3.4.md` |
+| `3_solver-technical-spec.md` | `4_solver-technical-spec-V2.7.3.md` |
+
+**New Documents:**
+- `0_Document-Type-Specifications-v2.1.md` — Governance framework
+- `1_SOLVER-README.md` — Project orientation
+- `2_SOLVER-Design-Intent-v1.1.md` — Design rationale
+- `6_SOLVER-Change-Management-v1.2.md` — Change control process
+
+**Backend Contract Alignment:** The backend implementation is being updated to align
+with the unified Architectural Contract (§9–12). Progress/staleness endpoints, state_version,
+workflow_events table, and SSE from_sequence replay are being implemented.
+
+---
 
 ## 2026-01-02 - P2.3
 **Deviation:** Use custom SolverCheckpointSaver instead of langgraph.checkpoint.postgres.PostgresSaver

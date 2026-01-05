@@ -137,6 +137,13 @@ class StepExecution(Base):
         nullable=True,
     )
 
+    # Auto-updated timestamp for progress tracking (DB trigger handles update)
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("NOW()"),
+    )
+
     # Usage tracking
     turn_count: Mapped[int] = mapped_column(
         Integer,

@@ -1,82 +1,50 @@
 # Gemini Context: SOLVER
 
-This document provides a persistent overview of the SOLVER project for AI-driven development. It summarizes the authoritative instructions from `docs/spec/0_SOLVER-Development-Directive.md`.
+**Structured Reasoning Workflow Engine**
+A deterministic supervisor for stochastic agents, optimizing for rigor, traceability, and human oversight.
 
-## Project Overview
-**SOLVER** is a Structured Reasoning Workflow Engine designed to transform problems into structured solutions through a two-pass methodology (V1→V2→V3 iteration and artifact production).
+## Project State
+- **Phase:** Pre-Phase 6 (Backend Remediation Complete)
+- **Current Focus:** Ready for Frontend Implementation
+- **Latest Milestone:** Backend Contract Alignment (Fixes 1-7 complete)
 
-## Role Definition
-- **Architect (User):** Makes design decisions, approves work, and controls scope.
-- **Co-Developer (AI Agent):** Analyzes, plans, and reviews. Does NOT implement code unless explicitly asked. Guards the architecture.
-- **Senior Developer (AI Agent):** Implements exactly what the documents specify. Does NOT invent new architectures, skip slices, or deviate without approval.
-
-## Document Authority Stack
+## Authority Stack
 | Document | Domain | Role |
 |----------|--------|------|
-| `docs/spec/1_meta-prompt-structured-reasoning.md` | **The Why** | Process, reasoning rules, gate semantics |
-| `docs/spec/2_structured-reasoning-architecture.md` | **The Where** | Component boundaries, layer responsibilities |
-| `docs/spec/3_solver-technical-spec.md` | **The What** | Schemas, endpoints, tables, file paths |
+| `docs/spec/3_SOLVER-Architectural-Contract-v3.4.md` | **CONTRACT** | Invariants, R1-R19 rules, Replay logic |
+| `docs/spec/4_solver-technical-spec-V2.7.3.md` | **SPEC** | Schemas, Endpoints, Tables |
+| `docs/spec/5_SOLVER-Development-Directive-v1.5.md` | **DIRECTIVE** | Build phases, Gate criteria |
 
-## Hard Constraints
-- **Pass 2 Gates are mandatory:** Cannot advance without explicit human `approve` action.
-- **State must survive restart:** All state persisted in DB; LangGraph interrupts enforce gates.
-- **No hardcoded secrets:** Use `.env` and `pydantic_settings`.
-- **Audit log:** All transitions must be recorded.
-- **Traceability:** Mandatory links from Step 1 → Step 2 → Step 3.
-- **Architecture:** Strict flat layout at `apps/api/`. Do NOT use `src/` directory.
+**Rule:** Contract wins. If code conflicts with Contract, code is wrong.
 
-## Current Session Context (Phase 6 Focus)
-- **Phase 1 (Foundation):** Complete.
-    - Flat layout (`apps/api/`), Docker/DB running, Schema applied.
-- **Phase 2 (Persistence):** Complete.
-    - SQLAlchemy models, Async Repositories, Custom Checkpoint Saver.
-- **Phase 3 (Orchestration):** Complete.
-    - LangGraph definition, Nodes, Interrupt/Resume logic.
-- **Phase 4 (API Layer):** Complete.
-    - **P4.1 Workflow:** Create/Get/Resume endpoints (DB-only).
-    - **P4.2 Actions:** Approve/Revise/Message/Clarify endpoints (Audit aware).
-    - **P4.3 SSE:** Streaming infrastructure (Snapshot on connect + Heartbeat).
-    - **P4.4 Wiring:** Connected API to LangGraph execution (Singleton Graph, Audit Polling for SSE).
-- **Phase 5 (Content Generation):** Complete.
-    - **P5.1 Adapter:** `OpenAIResponsesAdapter` (httpx, gpt-5.2).
-    - **P5.2 Prompts:** V1→V3 Methodology generation + JSON-only Pass 2.
-    - **P5.3 Storage:** `ArtifactService` with `jsonschema` validation and scan-based persistence.
-    - **P5.4 Traceability:** `TraceabilityService` extracting from `coverage_map` with replace semantics.
-- **Phase 6 (Verification):** Next.
-    - Goal: Run acceptance tests to close all Gates.
-    - Focus: Prove Methodology (Gate A) and Traceability (Gate B).
+## Backend Architecture (Contract-Aligned)
+- **Event Sourcing:** `workflow_events` table is the authoritative log.
+- **Atomicity:** Events persist in the *same transaction* as state changes; broadcast happens *after* commit.
+- **Replay:** SSE stream uses "Subscribe Live -> Query DB -> Filter" pattern to guarantee gap-free, duplicate-free ordering.
+- **Optimistic Concurrency:** Actions require `expected_state_version` and `expected_position`. Version increments on *any* state-eligibility change.
+- **Staleness:** DB triggers propagate staleness on *INSERT* (new revision) to all downstream artifacts and traceability links.
 
-## Acceptance Gates (Success Criteria)
-- **Gate A:** Methodology exists (36 docs for Steps 1-3). 🚧 (Implemented)
-- **Gate B:** Packages with valid schemas and traceability traces. 🚧 (Implemented)
-- **Gate C:** Gating enforced (cannot bypass via message). ✅
-- **Gate D:** Restart/resume works (state survives kill). ✅
-- **Gate E:** API + SSE flow works (interactive review flow supported). ✅
-- **Gate F:** Audit trail complete.
+## Key Invariants
+1.  **Persist Before Broadcast:** No SSE event is emitted unless it is committed to DB.
+2.  **Monotonic Sequences:** Every event has a unique, gap-free sequence number per workflow.
+3.  **Strict Validation:** Missing request fields return 400 (not 422). Step names are validated.
+4.  **Synthetic Events:** Artifact deltas are synthetic but persisted transactionally by the route.
 
-## Build Sequence (P1-P6)
-1. **P1: Foundation** (Structure, Docker, DB Schema) ✅
-2. **P2: Persistence** (SQLAlchemy models, Repositories, Checkpoints) ✅
-3. **P3: Orchestration** (Pydantic state, Graph definition, Interrupts) ✅
-4. **P4: API Layer** (FastAPI endpoints, SSE, Wiring) ✅
-5. **P5: Content Generation** (LLM adapter, Prompts, Traceability) ✅
-6. **P6: Verification** (Gate tests) 🚧
+## Verification
+| Gate | Status | Verified By |
+|------|--------|-------------|
+| **Gate C** (Gating) | ✅ PASS | `apps/api/tests/e2e/test_gate_c.py` |
+| **Gate D** (Restart) | ✅ PASS | `apps/api/tests/e2e/test_gate_d.py` |
+| **Gate E** (SSE Flow) | ✅ PASS | `apps/api/tests/e2e/test_gate_e.py` |
+| **SSE Replay** | ✅ PASS | `apps/api/tests/e2e/test_sse_replay.py` |
 
-## Verification Standard
-| Command | Purpose |
-|---------|---------|
-| `make test` | Unit tests |
-| `make test-gates` | Gate enforcement |
-| `make test-recovery` | Restart/resume tests |
-| `make migrate` | Run DB migrations (via Alembic) |
-| `python tools/validate_schemas.py` | Artifact validation (Gate B) |
-| `python tools/verify_methodology.py` | Methodology check (Gate A) |
-| `python tools/verify_traces.py` | Traceability check (Gate B) |
-| `pytest apps/api/tests/integration` | Integration tests (Orchestration & API) |
+## Next Steps
+1.  **Frontend Phase (Phase 6):** Implement React/Next.js frontend against this compliant backend.
+2.  **Strictness:** Frontend must enforce R1-R19 reliability contracts (Sequence Guard, Connection Manager).
+3.  **Dependencies:** Frontend relies on `GET /progress` and `GET /staleness` (canonical refetch bundle).
 
-## File Boundaries
-- `/apps/api/`: FastAPI backend (flat structure).
-- `/packages/`: Shared contracts and logic.
-- `/infra/`: Docker and migrations.
-- `/tests/` & `/tools/`: Verification code.
-- `/docs/spec/`: READ-ONLY authority.
+## Dev Context
+- **Working Dir:** `projects/solver-engine/`
+- **Backend:** FastAPI, SQLAlchemy (Async), LangGraph, Postgres+pgvector
+- **Migrations:** Alembic (`003_remediation.py` is latest)
+- **Tests:** `make test-gates`, `make e2e`

@@ -5,7 +5,7 @@ Maps to 'traceability_links' table from 001_initial_schema.py.
 """
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from sqlalchemy import (
@@ -104,6 +104,28 @@ class TraceabilityLink(Base):
         TIMESTAMP(timezone=True),
         nullable=False,
         server_default=text("NOW()"),
+    )
+
+    # Staleness tracking (Contract §7)
+    stale: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("FALSE"),
+    )
+
+    stale_reason: Mapped[Optional[str]] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
+    stale_since: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+    )
+
+    validated_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
     )
 
     # Relationships

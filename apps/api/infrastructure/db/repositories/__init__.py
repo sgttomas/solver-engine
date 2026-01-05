@@ -17,6 +17,7 @@ from infrastructure.db.repositories.checkpoint import (
     CheckpointRepository,
     CheckpointWriteRepository,
 )
+from infrastructure.db.repositories.workflow_event import WorkflowEventRepository
 
 __all__ = [
     "BaseRepository",
@@ -29,4 +30,5 @@ __all__ = [
     "AuditLogRepository",
     "CheckpointRepository",
     "CheckpointWriteRepository",
+    "WorkflowEventRepository",
 ]

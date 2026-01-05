@@ -218,52 +218,48 @@ class TestGateESSEFlow:
         )
         assert state["current_step_number"] == 1
 
-        # Approve Step 1
+        # Approve Step 1 with required OCC fields (Contract §11.1)
         approve_resp = client.post(
             f"{API_PREFIX}/{workflow_id}/actions/approve",
-            json={"actor_id": "test-actor"},
+            json={
+                "actor_id": "test-actor",
+                "expected_state_version": state["state_version"],
+                "expected_position": {
+                    "pass_type": state["current_pass"],
+                    "step_name": state["current_step"],
+                    "step_number": state["current_step_number"],
+                    "status": state["step_state"]["status"],
+                },
+            },
         )
         assert approve_resp.status_code == 200, f"Approve failed: {approve_resp.text}"
 
         # Connect to stream and collect events (backlog replay includes all events)
-        # Need to get past the first step.awaiting_review (from create) to find
-        # the approve events and second step.awaiting_review
+        # Need to collect until 2nd step.awaiting_review (from approve advancing to Step 2)
+        # The events after 1st awaiting_review include step.approved and Step 2 events
         try:
-            all_events = collect_sse_events(
-                client,
-                f"{API_PREFIX}/{workflow_id}/stream",
-                stop_on="step.awaiting_review",
-                timeout=5.0,
-                max_events=50,
-            )
-            # If we only got 4 events, we stopped at first awaiting_review
-            # The approve events should be after that, so get more
-            if len(all_events) <= 5:
-                # Reconnect and get all events without early stop
-                import time
-                time.sleep(0.2)  # Small delay for events to settle
-                all_events = []
-                with client.stream(
-                    "GET", f"{API_PREFIX}/{workflow_id}/stream", timeout=5.0
-                ) as stream:
-                    awaiting_count = 0
-                    for line in stream.iter_lines():
-                        if not line or line.startswith(":") or line.startswith("event:"):
-                            continue
-                        if not line.startswith("data:"):
-                            continue
-                        try:
-                            payload = json.loads(line[5:].strip())
-                        except json.JSONDecodeError:
-                            continue
-                        event_type = payload.get("event_type", "unknown")
-                        all_events.append((event_type, payload))
-                        if event_type == "step.awaiting_review":
-                            awaiting_count += 1
-                            if awaiting_count >= 2:
-                                break
-                        if len(all_events) >= 50:
+            all_events = []
+            with client.stream(
+                "GET", f"{API_PREFIX}/{workflow_id}/stream", timeout=5.0
+            ) as stream:
+                awaiting_count = 0
+                for line in stream.iter_lines():
+                    if not line or line.startswith(":") or line.startswith("event:"):
+                        continue
+                    if not line.startswith("data:"):
+                        continue
+                    try:
+                        payload = json.loads(line[5:].strip())
+                    except json.JSONDecodeError:
+                        continue
+                    event_type = payload.get("event_type", "unknown")
+                    all_events.append((event_type, payload))
+                    if event_type == "step.awaiting_review":
+                        awaiting_count += 1
+                        if awaiting_count >= 2:
                             break
+                    if len(all_events) >= 50:
+                        break
             events = all_events
         except httpx.ReadTimeout:
             pytest.fail("SSE stream timed out waiting for events")

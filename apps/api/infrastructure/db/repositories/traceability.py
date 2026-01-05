@@ -146,3 +146,26 @@ class TraceabilityLinkRepository(BaseRepository[TraceabilityLink]):
         )
         result = await self._session.execute(stmt)
         return result.rowcount
+
+    async def list_stale_links(self, workflow_id: UUID) -> List[TraceabilityLink]:
+        """List all stale traceability links for a workflow.
+
+        Per Contract §9.4: Staleness tracking support.
+        Links become stale when upstream artifacts are revised.
+
+        Args:
+            workflow_id: Workflow UUID
+
+        Returns:
+            List of links where stale = true
+        """
+        stmt = (
+            select(TraceabilityLink)
+            .where(
+                TraceabilityLink.workflow_id == workflow_id,
+                TraceabilityLink.stale == True,
+            )
+            .order_by(TraceabilityLink.from_step, TraceabilityLink.to_step)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())

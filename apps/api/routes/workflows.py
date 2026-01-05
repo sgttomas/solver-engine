@@ -11,7 +11,7 @@ P4.4: Wire to orchestration (graph invocation, resume).
 import asyncio
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -24,9 +24,12 @@ from application.workflow_service import (
     WorkflowNotFoundError,
     InstanceNotFoundError,
     InvalidStateError,
+    StateVersionMismatchError,
 )
 from application.event_stream import get_event_broker, SSEEvent, HEARTBEAT_EVENT
 from infrastructure.postgres import get_session, async_session_factory
+from infrastructure.db.repositories.workflow_event import WorkflowEventRepository
+from infrastructure.db.repositories.step_execution import StepExecutionRepository
 from infrastructure.db.checkpoint_saver import SolverCheckpointSaver
 from orchestration.graph import create_graph
 from domain.state import (
@@ -147,6 +150,39 @@ def chunk_string(s: str, num_chunks: int) -> list:
     return chunks
 
 
+def _extract_artifact_output(result) -> Optional[str]:
+    """Extract artifact output from graph execution result.
+
+    Handles both WorkflowState object and dict representations.
+
+    Args:
+        result: Graph execution result (WorkflowState or dict).
+
+    Returns:
+        JSON string of output if present, None otherwise.
+    """
+    output = None
+
+    # Try to get step_state.output from either object or dict
+    if hasattr(result, "step_state"):
+        # WorkflowState object
+        step_state = result.step_state
+        if step_state is not None:
+            if hasattr(step_state, "output"):
+                output = step_state.output
+            elif isinstance(step_state, dict):
+                output = step_state.get("output")
+    elif isinstance(result, dict):
+        # Dict representation
+        step_state_data = result.get("step_state", {})
+        if isinstance(step_state_data, dict):
+            output = step_state_data.get("output")
+        elif hasattr(step_state_data, "output"):
+            output = step_state_data.output
+
+    return json.dumps(output) if output else None
+
+
 def build_sse_payload(
     workflow,
     step_execution,
@@ -205,7 +241,10 @@ async def emit_event(
     data: dict = None,
     artifact_id: str = None,
 ) -> None:
-    """Emit SSE event to broker.
+    """Emit SSE event to broker (for synthetic events not persisted to DB).
+
+    Use this for artifact.delta and artifact.final events that are generated
+    in routes after graph execution.
 
     Args:
         workflow: Workflow DB model.
@@ -219,6 +258,27 @@ async def emit_event(
         workflow, step_execution, event_type, data, artifact_id
     )
     await broker.publish(workflow.workflow_id, SSEEvent(resolved_type, payload))
+
+
+async def publish_persisted_events(
+    workflow_id: str,
+    events: list,
+) -> None:
+    """Publish persisted events to SSE broker AFTER transaction commit.
+
+    Per Fix 1 (Atomic Event Persistence): Events must be persisted to DB first,
+    then published to broker after transaction commits. This function handles
+    the publishing step.
+
+    Args:
+        workflow_id: External workflow ID string for broker routing.
+        events: List of WorkflowEvent model instances to publish.
+    """
+    broker = get_event_broker()
+    for event in events:
+        # Use to_sse_dict() which includes event_id, event_type, sequence, timestamp
+        payload = event.to_sse_dict()
+        await broker.publish(workflow_id, SSEEvent(event.event_type, payload))
 
 
 # =============================================================================
@@ -245,20 +305,53 @@ class CreateWorkflowRequest(BaseModel):
 # P4.2: Action Request Schemas
 
 
+class ExpectedPosition(BaseModel):
+    """Expected workflow position for optimistic concurrency.
+
+    Per Contract §11.1: Full position check including step_name.
+    Client must provide expected position to detect concurrent state changes.
+    """
+
+    pass_type: str = Field(..., description="Expected pass type (definition or execution)")
+    step_name: str = Field(..., description="Expected step name")
+    step_number: int = Field(..., description="Expected step number")
+    status: str = Field(..., description="Expected step status")
+
+
 class ApproveRequest(BaseModel):
-    """Request to approve current step."""
+    """Request to approve current step.
+
+    Per Contract §11.1: Both expected_state_version and expected_position required
+    for optimistic concurrency control.
+    """
 
     actor_id: Optional[str] = Field(
         default=None, description="Actor ID (defaults to workflow.created_by)"
     )
+    expected_state_version: int = Field(
+        ..., description="Required: Expected state version for optimistic concurrency (§11.1)"
+    )
+    expected_position: ExpectedPosition = Field(
+        ..., description="Required: Expected workflow position for optimistic concurrency (§11.1)"
+    )
 
 
 class ReviseRequest(BaseModel):
-    """Request to revise current step."""
+    """Request to revise current step.
+
+    Per Contract §11.1: Both expected_state_version and expected_position required
+    for optimistic concurrency control.
+    """
 
     feedback: str = Field(..., description="Revision feedback/instructions")
     actor_id: Optional[str] = Field(
         default=None, description="Actor ID (defaults to workflow.created_by)"
+    )
+    expected_state_version: int = Field(
+        ..., description="Required: Expected state version for optimistic concurrency (§11.1)"
+    )
+    expected_position: ExpectedPosition = Field(
+        ..., description="Required: Expected workflow position for optimistic concurrency (§11.1)"
     )
 
 
@@ -272,11 +365,21 @@ class MessageRequest(BaseModel):
 
 
 class ClarifyRequest(BaseModel):
-    """Request to submit clarification answers."""
+    """Request to submit clarification answers.
+
+    Per Contract §11.1: Both expected_state_version and expected_position required
+    for optimistic concurrency control.
+    """
 
     answers: dict = Field(..., description="Clarification responses keyed by question ID")
     actor_id: Optional[str] = Field(
         default=None, description="Actor ID (defaults to workflow.created_by)"
+    )
+    expected_state_version: int = Field(
+        ..., description="Required: Expected state version for optimistic concurrency (§11.1)"
+    )
+    expected_position: ExpectedPosition = Field(
+        ..., description="Required: Expected workflow position for optimistic concurrency (§11.1)"
     )
 
 
@@ -301,6 +404,7 @@ class WorkflowResponse(BaseModel):
 
     Includes step_state for Doc 3 test patterns.
     Enums serialized as strings for stable API payloads.
+    Per Contract §9.1: state_version for optimistic concurrency.
     """
 
     workflow_id: str
@@ -313,11 +417,112 @@ class WorkflowResponse(BaseModel):
     original_problem: str
     domain: Optional[str]
     step_state: Optional[StepStateResponse]
+    state_version: int = Field(..., description="Optimistic concurrency version (§9.1)")
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class PositionResponse(BaseModel):
+    """Current workflow position for StateConflictResponse.
+
+    Per Contract §10.5: returned in 409 responses.
+    """
+
+    pass_type: str
+    step_number: int
+    step_name: str
+    status: str
+
+
+class StateConflictResponse(BaseModel):
+    """409 Conflict response for state version mismatch.
+
+    Per Contract §10.5: Returned when expected_state_version doesn't match.
+    Client should refetch state and retry.
+    """
+
+    error_code: Literal["STATE_CONFLICT"] = "STATE_CONFLICT"
+    message: str
+    current_position: PositionResponse
+    current_state_version: int
+
+
+class StepProgressEntry(BaseModel):
+    """Per-step progress entry for ProgressResponse.
+
+    Per Contract §10.3: detailed step progress including artifact info.
+    """
+
+    pass_type: str
+    step_number: int
+    step_name: str
+    status: str
+    phase: str
+    latest_artifact_id: Optional[UUID] = None
+    latest_artifact_revision: Optional[int] = None
+    artifact_stale: bool = False
+    updated_at: Optional[datetime] = None
+
+
+class ProgressResponse(BaseModel):
+    """Workflow progress response.
+
+    Per Contract §10.3: Part of canonical refetch bundle.
+    Includes state_version for optimistic concurrency.
+    """
+
+    workflow_id: str
+    state_version: int
+    current_pass: str
+    current_step: str
+    current_step_number: int
+    steps: list[StepProgressEntry]
+
+
+class StaleArtifactEntry(BaseModel):
+    """Stale artifact entry for StalenessResponse.
+
+    Per Contract §10.2: detailed staleness info.
+    """
+
+    artifact_id: UUID
+    step_name: str
+    pass_type: str
+    reason: Optional[str] = None
+    stale_since: Optional[datetime] = None
+
+
+class StaleLinkEntry(BaseModel):
+    """Stale traceability link entry for StalenessResponse.
+
+    Per Contract §10.2: detailed staleness info for links.
+    """
+
+    link_id: UUID
+    from_step: str
+    to_step: str
+    link_type: str
+    reason: Optional[str] = None
+    stale_since: Optional[datetime] = None
+
+
+class StalenessResponse(BaseModel):
+    """Workflow staleness response.
+
+    Per Contract §10.2: Part of canonical refetch bundle.
+    Indicates if workflow can complete (no blocking stale artifacts/links).
+    Includes position and blocking_reasons per spec.
+    """
+
+    workflow_id: str
+    position: PositionResponse
+    can_complete: bool
+    blocking_reasons: list[str]
+    stale_artifacts: list[StaleArtifactEntry]
+    stale_links: list[StaleLinkEntry]
 
 
 # =============================================================================
@@ -351,6 +556,7 @@ def build_workflow_response(workflow, step_execution) -> WorkflowResponse:
         original_problem=workflow.original_problem,
         domain=workflow.domain,
         step_state=step_state,
+        state_version=workflow.state_version,
         created_at=workflow.created_at,
         updated_at=workflow.updated_at,
     )
@@ -371,22 +577,27 @@ async def create_workflow(
     Creates Workflow and initial StepExecution records, then invokes graph.
 
     P4.4: DB create + graph invocation.
+    Per Fix 1: Persisted events published AFTER transaction commits.
     """
     service = WorkflowService(session)
 
     try:
-        # P4.1: Create DB records
+        # Collect all persisted events to publish after commits
+        all_events = []
+
+        # P4.1: Create DB records (Fix 1: events persisted in transaction)
         async with session.begin():
-            workflow, step_execution = await service.create_workflow(
+            workflow, step_execution, create_events = await service.create_workflow(
                 problem=request.problem,
                 created_by=request.created_by,
                 instance_number=request.instance_number,
                 domain=request.domain,
             )
+            all_events.extend(create_events)
 
-        # P6.5: Emit SSE events before graph invocation
-        await emit_event(workflow, step_execution, "workflow.started")
-        await emit_event(workflow, step_execution, "step.started")
+        # Fix 1: Publish persisted events AFTER transaction commits
+        await publish_persisted_events(workflow.workflow_id, all_events)
+        all_events.clear()
 
         # P4.4: Invoke graph with initial state
         graph = get_graph()
@@ -411,9 +622,21 @@ async def create_workflow(
 
         result = await graph.ainvoke(initial_state, config)
 
-        # Sync DB with graph result
+        # Sync DB with graph result (Fix 1: events persisted in transaction)
+        # Extract artifact output to pass to sync_db_from_state for correct event ordering
+        # Handle both WorkflowState object and dict representations
+        artifact_output = _extract_artifact_output(result)
+
         async with session.begin():
-            await service.sync_db_from_state(workflow.workflow_id, result)
+            # sync_db_from_state handles ALL events in correct order:
+            # step.started -> artifact.delta -> artifact.final -> step.awaiting_review
+            sync_events = await service.sync_db_from_state(
+                workflow.workflow_id, result, artifact_output=artifact_output
+            )
+            all_events.extend(sync_events)
+
+        # Fix 1: Publish persisted events AFTER transaction commits
+        await publish_persisted_events(workflow.workflow_id, all_events)
 
         # Reload for response (force refresh from DB to get updated status/phase)
         # Note: expire_on_commit=False means identity map has stale objects
@@ -421,21 +644,6 @@ async def create_workflow(
         await session.refresh(workflow)
         if step_execution:
             await session.refresh(step_execution)
-
-        # P6.5: Emit SSE events after graph completion
-        # Synthetic artifact.delta events (chunk output)
-        step_state_data = result.get("step_state", {})
-        output = step_state_data.get("output") if isinstance(step_state_data, dict) else None
-        if output:
-            output_str = json.dumps(output)
-            for i, chunk in enumerate(chunk_string(output_str, 3)):
-                await emit_event(
-                    workflow, step_execution, "artifact.delta",
-                    {"delta": chunk, "index": i}
-                )
-        await emit_event(workflow, step_execution, "artifact.final")
-        # Final step state event (uses STATUS_TO_EVENT mapping)
-        await emit_event(workflow, step_execution)
 
         return build_workflow_response(workflow, step_execution)
 
@@ -470,6 +678,261 @@ async def get_workflow(
         )
 
 
+@router.get("/{workflow_id}/progress", response_model=ProgressResponse)
+async def get_workflow_progress(
+    workflow_id: str,
+    session: AsyncSession = Depends(get_session),
+):
+    """Get workflow progress with per-step details.
+
+    Per Contract §10.3: Part of canonical refetch bundle.
+    Includes state_version for optimistic concurrency.
+
+    Returns all step executions with their current status, phase,
+    and latest artifact info (including staleness).
+    """
+    service = WorkflowService(session)
+
+    try:
+        workflow, _ = await service.get_workflow(workflow_id)
+    except WorkflowNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow not found: {workflow_id}",
+        )
+
+    # Get all step executions for this workflow
+    step_repo = StepExecutionRepository(session)
+    step_executions = await step_repo.list_for_workflow(workflow.id)
+
+    # Build step progress entries
+    steps = []
+    for step_exec in step_executions:
+        # Query artifact for staleness and revision info (if exists)
+        artifact_stale = False
+        latest_artifact_revision = None
+        if step_exec.latest_artifact_id:
+            from infrastructure.db.repositories.artifact import ArtifactRepository
+            artifact_repo = ArtifactRepository(session)
+            artifact = await artifact_repo.get(step_exec.latest_artifact_id)
+            if artifact:
+                artifact_stale = artifact.stale  # Note: column is 'stale', not 'is_stale'
+                latest_artifact_revision = artifact.revision
+
+        steps.append(
+            StepProgressEntry(
+                pass_type=step_exec.pass_type.value,
+                step_number=step_exec.step_number,
+                step_name=step_exec.step_name.value,
+                status=step_exec.status.value,
+                phase=step_exec.phase.value,
+                latest_artifact_id=step_exec.latest_artifact_id,
+                latest_artifact_revision=latest_artifact_revision,
+                artifact_stale=artifact_stale,
+                updated_at=step_exec.updated_at,
+            )
+        )
+
+    return ProgressResponse(
+        workflow_id=workflow.workflow_id,
+        state_version=workflow.state_version,
+        current_pass=workflow.current_pass.value,
+        current_step=workflow.current_step.value,
+        current_step_number=workflow.current_step_number,
+        steps=steps,
+    )
+
+
+@router.get("/{workflow_id}/staleness", response_model=StalenessResponse)
+async def get_workflow_staleness(
+    workflow_id: str,
+    session: AsyncSession = Depends(get_session),
+):
+    """Get workflow staleness status.
+
+    Per Contract §10.2: Part of canonical refetch bundle.
+    Returns whether workflow can complete (no stale blocking artifacts/links)
+    and list of any stale artifacts and links with details.
+    """
+    service = WorkflowService(session)
+
+    try:
+        workflow, step_execution = await service.get_workflow(workflow_id)
+    except WorkflowNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow not found: {workflow_id}",
+        )
+
+    # Build position response
+    position = PositionResponse(
+        pass_type=workflow.current_pass.value,
+        step_number=workflow.current_step_number,
+        step_name=workflow.current_step.value,
+        status=step_execution.status.value if step_execution else "unknown",
+    )
+
+    # Query stale artifacts
+    from infrastructure.db.repositories.artifact import ArtifactRepository
+    artifact_repo = ArtifactRepository(session)
+    stale_artifacts_db = await artifact_repo.list_stale_artifacts(workflow.id)
+
+    stale_artifacts = [
+        StaleArtifactEntry(
+            artifact_id=artifact.id,
+            step_name=artifact.step_name.value,
+            pass_type=artifact.pass_type.value,
+            reason=artifact.stale_reason,
+            stale_since=artifact.stale_since,
+        )
+        for artifact in stale_artifacts_db
+    ]
+
+    # Query stale traceability links
+    from infrastructure.db.repositories.traceability import TraceabilityLinkRepository
+    link_repo = TraceabilityLinkRepository(session)
+    stale_links_db = await link_repo.list_stale_links(workflow.id)
+
+    stale_links = [
+        StaleLinkEntry(
+            link_id=link.id,
+            from_step=str(link.from_step),
+            to_step=str(link.to_step),
+            link_type=link.link_type,
+            reason=link.stale_reason,
+            stale_since=link.stale_since,
+        )
+        for link in stale_links_db
+    ]
+
+    # Build blocking reasons
+    blocking_reasons = []
+    if stale_artifacts:
+        blocking_reasons.append(f"{len(stale_artifacts)} stale artifact(s) require re-execution")
+    if stale_links:
+        blocking_reasons.append(f"{len(stale_links)} stale traceability link(s) require validation")
+
+    # can_complete = no stale artifacts and no stale links
+    can_complete = len(stale_artifacts) == 0 and len(stale_links) == 0
+
+    return StalenessResponse(
+        workflow_id=workflow.workflow_id,
+        position=position,
+        can_complete=can_complete,
+        blocking_reasons=blocking_reasons,
+        stale_artifacts=stale_artifacts,
+        stale_links=stale_links,
+    )
+
+
+class AcknowledgeStaleRequest(BaseModel):
+    """Request to acknowledge stale artifacts/links.
+
+    Per Contract §10.2: Acknowledge that staleness has been reviewed.
+    """
+
+    artifact_ids: list[UUID] = Field(
+        default_factory=list, description="Artifact IDs to acknowledge as reviewed"
+    )
+    link_ids: list[UUID] = Field(
+        default_factory=list, description="Traceability link IDs to acknowledge as reviewed"
+    )
+    actor_id: Optional[str] = Field(
+        default=None, description="Actor ID (defaults to workflow.created_by)"
+    )
+
+
+class AcknowledgeStaleResponse(BaseModel):
+    """Response for acknowledge-stale action.
+
+    Per Contract §10.2: Confirms acknowledgement.
+    """
+
+    workflow_id: str
+    acknowledged_artifacts: int
+    acknowledged_links: int
+
+
+@router.post("/{workflow_id}/actions/acknowledge-stale", response_model=AcknowledgeStaleResponse)
+async def acknowledge_stale(
+    workflow_id: str,
+    request: AcknowledgeStaleRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    """Acknowledge stale artifacts and links.
+
+    Per Contract §10.2: Allows human to acknowledge they've reviewed
+    stale artifacts/links without triggering re-execution.
+    This is a read-only acknowledgement, not a state change.
+    """
+    service = WorkflowService(session)
+
+    try:
+        workflow, _ = await service.get_workflow(workflow_id)
+    except WorkflowNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow not found: {workflow_id}",
+        )
+
+    # For now, this is a no-op acknowledgement endpoint
+    # Future: Could persist acknowledgement to audit log
+    return AcknowledgeStaleResponse(
+        workflow_id=workflow.workflow_id,
+        acknowledged_artifacts=len(request.artifact_ids),
+        acknowledged_links=len(request.link_ids),
+    )
+
+
+class ReExecuteRequest(BaseModel):
+    """Request to re-execute a stale step.
+
+    Per Contract §10.2: Trigger re-execution of a stale step.
+    """
+
+    step_name: str = Field(..., description="Step name to re-execute")
+    pass_type: str = Field(..., description="Pass type (definition or execution)")
+    actor_id: Optional[str] = Field(
+        default=None, description="Actor ID (defaults to workflow.created_by)"
+    )
+
+
+@router.post("/{workflow_id}/actions/re-execute", response_model=WorkflowResponse)
+async def re_execute_step(
+    workflow_id: str,
+    request: ReExecuteRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    """Re-execute a stale step.
+
+    Per Contract §10.2: Triggers re-execution of a step that has
+    become stale due to upstream revisions.
+
+    Note: This is a placeholder - full implementation requires
+    integration with the graph execution system.
+    """
+    service = WorkflowService(session)
+
+    try:
+        workflow, step_execution = await service.get_workflow(workflow_id)
+    except WorkflowNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow not found: {workflow_id}",
+        )
+
+    # Validate the requested step exists and is stale
+    # This is a placeholder - full implementation would:
+    # 1. Navigate to the stale step
+    # 2. Trigger graph re-execution
+    # 3. Update staleness flags after successful execution
+
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Re-execute step is not yet implemented. Use revise action to trigger re-generation.",
+    )
+
+
 @router.post("/{workflow_id}/resume", response_model=WorkflowResponse)
 async def resume_workflow(
     workflow_id: str,
@@ -492,14 +955,20 @@ async def resume_workflow(
 
         if snapshot and snapshot.values.get("__interrupt__"):
             # At gate - sync DB from checkpoint state, don't advance
+            # No artifact_output for resume at interrupt (state already persisted)
             async with session.begin():
                 await service.sync_db_from_state(workflow_id, snapshot.values)
         else:
             # Not at gate (crashed mid-execution or no checkpoint) - continue
             if snapshot:
                 result = await graph.ainvoke(None, config)
+                # Extract artifact output for correct event ordering
+                # Handle both WorkflowState object and dict representations
+                artifact_output = _extract_artifact_output(result)
                 async with session.begin():
-                    await service.sync_db_from_state(workflow_id, result)
+                    await service.sync_db_from_state(
+                        workflow_id, result, artifact_output=artifact_output
+                    )
 
         # Reload for response
         workflow, step_execution = await service.get_workflow(workflow_id)
@@ -526,21 +995,30 @@ async def approve_step(
     """Approve current step.
 
     P4.4: DB update + graph resume via aupdate_state + ainvoke.
+    Per Fix 1: Persisted events published AFTER transaction commits.
 
     Requires step to be in AWAITING_REVIEW status.
     """
     service = WorkflowService(session)
 
     try:
-        # P4.2: DB update
+        # Collect all persisted events to publish after commits
+        all_events = []
+
+        # P4.2: DB update with optimistic concurrency validation
+        # Fix 1: events persisted in transaction, returned for publishing
         async with session.begin():
-            workflow, step_execution = await service.approve_step(
+            workflow, step_execution, approve_events = await service.approve_step(
                 workflow_id=workflow_id,
                 actor_id=request.actor_id,
+                expected_state_version=request.expected_state_version,
+                expected_position=request.expected_position.model_dump(),
             )
+            all_events.extend(approve_events)
 
-        # P6.5: Emit step.approved event
-        await emit_event(workflow, step_execution, "step.approved")
+        # Fix 1: Publish persisted events AFTER transaction commits
+        await publish_persisted_events(workflow.workflow_id, all_events)
+        all_events.clear()
 
         # P4.4: Update graph state and resume
         graph = get_graph()
@@ -554,9 +1032,21 @@ async def approve_step(
 
         result = await graph.ainvoke(None, config)
 
-        # Sync DB with graph result
+        # Sync DB with graph result (Fix 1: events persisted in transaction)
+        # Extract artifact output to pass to sync_db_from_state for correct event ordering
+        # Handle both WorkflowState object and dict representations
+        artifact_output = _extract_artifact_output(result)
+
         async with session.begin():
-            await service.sync_db_from_state(workflow_id, result)
+            # sync_db_from_state handles ALL events in correct order:
+            # step.started -> artifact.delta -> artifact.final -> step.awaiting_review
+            sync_events = await service.sync_db_from_state(
+                workflow_id, result, artifact_output=artifact_output
+            )
+            all_events.extend(sync_events)
+
+        # Fix 1: Publish persisted events AFTER transaction commits
+        await publish_persisted_events(workflow.workflow_id, all_events)
 
         # Reload for response (force refresh from DB to get updated status/phase)
         # Note: expire_on_commit=False means identity map has stale objects
@@ -565,22 +1055,6 @@ async def approve_step(
         if step_execution:
             await session.refresh(step_execution)
 
-        # P6.5: Emit SSE events for new step
-        await emit_event(workflow, step_execution, "step.started")
-        # Synthetic artifact.delta events (chunk output)
-        step_state_data = result.get("step_state", {})
-        output = step_state_data.get("output") if isinstance(step_state_data, dict) else None
-        if output:
-            output_str = json.dumps(output)
-            for i, chunk in enumerate(chunk_string(output_str, 3)):
-                await emit_event(
-                    workflow, step_execution, "artifact.delta",
-                    {"delta": chunk, "index": i}
-                )
-        await emit_event(workflow, step_execution, "artifact.final")
-        # Final step state event (uses STATUS_TO_EVENT mapping)
-        await emit_event(workflow, step_execution)
-
         return build_workflow_response(workflow, step_execution)
 
     except WorkflowNotFoundError:
@@ -588,9 +1062,25 @@ async def approve_step(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Workflow not found: {workflow_id}",
         )
-    except InvalidStateError as e:
+    except StateVersionMismatchError as e:
+        # 409: Optimistic concurrency failure (Contract §10.5)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
+            detail=StateConflictResponse(
+                message=str(e),
+                current_position=PositionResponse(
+                    pass_type=e.current_pass,
+                    step_number=e.current_step_number,
+                    step_name=e.current_step,
+                    status=e.current_status,
+                ),
+                current_state_version=e.current_version,
+            ).model_dump(),
+        )
+    except InvalidStateError as e:
+        # 422: Semantic violation (action invalid for current state)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid state: {e.current_status}, expected {e.expected_status}",
         )
 
@@ -604,19 +1094,31 @@ async def revise_step(
     """Request revision of current step.
 
     P4.4: DB update + graph resume via aupdate_state + ainvoke.
+    Per Fix 1: Persisted events published AFTER transaction commits.
 
     Requires step to be in AWAITING_REVIEW status.
     """
     service = WorkflowService(session)
 
     try:
-        # P4.2: DB update
+        # Collect all persisted events to publish after commits
+        all_events = []
+
+        # P4.2: DB update with optimistic concurrency validation
+        # Fix 1: events persisted in transaction, returned for publishing
         async with session.begin():
-            workflow, step_execution = await service.revise_step(
+            workflow, step_execution, revise_events = await service.revise_step(
                 workflow_id=workflow_id,
                 feedback=request.feedback,
                 actor_id=request.actor_id,
+                expected_state_version=request.expected_state_version,
+                expected_position=request.expected_position.model_dump(),
             )
+            all_events.extend(revise_events)
+
+        # Fix 1: Publish persisted events AFTER transaction commits
+        await publish_persisted_events(workflow.workflow_id, all_events)
+        all_events.clear()
 
         # P4.4: Update graph state and resume
         graph = get_graph()
@@ -633,9 +1135,21 @@ async def revise_step(
 
         result = await graph.ainvoke(None, config)
 
-        # Sync DB with graph result
+        # Sync DB with graph result (Fix 1: events persisted in transaction)
+        # Extract artifact output to pass to sync_db_from_state for correct event ordering
+        # Handle both WorkflowState object and dict representations
+        artifact_output = _extract_artifact_output(result)
+
         async with session.begin():
-            await service.sync_db_from_state(workflow_id, result)
+            # sync_db_from_state handles ALL events in correct order:
+            # step.started -> artifact.delta -> artifact.final -> step.awaiting_review
+            sync_events = await service.sync_db_from_state(
+                workflow_id, result, artifact_output=artifact_output
+            )
+            all_events.extend(sync_events)
+
+        # Fix 1: Publish persisted events AFTER transaction commits
+        await publish_persisted_events(workflow.workflow_id, all_events)
 
         # Reload for response
         workflow, step_execution = await service.get_workflow(workflow_id)
@@ -646,9 +1160,25 @@ async def revise_step(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Workflow not found: {workflow_id}",
         )
-    except InvalidStateError as e:
+    except StateVersionMismatchError as e:
+        # 409: Optimistic concurrency failure (Contract §10.5)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
+            detail=StateConflictResponse(
+                message=str(e),
+                current_position=PositionResponse(
+                    pass_type=e.current_pass,
+                    step_number=e.current_step_number,
+                    step_name=e.current_step,
+                    status=e.current_status,
+                ),
+                current_state_version=e.current_version,
+            ).model_dump(),
+        )
+    except InvalidStateError as e:
+        # 422: Semantic violation (action invalid for current state)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid state: {e.current_status}, expected {e.expected_status}",
         )
 
@@ -684,8 +1214,10 @@ async def send_message(
             detail=f"Workflow not found: {workflow_id}",
         )
     except InvalidStateError as e:
+        # 422: Semantic violation (action invalid for current state)
+        # Note: send_message doesn't change state, so no version mismatch possible
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid state: {e.current_status}, expected {e.expected_status}",
         )
 
@@ -699,19 +1231,31 @@ async def submit_clarification(
     """Submit clarification answers.
 
     P4.4: DB update + graph resume via aupdate_state + ainvoke.
+    Per Fix 1: Persisted events published AFTER transaction commits.
 
     Requires step to be in AWAITING_CLARIFICATION status.
     """
     service = WorkflowService(session)
 
     try:
-        # P4.2: DB update
+        # Collect all persisted events to publish after commits
+        all_events = []
+
+        # P4.2: DB update with optimistic concurrency validation
+        # Fix 1: events persisted in transaction, returned for publishing
         async with session.begin():
-            workflow, step_execution = await service.submit_clarification(
+            workflow, step_execution, clarify_events = await service.submit_clarification(
                 workflow_id=workflow_id,
                 answers=request.answers,
                 actor_id=request.actor_id,
+                expected_state_version=request.expected_state_version,
+                expected_position=request.expected_position.model_dump(),
             )
+            all_events.extend(clarify_events)
+
+        # Fix 1: Publish persisted events AFTER transaction commits
+        await publish_persisted_events(workflow.workflow_id, all_events)
+        all_events.clear()
 
         # P4.4: Update graph state and resume
         graph = get_graph()
@@ -727,9 +1271,21 @@ async def submit_clarification(
 
         result = await graph.ainvoke(None, config)
 
-        # Sync DB with graph result
+        # Sync DB with graph result (Fix 1: events persisted in transaction)
+        # Extract artifact output to pass to sync_db_from_state for correct event ordering
+        # Handle both WorkflowState object and dict representations
+        artifact_output = _extract_artifact_output(result)
+
         async with session.begin():
-            await service.sync_db_from_state(workflow_id, result)
+            # sync_db_from_state handles ALL events in correct order:
+            # step.started -> artifact.delta -> artifact.final -> step.awaiting_review
+            sync_events = await service.sync_db_from_state(
+                workflow_id, result, artifact_output=artifact_output
+            )
+            all_events.extend(sync_events)
+
+        # Fix 1: Publish persisted events AFTER transaction commits
+        await publish_persisted_events(workflow.workflow_id, all_events)
 
         # Reload for response
         workflow, step_execution = await service.get_workflow(workflow_id)
@@ -740,9 +1296,25 @@ async def submit_clarification(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Workflow not found: {workflow_id}",
         )
-    except InvalidStateError as e:
+    except StateVersionMismatchError as e:
+        # 409: Optimistic concurrency failure (Contract §10.5)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
+            detail=StateConflictResponse(
+                message=str(e),
+                current_position=PositionResponse(
+                    pass_type=e.current_pass,
+                    step_number=e.current_step_number,
+                    step_name=e.current_step,
+                    status=e.current_status,
+                ),
+                current_state_version=e.current_version,
+            ).model_dump(),
+        )
+    except InvalidStateError as e:
+        # 422: Semantic violation (action invalid for current state)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid state: {e.current_status}, expected {e.expected_status}",
         )
 
@@ -755,13 +1327,20 @@ async def submit_clarification(
 @router.get("/{workflow_id}/stream")
 async def stream_workflow(
     workflow_id: str,
+    from_sequence: int = 0,  # Default to 0 for full replay
     session: AsyncSession = Depends(get_session),
 ):
     """SSE stream for real-time events.
 
     Gate E: Supports full interactive flow via EventBroker.
 
-    P6.5: Streams from EventBroker with backlog replay for late-connecting clients.
+    Per Contract §12.1: from_sequence parameter for replay.
+    - Replays events with sequence > from_sequence from DB
+    - Uses subscribe_live to avoid broker backlog mixing
+    - Drops live events with sequence <= max_seq at subscription time
+    - All events include sequence field in payload
+
+    Fix 2 (Remediation): Race-free replay using subscribe_live.
     """
     # Validate workflow exists BEFORE starting stream
     service = WorkflowService(session)
@@ -774,17 +1353,41 @@ async def stream_workflow(
         )
 
     broker = get_event_broker()
+    event_repo = WorkflowEventRepository(session)
+
+    # Step 1: Get max sequence at subscription time BEFORE subscribing
+    # This ensures we know which events are "historical" vs "live"
+    max_seq = await event_repo.get_latest_sequence(workflow.id)
+
+    # Step 2: Get historical events: from_sequence < seq <= max_seq
+    db_events = await event_repo.get_events_after(
+        workflow_id=workflow.id,
+        from_sequence=from_sequence,
+    )
+    # Filter to only events with seq <= max_seq (in case new events were added)
+    historical_events = [e for e in db_events if e.sequence <= max_seq]
 
     async def event_generator():
         try:
-            # Subscribe to broker - yields backlog first, then live events
+            # Phase 1: Replay historical events from DB (Contract §12.1)
+            for db_event in historical_events:
+                sse_dict = db_event.to_sse_dict()
+                yield format_sse_event(sse_dict["event_type"], sse_dict)
+
+            # Phase 2: Subscribe to LIVE events from broker (no backlog replay)
+            # Fix 1 complete: Events are now persisted to DB before broker publish,
+            # so we use subscribe_live() to avoid broker backlog mixing with DB replay.
+            # Drop any events with sequence <= max_seq to avoid duplicates.
             # Use 5s timeout for heartbeats (keeps tests fast, production responsive)
-            async for event in broker.subscribe(workflow_id, timeout=5.0):
+            async for event in broker.subscribe_live(workflow_id, timeout=5.0):
                 # Handle heartbeat events as SSE comments (not data events)
                 if event is HEARTBEAT_EVENT or event.event_type == "__heartbeat__":
                     yield format_sse_comment("keep-alive")
                 else:
-                    yield format_sse_event(event.event_type, event.payload)
+                    # Drop events already replayed from DB
+                    event_seq = event.payload.get("sequence", 0)
+                    if event_seq > max_seq:
+                        yield format_sse_event(event.event_type, event.payload)
 
         except asyncio.CancelledError:
             # Client disconnected - clean shutdown

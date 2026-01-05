@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from infrastructure.db.models.traceability import TraceabilityLink
     from infrastructure.db.models.message import Message
     from infrastructure.db.models.audit import AuditLog
+    from infrastructure.db.models.workflow_event import WorkflowEvent
 
 
 class Workflow(Base):
@@ -114,6 +115,13 @@ class Workflow(Base):
         server_default=text("'active'"),
     )
 
+    # Optimistic concurrency control (Contract §9.1)
+    state_version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("1"),
+    )
+
     # Gate policy
     pass_1_gate_policy: Mapped[GatePolicy] = mapped_column(
         GatePolicyEnum,
@@ -184,6 +192,13 @@ class Workflow(Base):
         "AuditLog",
         back_populates="workflow",
         cascade="all, delete-orphan",
+    )
+
+    events: Mapped[List["WorkflowEvent"]] = relationship(
+        "WorkflowEvent",
+        back_populates="workflow",
+        cascade="all, delete-orphan",
+        order_by="WorkflowEvent.sequence",
     )
 
     # Indexes

@@ -159,3 +159,25 @@ class ArtifactRepository(BaseRepository[Artifact]):
 
         result = await self._session.execute(stmt)
         return result.scalars().first()
+
+    async def list_stale_artifacts(self, workflow_id: UUID) -> List[Artifact]:
+        """List all stale artifacts for a workflow.
+
+        Per Contract §9.4: Staleness tracking support.
+
+        Args:
+            workflow_id: Workflow UUID
+
+        Returns:
+            List of artifacts where stale = true
+        """
+        stmt = (
+            select(Artifact)
+            .where(
+                Artifact.workflow_id == workflow_id,
+                Artifact.stale == True,
+            )
+            .order_by(Artifact.step_number, Artifact.revision)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())

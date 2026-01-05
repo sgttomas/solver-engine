@@ -9,6 +9,7 @@ from typing import Optional, TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     ForeignKey,
     Index,
@@ -132,6 +133,37 @@ class Artifact(Base):
         TIMESTAMP(timezone=True),
         nullable=False,
         server_default=text("NOW()"),
+    )
+
+    # Lineage tracking (Contract §7 - insert-per-revision model)
+    supersedes: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("artifacts.id"),
+        nullable=True,
+    )
+
+    superseded_by: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("artifacts.id"),
+        nullable=True,
+    )
+
+    # Staleness tracking (Contract §9.4)
+    # Note: Column is 'stale' per spec, not 'is_stale'
+    stale: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("FALSE"),
+    )
+
+    stale_reason: Mapped[Optional[str]] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
+    stale_since: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
     )
 
     # Relationships

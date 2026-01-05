@@ -115,6 +115,47 @@ class EventBroker:
                 if self._queues.get(workflow_id) is queue:
                     del self._queues[workflow_id]
 
+    async def subscribe_live(
+        self,
+        workflow_id: str,
+        timeout: float = 30.0,
+    ) -> AsyncIterator[SSEEvent]:
+        """Subscribe to LIVE events only (no backlog replay).
+
+        Use this when replaying from DB to avoid backlog mixing.
+        Per Fix 2 in remediation plan: subscribe_live for race-free replay.
+
+        Args:
+            workflow_id: Workflow to subscribe to.
+            timeout: Max seconds to wait for next event (default 30s).
+
+        Yields:
+            SSEEvent objects from live stream only (no backlog).
+        """
+        queue: asyncio.Queue[SSEEvent] = asyncio.Queue()
+
+        async with self._lock:
+            # Register subscriber - NO backlog replay
+            self._queues[workflow_id] = queue
+
+        # Stream live events with timeout (no backlog replay)
+        try:
+            while True:
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=timeout)
+                    yield event
+                except asyncio.TimeoutError:
+                    # Yield heartbeat to keep connection alive
+                    yield HEARTBEAT_EVENT
+        except asyncio.CancelledError:
+            # Clean exit on cancellation
+            raise
+        finally:
+            # Cleanup on disconnect
+            async with self._lock:
+                if self._queues.get(workflow_id) is queue:
+                    del self._queues[workflow_id]
+
     async def clear_workflow(self, workflow_id: str) -> None:
         """Clear backlog for a workflow.
 

@@ -42,7 +42,7 @@ from infrastructure.db.models.enums import (
     ObjectiveCategoryEnum,
 )
 
-# Models (9 tables)
+# Models (10 tables)
 from infrastructure.db.models.instance import Instance
 from infrastructure.db.models.workflow import Workflow
 from infrastructure.db.models.step_execution import StepExecution
@@ -51,6 +51,7 @@ from infrastructure.db.models.traceability import TraceabilityLink
 from infrastructure.db.models.message import Message
 from infrastructure.db.models.audit import AuditLog
 from infrastructure.db.models.checkpoint import Checkpoint, CheckpointWrite
+from infrastructure.db.models.workflow_event import WorkflowEvent
 
 __all__ = [
     # Base
@@ -93,4 +94,5 @@ __all__ = [
     "AuditLog",
     "Checkpoint",
     "CheckpointWrite",
+    "WorkflowEvent",
 ]

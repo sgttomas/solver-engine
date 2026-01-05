@@ -34,6 +34,8 @@ from infrastructure.db.repositories.instance import InstanceRepository
 from infrastructure.db.repositories.message import MessageRepository
 from infrastructure.db.repositories.audit import AuditLogRepository
 from infrastructure.db.repositories.artifact import ArtifactRepository
+from infrastructure.db.repositories.workflow_event import WorkflowEventRepository
+from infrastructure.db.models.workflow_event import WorkflowEvent
 from application.artifact_service import ArtifactService
 from application.traceability_service import (
     TraceabilityService,
@@ -42,6 +44,29 @@ from application.traceability_service import (
 
 
 logger = logging.getLogger(__name__)
+
+
+def _chunk_string(s: str, num_chunks: int) -> list:
+    """Split string into approximately equal chunks.
+
+    Args:
+        s: String to split.
+        num_chunks: Number of chunks to create.
+
+    Returns:
+        List of string chunks.
+    """
+    if not s or num_chunks <= 0:
+        return [s] if s else []
+    chunk_size = max(1, len(s) // num_chunks)
+    chunks = []
+    for i in range(0, len(s), chunk_size):
+        chunks.append(s[i : i + chunk_size])
+    # Merge last small chunk if needed
+    if len(chunks) > num_chunks and chunks:
+        chunks[-2] = chunks[-2] + chunks[-1]
+        chunks.pop()
+    return chunks
 
 
 class WorkflowNotFoundError(Exception):
@@ -61,7 +86,11 @@ class InstanceNotFoundError(Exception):
 
 
 class InvalidStateError(Exception):
-    """Raised when workflow is in invalid state for action."""
+    """Raised when workflow is in invalid state for action (semantic violation).
+
+    Results in 422 Unprocessable Entity - the action is semantically invalid
+    for the current workflow state (e.g., approve when not awaiting_review).
+    """
 
     def __init__(self, workflow_id: str, current_status: str, expected_status: str):
         self.workflow_id = workflow_id
@@ -69,6 +98,35 @@ class InvalidStateError(Exception):
         self.expected_status = expected_status
         super().__init__(
             f"Workflow {workflow_id} is in {current_status}, expected {expected_status}"
+        )
+
+
+class StateVersionMismatchError(Exception):
+    """Raised when expected_state_version doesn't match current (optimistic concurrency).
+
+    Per Contract §10.5, §11.1-§11.2: Results in 409 Conflict with StateConflictResponse.
+    Client should refetch state and retry with updated expected_state_version.
+    """
+
+    def __init__(
+        self,
+        workflow_id: str,
+        expected_version: int,
+        current_version: int,
+        current_pass: str,
+        current_step: str,
+        current_step_number: int,
+        current_status: str,
+    ):
+        self.workflow_id = workflow_id
+        self.expected_version = expected_version
+        self.current_version = current_version
+        self.current_pass = current_pass
+        self.current_step = current_step
+        self.current_step_number = current_step_number
+        self.current_status = current_status
+        super().__init__(
+            f"State version mismatch: expected {expected_version}, got {current_version}"
         )
 
 
@@ -93,6 +151,7 @@ class WorkflowService:
         self._message_repo = MessageRepository(session)
         self._audit_repo = AuditLogRepository(session)
         self._artifact_repo = ArtifactRepository(session)
+        self._event_repo = WorkflowEventRepository(session)
         self._artifact_service = ArtifactService(session)
         self._traceability_service = TraceabilityService(session)
 
@@ -102,11 +161,14 @@ class WorkflowService:
         created_by: str,
         instance_number: int = 0,
         domain: Optional[str] = None,
-    ) -> tuple[Workflow, StepExecution]:
+    ) -> tuple[Workflow, StepExecution, list[WorkflowEvent]]:
         """Create a new workflow with initial step execution.
 
         Creates Workflow and initial StepExecution records in one transaction.
         Does NOT invoke graph (deferred to P4.4).
+
+        Per Fix 1 (Atomic Event Persistence): Persists workflow.started event
+        and returns it for route to publish after transaction commits.
 
         Args:
             problem: The problem statement
@@ -115,11 +177,13 @@ class WorkflowService:
             domain: Optional domain classification
 
         Returns:
-            Tuple of (Workflow, StepExecution) for the created workflow
+            Tuple of (Workflow, StepExecution, events) for the created workflow
 
         Raises:
             InstanceNotFoundError: If instance_number doesn't exist
         """
+        events: list[WorkflowEvent] = []
+
         # Resolve instance by number
         instance = await self._instance_repo.get_by_number(instance_number)
         if instance is None:
@@ -159,7 +223,16 @@ class WorkflowService:
         self._session.add(step_execution)
         await self._session.flush()
 
-        return workflow, step_execution
+        # Persist workflow.started event (Fix 1: persist before publish)
+        event = await self._persist_event(
+            workflow=workflow,
+            event_type="workflow.started",
+            step_execution=step_execution,
+            data={"problem": problem, "created_by": created_by},
+        )
+        events.append(event)
+
+        return workflow, step_execution, events
 
     async def get_workflow(
         self,
@@ -262,6 +335,156 @@ class WorkflowService:
         """Resolve actor ID with fallback to workflow.created_by."""
         return actor_id if actor_id else workflow.created_by
 
+    def _validate_optimistic_concurrency(
+        self,
+        workflow: Workflow,
+        step_execution: StepExecution,
+        expected_state_version: int,
+        expected_position: dict,
+    ) -> None:
+        """Validate optimistic concurrency for action endpoints.
+
+        Per Contract §11.1-§11.2: Actions MUST include expected_state_version
+        and expected_position. Both are REQUIRED - no None bypass.
+
+        Raises StateVersionMismatchError (409) if:
+        - expected_state_version != current state_version
+        - expected_position doesn't match current position (pass, step, step_number, status)
+
+        Args:
+            workflow: Current workflow state
+            step_execution: Current step execution
+            expected_state_version: Required version client expects
+            expected_position: Required position dict with pass_type, step_name, step_number, status
+
+        Raises:
+            StateVersionMismatchError: If version or position mismatch
+        """
+        # Version check
+        if expected_state_version != workflow.state_version:
+            raise StateVersionMismatchError(
+                workflow_id=workflow.workflow_id,
+                expected_version=expected_state_version,
+                current_version=workflow.state_version,
+                current_pass=workflow.current_pass.value,
+                current_step=workflow.current_step.value,
+                current_step_number=workflow.current_step_number,
+                current_status=step_execution.status.value if step_execution else "unknown",
+            )
+
+        # Full position check (includes step_name)
+        current_pass = workflow.current_pass.value
+        current_step = workflow.current_step.value
+        current_step_number = workflow.current_step_number
+        current_status = step_execution.status.value if step_execution else "unknown"
+
+        position_mismatch = (
+            expected_position.get("pass_type") != current_pass or
+            expected_position.get("step_name") != current_step or
+            expected_position.get("step_number") != current_step_number or
+            expected_position.get("status") != current_status
+        )
+
+        if position_mismatch:
+            raise StateVersionMismatchError(
+                workflow_id=workflow.workflow_id,
+                expected_version=expected_state_version,
+                current_version=workflow.state_version,
+                current_pass=current_pass,
+                current_step=current_step,
+                current_step_number=current_step_number,
+                current_status=current_status,
+            )
+
+    async def _increment_state_version(self, workflow: Workflow) -> int:
+        """Increment workflow state_version for optimistic concurrency.
+
+        Per Contract §9.1: state_version MUST be a monotonically increasing integer
+        Per Contract §11.3: state_version increment MUST occur on every accepted state transition
+
+        Args:
+            workflow: Workflow to update
+
+        Returns:
+            New state_version value
+        """
+        workflow.state_version = workflow.state_version + 1
+        return workflow.state_version
+
+    def _build_event_payload(
+        self,
+        workflow: Workflow,
+        step_execution: Optional[StepExecution] = None,
+        artifact_id: Optional[str] = None,
+        data: Optional[dict] = None,
+    ) -> dict:
+        """Build consistent event payload for SSE events.
+
+        Per Fix 1 (Atomic Event Persistence): All events use consistent payload structure.
+
+        Args:
+            workflow: Workflow for context
+            step_execution: Optional step execution for status/phase
+            artifact_id: Optional artifact ID for artifact events
+            data: Optional additional data to include
+
+        Returns:
+            Event payload dict (excluding event_id, sequence, timestamp - added by model)
+        """
+        payload = {
+            "workflow_id": workflow.workflow_id,  # External workflow ID string
+            "instance_id": str(workflow.instance_id),
+            "pass_type": workflow.current_pass.value,
+            "step_number": workflow.current_step_number,
+            "step_name": workflow.current_step.value,
+            "data": {},
+        }
+
+        if artifact_id:
+            payload["artifact_id"] = artifact_id
+
+        if step_execution:
+            payload["data"]["status"] = step_execution.status.value
+            payload["data"]["phase"] = step_execution.phase.value
+
+        if data:
+            payload["data"].update(data)
+
+        return payload
+
+    async def _persist_event(
+        self,
+        workflow: Workflow,
+        event_type: str,
+        step_execution: Optional[StepExecution] = None,
+        artifact_id: Optional[str] = None,
+        data: Optional[dict] = None,
+    ):
+        """Persist workflow event to durable log and return it.
+
+        Per Contract §9.2: Events stored in workflow_events table
+        Per Contract §11.4: Events MUST be persisted BEFORE broadcast
+        Per Fix 1: Returns event for route to publish after commit
+
+        Args:
+            workflow: Workflow the event belongs to
+            event_type: Event type (e.g., 'step.approved')
+            step_execution: Optional step execution for status/phase
+            artifact_id: Optional artifact ID for artifact events
+            data: Optional additional data to include
+
+        Returns:
+            Created WorkflowEvent for publishing after transaction commit
+        """
+        payload = self._build_event_payload(
+            workflow, step_execution, artifact_id, data
+        )
+        return await self._event_repo.create_event(
+            workflow_id=workflow.id,
+            event_type=event_type,
+            payload=payload,
+        )
+
     async def _create_audit_entry(
         self,
         workflow: Workflow,
@@ -294,25 +517,40 @@ class WorkflowService:
         self,
         workflow_id: str,
         actor_id: Optional[str] = None,
-    ) -> tuple[Workflow, StepExecution]:
+        expected_state_version: int = 0,
+        expected_position: Optional[dict] = None,
+    ) -> tuple[Workflow, StepExecution, list[WorkflowEvent]]:
         """Approve current step.
 
         P4.2: DB-only (updates status to APPROVED).
         P4.4 will add graph invocation to advance workflow.
 
+        Per Fix 1 (Atomic Event Persistence): Persists step.approved event
+        and returns it for route to publish after transaction commits.
+
         Args:
             workflow_id: Unique workflow identifier
             actor_id: Actor performing action (defaults to workflow.created_by)
+            expected_state_version: Required version for optimistic concurrency (§11.1)
+            expected_position: Required position dict for optimistic concurrency (§11.1)
 
         Returns:
-            Tuple of (Workflow, StepExecution)
+            Tuple of (Workflow, StepExecution, events)
 
         Raises:
             WorkflowNotFoundError: If workflow doesn't exist
-            InvalidStateError: If step is not AWAITING_REVIEW
+            InvalidStateError: If step is not AWAITING_REVIEW (422)
+            StateVersionMismatchError: If expected_state_version or position mismatch (409)
         """
+        events: list[WorkflowEvent] = []
+
         workflow, step_execution = await self._get_workflow_and_step(
             workflow_id, StepStatus.AWAITING_REVIEW
+        )
+
+        # Validate optimistic concurrency (Contract §11.1-§11.2)
+        self._validate_optimistic_concurrency(
+            workflow, step_execution, expected_state_version, expected_position or {}
         )
 
         actor = self._resolve_actor_id(actor_id, workflow)
@@ -324,6 +562,9 @@ class WorkflowService:
         # Update last_actor_id FIRST (before status change for audit trigger)
         workflow.last_actor_id = actor
         workflow.updated_at = datetime.utcnow()
+
+        # Increment state_version for optimistic concurrency (Contract §9.1, §11.3)
+        await self._increment_state_version(workflow)
 
         # Update step execution
         step_execution.status = StepStatus.APPROVED
@@ -342,34 +583,61 @@ class WorkflowService:
             to_phase=StepPhase.COMPLETE,
         )
 
+        # Persist event to durable log (Fix 1: persist before publish, return for route)
+        event = await self._persist_event(
+            workflow=workflow,
+            event_type="step.approved",
+            step_execution=step_execution,
+            data={
+                "actor_id": actor,
+                "state_version": workflow.state_version,
+            },
+        )
+        events.append(event)
+
         await self._session.flush()
-        return workflow, step_execution
+        return workflow, step_execution, events
 
     async def revise_step(
         self,
         workflow_id: str,
         feedback: str,
         actor_id: Optional[str] = None,
-    ) -> tuple[Workflow, StepExecution]:
+        expected_state_version: int = 0,
+        expected_position: Optional[dict] = None,
+    ) -> tuple[Workflow, StepExecution, list[WorkflowEvent]]:
         """Request revision of current step.
 
         P4.2: DB-only (updates status to REVISION_REQUESTED).
         P4.4 will add graph invocation to re-run step.
 
+        Per Fix 1 (Atomic Event Persistence): Persists step.revised event
+        and returns it for route to publish after transaction commits.
+
         Args:
             workflow_id: Unique workflow identifier
             feedback: Revision feedback/instructions
             actor_id: Actor performing action (defaults to workflow.created_by)
+            expected_state_version: Required version for optimistic concurrency (§11.1)
+            expected_position: Required position dict for optimistic concurrency (§11.1)
 
         Returns:
-            Tuple of (Workflow, StepExecution)
+            Tuple of (Workflow, StepExecution, events)
 
         Raises:
             WorkflowNotFoundError: If workflow doesn't exist
-            InvalidStateError: If step is not AWAITING_REVIEW
+            InvalidStateError: If step is not AWAITING_REVIEW (422)
+            StateVersionMismatchError: If expected_state_version or position mismatch (409)
         """
+        events: list[WorkflowEvent] = []
+
         workflow, step_execution = await self._get_workflow_and_step(
             workflow_id, StepStatus.AWAITING_REVIEW
+        )
+
+        # Validate optimistic concurrency (Contract §11.1-§11.2)
+        self._validate_optimistic_concurrency(
+            workflow, step_execution, expected_state_version, expected_position or {}
         )
 
         actor = self._resolve_actor_id(actor_id, workflow)
@@ -381,6 +649,9 @@ class WorkflowService:
         # Update last_actor_id FIRST
         workflow.last_actor_id = actor
         workflow.updated_at = datetime.utcnow()
+
+        # Increment state_version for optimistic concurrency (Contract §9.1, §11.3)
+        await self._increment_state_version(workflow)
 
         # Update step execution
         step_execution.status = StepStatus.REVISION_REQUESTED
@@ -410,8 +681,21 @@ class WorkflowService:
             details={"feedback": feedback},
         )
 
+        # Persist event to durable log (Fix 1: persist before publish, return for route)
+        event = await self._persist_event(
+            workflow=workflow,
+            event_type="step.revised",
+            step_execution=step_execution,
+            data={
+                "actor_id": actor,
+                "state_version": workflow.state_version,
+                "feedback": feedback,
+            },
+        )
+        events.append(event)
+
         await self._session.flush()
-        return workflow, step_execution
+        return workflow, step_execution, events
 
     async def send_message(
         self,
@@ -477,26 +761,41 @@ class WorkflowService:
         workflow_id: str,
         answers: dict,
         actor_id: Optional[str] = None,
-    ) -> tuple[Workflow, StepExecution]:
+        expected_state_version: int = 0,
+        expected_position: Optional[dict] = None,
+    ) -> tuple[Workflow, StepExecution, list[WorkflowEvent]]:
         """Submit clarification answers.
 
         P4.2: DB-only (updates status to IN_PROGRESS).
         P4.4 will add graph invocation to resume.
 
+        Per Fix 1 (Atomic Event Persistence): Persists step.clarified event
+        and returns it for route to publish after transaction commits.
+
         Args:
             workflow_id: Unique workflow identifier
             answers: Clarification responses keyed by question ID
             actor_id: Actor performing action (defaults to workflow.created_by)
+            expected_state_version: Required version for optimistic concurrency (§11.1)
+            expected_position: Required position dict for optimistic concurrency (§11.1)
 
         Returns:
-            Tuple of (Workflow, StepExecution)
+            Tuple of (Workflow, StepExecution, events)
 
         Raises:
             WorkflowNotFoundError: If workflow doesn't exist
-            InvalidStateError: If step is not AWAITING_CLARIFICATION
+            InvalidStateError: If step is not AWAITING_CLARIFICATION (422)
+            StateVersionMismatchError: If expected_state_version or position mismatch (409)
         """
+        events: list[WorkflowEvent] = []
+
         workflow, step_execution = await self._get_workflow_and_step(
             workflow_id, StepStatus.AWAITING_CLARIFICATION
+        )
+
+        # Validate optimistic concurrency (Contract §11.1-§11.2)
+        self._validate_optimistic_concurrency(
+            workflow, step_execution, expected_state_version, expected_position or {}
         )
 
         actor = self._resolve_actor_id(actor_id, workflow)
@@ -508,6 +807,9 @@ class WorkflowService:
         # Update last_actor_id FIRST
         workflow.last_actor_id = actor
         workflow.updated_at = datetime.utcnow()
+
+        # Increment state_version for optimistic concurrency (Contract §9.1, §11.3)
+        await self._increment_state_version(workflow)
 
         # Update step execution
         step_execution.status = StepStatus.IN_PROGRESS
@@ -536,14 +838,28 @@ class WorkflowService:
             details={"answers": answers},
         )
 
+        # Persist event to durable log (Fix 1: persist before publish, return for route)
+        event = await self._persist_event(
+            workflow=workflow,
+            event_type="step.clarified",
+            step_execution=step_execution,
+            data={
+                "actor_id": actor,
+                "state_version": workflow.state_version,
+            },
+        )
+        events.append(event)
+
         await self._session.flush()
-        return workflow, step_execution
+        return workflow, step_execution, events
 
     # =========================================================================
     # P4.4: Graph State Synchronization
     # =========================================================================
 
-    async def sync_db_from_state(self, workflow_id: str, result: dict) -> None:
+    async def sync_db_from_state(
+        self, workflow_id: str, result: dict, artifact_output: Optional[str] = None
+    ) -> list[WorkflowEvent]:
         """Sync DB state from graph execution result.
 
         Per Co-Developer-1 feedback:
@@ -551,6 +867,15 @@ class WorkflowService:
         - Ensures StepExecution row exists for current step
         - Updates all step_state fields (status, phase, started_at, etc.)
         - Only updates current step, not prior steps
+
+        Per Fix 1 (Atomic Event Persistence): Persists native events and returns
+        them for route to publish after transaction commits:
+        - step.started when new step begins
+        - step.awaiting_review when status changes to awaiting_review
+        - workflow.completed when workflow finishes
+
+        Returns:
+            List of persisted events for route to publish after commit.
         """
         from domain.state import (
             ensure_workflow_state,
@@ -560,6 +885,8 @@ class WorkflowService:
         )
         from infrastructure.db.models import WorkflowStatus
 
+        events: list[WorkflowEvent] = []
+
         workflow = await self._workflow_repo.get_by_workflow_id(workflow_id)
         if workflow is None:
             raise WorkflowNotFoundError(workflow_id)
@@ -567,11 +894,28 @@ class WorkflowService:
         state = ensure_workflow_state(result)
         step_state = state.step_state
 
+        # Capture state BEFORE changes for state-eligibility comparison (Contract §11.3)
+        old_pass = workflow.current_pass
+        old_step = workflow.current_step
+        old_step_number = workflow.current_step_number
+
+        # Get current step execution status/phase (if exists)
+        old_step_execution = await self._step_repo.get_by_composite(
+            workflow_id=workflow.id,
+            pass_type=PassType(state.current_pass.value),
+            step_name=StepName(state.current_step.value),
+        )
+        old_status = old_step_execution.status if old_step_execution else None
+        old_phase = old_step_execution.phase if old_step_execution else None
+
         # Update workflow position
         workflow.current_pass = PassType(state.current_pass.value)
         workflow.current_step = StepName(state.current_step.value)
         workflow.current_step_number = step_state.step_number
         workflow.updated_at = datetime.utcnow()
+
+        # Track if workflow completed
+        workflow_completed = False
 
         # Check if workflow completed (Step 3 Pass 2 approved)
         if (
@@ -581,6 +925,7 @@ class WorkflowService:
         ):
             workflow.status = WorkflowStatus.COMPLETED
             workflow.completed_at = datetime.utcnow()
+            workflow_completed = True
 
         # Ensure StepExecution exists for current step
         step_execution = await self._step_repo.get_by_composite(
@@ -588,6 +933,9 @@ class WorkflowService:
             pass_type=workflow.current_pass,
             step_name=workflow.current_step,
         )
+
+        # Track if this is a new step (for step.started event)
+        new_step_created = False
 
         if step_execution is None:
             # Create new step execution (advanced to new step)
@@ -601,6 +949,7 @@ class WorkflowService:
             )
             self._session.add(step_execution)
             await self._session.flush()  # Get step_execution.id
+            new_step_created = True
 
         # P6.6: Capture IN_PROGRESS transition for audit trail (Gate F)
         # If transitioning from NOT_STARTED to a later status, add intermediate
@@ -658,7 +1007,96 @@ class WorkflowService:
             if step_exec:
                 step_exec.latest_artifact_id = artifact_id
 
+        # Detect state-eligibility changes (Contract §11.3)
+        # Increment state_version ONLY if something affecting action eligibility changed
+        # This includes: position, status, phase, or new artifacts created
+        new_status = step_execution.status
+        new_phase = step_execution.phase
+
+        state_eligibility_changed = (
+            # Position changes
+            old_pass != workflow.current_pass or
+            old_step != workflow.current_step or
+            old_step_number != workflow.current_step_number or
+            # Status changes (EVEN without position change)
+            (old_status is not None and old_status != new_status) or
+            # Phase changes (EVEN without position change)
+            (old_phase is not None and old_phase != new_phase) or
+            # New step execution created (old_status was None)
+            old_status is None or
+            # New artifacts created
+            len(artifact_results) > 0
+        )
+
+        if state_eligibility_changed:
+            await self._increment_state_version(workflow)
+
         await self._session.flush()
+
+        # Fix 1: Persist native events AFTER state is updated
+        # These events are persisted in DB and returned for route to publish after commit
+        # Order: step.started -> artifact.delta/final -> step.awaiting_review
+
+        # step.started when:
+        # - New step is created (advanced from previous step), OR
+        # - Step transitions from NOT_STARTED to a running state (initial step start)
+        step_started = (
+            new_step_created or
+            (old_status == StepStatus.NOT_STARTED and new_status != StepStatus.NOT_STARTED)
+        )
+        if step_started:
+            event = await self._persist_event(
+                workflow=workflow,
+                event_type="step.started",
+                step_execution=step_execution,
+            )
+            events.append(event)
+
+        # Persist artifact events AFTER step.started but BEFORE step.awaiting_review
+        # This ensures correct event ordering per Gate E expectations
+        if artifact_output:
+            # Split output into chunks for artifact.delta events
+            chunks = _chunk_string(artifact_output, 3)
+            for i, chunk in enumerate(chunks):
+                delta_event = await self._persist_event(
+                    workflow=workflow,
+                    event_type="artifact.delta",
+                    step_execution=step_execution,
+                    data={"delta": chunk, "index": i},
+                )
+                events.append(delta_event)
+
+            # artifact.final when output is complete
+            final_event = await self._persist_event(
+                workflow=workflow,
+                event_type="artifact.final",
+                step_execution=step_execution,
+            )
+            events.append(final_event)
+
+        # step.awaiting_review when status changes to awaiting_review
+        if (
+            old_status != StepStatus.AWAITING_REVIEW
+            and new_status == StepStatus.AWAITING_REVIEW
+        ):
+            event = await self._persist_event(
+                workflow=workflow,
+                event_type="step.awaiting_review",
+                step_execution=step_execution,
+            )
+            events.append(event)
+
+        # workflow.completed when workflow finishes
+        if workflow_completed:
+            event = await self._persist_event(
+                workflow=workflow,
+                event_type="workflow.completed",
+                step_execution=step_execution,
+            )
+            events.append(event)
+
+        await self._session.flush()
+        return events
 
     async def sync_artifacts_from_state(
         self,

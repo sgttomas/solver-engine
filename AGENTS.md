@@ -10,20 +10,43 @@ It complements the environment-level instructions in `/Users/ryan/ai-env/AGENTS.
    - `git status -sb`
 2) Read the local docs before changes:
    - `README.md`
-   - `docs/spec/0_SOLVER-Development-Directive.md`
-   - If touching reasoning logic or prompts: also read `docs/spec/1_meta-prompt-structured-reasoning.md`
+   - `docs/spec/1_SOLVER-README.md` (project orientation)
 3) Stay within MVP scope (Steps 1–3) unless explicitly directed.
 
-## Authority Stack (Hard Rule)
+## Specification Documents (Authoritative)
 
-Follow the doc hierarchy for decisions:
+Read in this order:
 
-1) `docs/spec/1_meta-prompt-structured-reasoning.md` — Why / reasoning rules
-2) `docs/spec/2_structured-reasoning-architecture.md` — Where / boundaries
-3) `docs/spec/3_solver-technical-spec.md` — What / schemas, paths, endpoints
+1. `docs/spec/0_Document-Type-Specifications-v2.1.md` — Governance framework
+2. `docs/spec/2_SOLVER-Design-Intent-v1.1.md` — Why² (principles, rationale)
+3. `docs/spec/3_SOLVER-Architectural-Contract-v3.4.md` — Why (invariants, R1–R19)
+4. `docs/spec/4_solver-technical-spec-V2.7.3.md` — What (schemas, APIs)
+5. `docs/spec/5_SOLVER-Development-Directive-v1.5.md` — How (phases, packages, gates)
+6. `docs/spec/6_SOLVER-Change-Management-v1.2.md` — Process (change control)
+
+Note: `docs/spec/1_SOLVER-README.md` is project orientation (read after repo README).
+
+## Legacy Documents (Reference Only)
+
+The following docs in `docs/legacy/` are superseded but retained for historical context:
+- `0_SOLVER-Development-Directive.md` → superseded by `5_SOLVER-Development-Directive`
+- `1_meta-prompt-structured-reasoning.md` → methodology source (still valid for reasoning)
+- `2_structured-reasoning-architecture.md` → superseded by `3_SOLVER-Architectural-Contract`
+- `3_solver-technical-spec.md` → superseded by `4_solver-technical-spec`
+
+## Authority Hierarchy
+
+From Document-Type-Specifications v2.1, two hierarchies govern:
+
+| Hierarchy | Order | Use When |
+|-----------|-------|----------|
+| **Purpose Priority** | Intent > Contract > Spec > Directive > README | Choosing between compliant options |
+| **Binding Precedence** | Contract > Spec > Directive > Intent > README | Resolving conflicts about what must be true |
+
+**Rule:** Contract wins conflicts. Intent is tie-breaker only among compliant solutions.
 
 If a deviation is needed, use the deviation protocol in
-`docs/spec/0_SOLVER-Development-Directive.md` and log it in `docs/DECISIONS.md`.
+`docs/spec/6_SOLVER-Change-Management-v1.2.md` and log it in `docs/DECISIONS.md`.
 
 ## Execution Protocol (Slices)
 
@@ -44,13 +67,20 @@ Work only on the assigned slice. For each slice:
 ## Non-Negotiables
 
 - Do not invent new architecture or paths.
-- Do not reintroduce a `src/` layout under `apps/api` (flat layout per Doc 3 §11).
+- Do not reintroduce a `src/` layout under `apps/api` (flat layout per Technical Spec §11).
 - Do not skip gates; verify with the required commands.
 - No hidden chain-of-thought; provide reviewable, traceable rationale only.
 - Never advance workflow state without explicit approval action.
 - Do not implement Steps 4–10 (stubs only if explicitly requested).
 - Do not implement deferred items listed in `docs/DECISIONS.md` unless explicitly assigned.
 - If a gate scenario is only partially met, log the deviation in `docs/DECISIONS.md` and add a brief note in the relevant spec section.
+
+## Backend Contract Guardrails
+
+- Persist all SSE events to `workflow_events` with monotonic sequences before publish.
+- `/stream` must support `from_sequence` replay with gap handling and no broker backlog mixing.
+- Action endpoints must require `expected_state_version` and `expected_position` and return 409 on mismatch.
+- Applied migrations are immutable; add a new migration for changes.
 
 ## Orchestration Note
 
@@ -63,11 +93,7 @@ Work only on the assigned slice. For each slice:
 
 ## Methodology Caching Note
 
-- Hypothesis: caching V3 methodology docs for well-defined problem types
-  (e.g., deliverables/packages) can provide reusable domain scaffolding and
-  SME-like behavior across similar tasks.
-- Treat cached methods as versioned artifacts; validate scope fit and update
-  via gate review rather than assuming transfer.
+- Treat cached methodology as versioned artifacts; validate scope fit before reuse.
 
 ## Tooling and Edits
 
@@ -81,8 +107,8 @@ Work only on the assigned slice. For each slice:
 ## Key References
 
 - `README.md` — project overview and API summary
-- `docs/spec/0_SOLVER-Development-Directive.md` — operating manual for agents
-- `docs/spec/1_meta-prompt-structured-reasoning.md` — methodology rules
-- `docs/spec/2_structured-reasoning-architecture.md` — system boundaries
-- `docs/spec/3_solver-technical-spec.md` — exact schemas and endpoints
+- `docs/spec/3_SOLVER-Architectural-Contract-v3.4.md` — invariants and reliability rules (R1–R19)
+- `docs/spec/4_solver-technical-spec-V2.7.3.md` — exact schemas and endpoints
+- `docs/spec/5_SOLVER-Development-Directive-v1.5.md` — phases, packages, gates
+- `docs/legacy/1_meta-prompt-structured-reasoning.md` — methodology rules (still valid)
 - `docs/DECISIONS.md` — approved deviations from spec (must be respected)

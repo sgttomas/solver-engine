@@ -10,16 +10,27 @@
 
 ## Authority Stack (CRITICAL)
 
-When documents conflict, higher priority wins:
+Two hierarchies govern (from Document-Type-Specifications v2.1):
 
-| Priority | Document | Governs |
-|----------|----------|---------|
-| 1st | `docs/spec/1_meta-prompt-structured-reasoning.md` | **Why** — Logic, gates |
-| 2nd | `docs/spec/2_structured-reasoning-architecture.md` | **Where** — Components |
-| 3rd | `docs/spec/3_solver-technical-spec.md` | **What** — Tables, schemas |
-| 4th | `docs/spec/0_SOLVER-Development-Directive.md` | **How** — Slices, workflow |
+| Hierarchy | Order | Use When |
+|-----------|-------|----------|
+| **Purpose Priority** | Intent > Contract > Spec > Directive | Choosing between compliant options |
+| **Binding Precedence** | Contract > Spec > Directive > Intent | Resolving conflicts about what must be true |
 
-Deviations require approval and entry in `docs/DECISIONS.md`.
+**Documents (in docs/spec/):**
+
+| # | Document | Role |
+|---|----------|------|
+| 0 | `0_Document-Type-Specifications-v2.1.md` | Governance framework |
+| 2 | `2_SOLVER-Design-Intent-v1.1.md` | Why² — Design rationale |
+| 3 | `3_SOLVER-Architectural-Contract-v3.4.md` | Why — Invariants, R1–R19 |
+| 4 | `4_solver-technical-spec-V2.7.3.md` | What — Schemas, endpoints |
+| 5 | `5_SOLVER-Development-Directive-v1.5.md` | How — Phases, packages, gates |
+| 6 | `6_SOLVER-Change-Management-v1.2.md` | Process — Change control |
+
+**Rule:** Contract wins conflicts. Intent is tie-breaker only among compliant solutions.
+
+Deviations require approval and entry in `docs/DECISIONS.md` per Change Management process.
 
 ---
 
@@ -34,14 +45,15 @@ Deviations require approval and entry in `docs/DECISIONS.md`.
 
 ### Key Context
 
-- **Schema is authoritative:** `infra/db/migrations/versions/001_initial_schema.py` defines the database. Models must match exactly.
+- **Schema is authoritative:** `infra/db/migrations/versions/` defines the database (001, 002, 003). Models must match exactly.
 - **Config location:** `apps/api/config.py` (not `apps/api/config/settings.py` — that was deleted)
 - **Flat layout:** `apps/api/infrastructure/db/` (not `apps/api/src/solver_api/`)
 - **Custom checkpoint saver:** Uses `SolverCheckpointSaver` instead of `langgraph-checkpoint-postgres.PostgresSaver` due to schema incompatibility (see `docs/DECISIONS.md`)
 - **State coercion:** Use `coerce_state(state)` at start of nodes to handle dict/string deserialization from checkpoints
 - **Resume from interrupt:** Use `as_node="review"` or `as_node="elicit"` in `aupdate_state()` to tell LangGraph which node completed
 - **Graph singleton:** Module-level graph in `routes/workflows.py`; checkpointer manages sessions, `thread_id` provides isolation
-- **DB sync:** `workflow_service.sync_db_from_state()` syncs DB from graph execution results
+- **Event persistence:** `sync_db_from_state()` persists events in correct order (step.started → artifact.* → step.awaiting_review). Routes publish events AFTER transaction commits.
+- **SSE replay:** Stream endpoint uses `from_sequence` parameter for reliable reconnection. Events replayed from DB, then live events from broker.
 
 ---
 
@@ -69,8 +81,8 @@ docs/spec/            # Authority documents
 
 ### Before Starting
 
-1. Read `docs/spec/0_SOLVER-Development-Directive.md` for your slice
-2. Read relevant sections of Doc 3 (Technical Spec)
+1. Read `docs/spec/5_SOLVER-Development-Directive-v1.5.md` for your package/slice
+2. Read relevant sections of Technical Spec (`docs/spec/4_solver-technical-spec-V2.7.3.md`)
 3. Check existing code before creating new files
 
 ### Working on a Slice
@@ -118,11 +130,12 @@ python tools/verify_audit.py --workflow-id $ID      # Verify audit trail
 | Skip reading specs | Read authority docs first |
 | Create `apps/api/src/` nesting | Use flat `apps/api/` layout |
 | Let LLM control state | Only API calls advance gates |
-| Assume schema fields | Check migration file |
+| Assume schema fields | Check migration files (001, 002, 003) |
 | Use PostgresSaver directly | Use `SolverCheckpointSaver` (schema mismatch) |
 | Call `aupdate_state` without `as_node` | Use `as_node="review"` or `as_node="elicit"` |
 | Assume state has proper types after resume | Use `coerce_state(state)` in nodes |
 | Wire `message` action to graph | Keep DB-only (Gate C: no state change) |
+| Publish events inside transaction | Persist in transaction, publish AFTER commit |
 
 ---
 
@@ -141,9 +154,10 @@ python tools/verify_audit.py --workflow-id $ID      # Verify audit trail
 
 ## Quick Reference
 
-- **Database tables:** 9 tables defined in `001_initial_schema.py`
+- **Database:** 3 migrations (001_initial_schema, 002_contract_alignment, 003_remediation)
 - **Instance 0:** Already seeded (Universal Methodology)
 - **Async DB:** Use `asyncpg` driver, `AsyncSession`
 - **ENUMs exist:** Use `create_type=False` in SQLAlchemy
+- **Tests:** `make test-gates` (C), `make test-recovery` (D), `make e2e` (E + SSE replay)
 
 For full details, see `README.md` and the spec documents.

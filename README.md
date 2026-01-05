@@ -157,10 +157,13 @@ graph TD
 solver-engine/
 ├── docs/
 │   └── spec/
-│       ├── 0_SOLVER-Development-Directive.md   # AI agent instructions
-│       ├── 1_meta-prompt-structured-reasoning.md
-│       ├── 2_structured-reasoning-architecture.md
-│       └── 3_solver-technical-spec.md
+│       ├── 0_Document-Type-Specifications-v2.1.md  # Governance framework
+│       ├── 1_SOLVER-README.md                      # Project orientation
+│       ├── 2_SOLVER-Design-Intent-v1.1.md          # Why² — Design rationale
+│       ├── 3_SOLVER-Architectural-Contract-v3.4.md # Why — Invariants
+│       ├── 4_solver-technical-spec-V2.7.3.md       # What — Schemas, endpoints
+│       ├── 5_SOLVER-Development-Directive-v1.5.md  # How — Phases, gates
+│       └── 6_SOLVER-Change-Management-v1.2.md      # Process — Change control
 ├── apps/
 │   ├── api/                    # FastAPI backend
 │   │   ├── domain/             # Pure domain models
@@ -204,12 +207,16 @@ All endpoints under `/api/v1`.
 | POST | `/workflows/{id}/actions/revise` | Request revision with feedback |
 | POST | `/workflows/{id}/actions/message` | Comment without state change |
 | POST | `/workflows/{id}/actions/clarify` | Submit clarification answers |
+| GET | `/workflows/{id}/progress` | Progress snapshot (canonical refetch bundle) |
+| GET | `/workflows/{id}/staleness` | Staleness snapshot (canonical refetch bundle) |
+| POST | `/workflows/{id}/actions/acknowledge-stale` | Acknowledge stale items |
+| POST | `/workflows/{id}/actions/re-execute` | Re-execute stale step (stub) |
 
-Endpoints listed here are currently implemented. See `docs/spec/3_solver-technical-spec.md` for additional planned endpoints (history, traceability).
+Endpoints listed here are currently implemented. See `docs/spec/4_solver-technical-spec-V2.7.3.md` for additional planned endpoints (history, traceability).
 
 ### SSE Stream
 
-`GET /workflows/{id}/stream` — Structured events during execution:
+`GET /workflows/{id}/stream?from_sequence=N` — Structured events during execution:
 
 ```
 workflow.started        Workflow execution began
@@ -224,7 +231,7 @@ workflow.completed     Workflow finished
 error                  Error occurred
 ```
 
-Events are emitted via an in-memory EventBroker with backlog replay for late-connecting clients.
+Events are persisted to the database with monotonic sequence numbers. The `from_sequence` parameter enables reliable reconnection by replaying only events with `sequence > N`. Late-connecting clients receive the full event history.
 
 ---
 
@@ -280,24 +287,16 @@ make dev-api
 
 ## Development
 
-### Authority Stack
-
-When contributing to this repo (human or AI), follow the document hierarchy:
-
-| Priority | Document | Governs |
-|----------|----------|---------|
-| 1st | Meta-Prompt (Doc 1) | **Why** — Logic, reasoning rules, gates |
-| 2nd | Architecture (Doc 2) | **Where** — Components, layers, boundaries |
-| 3rd | Technical Spec (Doc 3) | **What** — Tables, endpoints, schemas |
-
-If documents conflict, higher priority wins. Deviations require approval and entry in `docs/DECISIONS.md`.
+Authority order and change-control are defined in:
+- `docs/spec/0_Document-Type-Specifications-v2.1.md`
+- `AGENTS.md`
 
 ### With AI Coding Agent
 
-The [Development Directive](docs/spec/0_SOLVER-Development-Directive.md) provides complete instructions:
+The [Development Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.md) provides complete instructions:
 
 ```
-"Read docs/spec/0_SOLVER-Development-Directive.md in full.
+"Read docs/spec/5_SOLVER-Development-Directive-v1.5.md in full.
 This is your authoritative operating manual."
 
 "Begin slice P1.1"
@@ -351,13 +350,15 @@ SOLVER prioritizes **correctness over speed**:
 
 | Document | Purpose |
 |----------|---------|
-| [GEMINI.md](GEMINI.md) | Gemini AI assistant development guide |
-| [CLAUDE.md](CLAUDE.md) | Claude Code / OpenAI assistant development guide |
-| [AGENTS](AGENTS.md) | Repo-level instructions for CLI coding agents |
-| [Development Directive](docs/spec/0_SOLVER-Development-Directive.md) | AI coding agent instructions |
-| [Meta-Prompt](docs/spec/1_meta-prompt-structured-reasoning.md) | Instance 0 methodology |
-| [Architecture](docs/spec/2_structured-reasoning-architecture.md) | System design |
-| [Technical Spec](docs/spec/3_solver-technical-spec.md) | Implementation details |
+| [ONBOARDING.md](docs/ONBOARDING.md) | Senior developer onboarding guide |
+| [CO-DEV-ONBOARDING.md](docs/CO-DEV-ONBOARDING.md) | Co-developer (reviewer) onboarding guide |
+| [CLAUDE.md](CLAUDE.md) | Claude Code development guide |
+| [AGENTS.md](AGENTS.md) | Repo-level instructions for AI coding agents |
+| [SOLVER README](docs/spec/1_SOLVER-README.md) | Project orientation |
+| [Design Intent](docs/spec/2_SOLVER-Design-Intent-v1.1.md) | Why² — Design rationale |
+| [Architectural Contract](docs/spec/3_SOLVER-Architectural-Contract-v3.4.md) | Why — Invariants, constraints |
+| [Technical Spec](docs/spec/4_solver-technical-spec-V2.7.3.md) | What — Schemas, endpoints |
+| [Development Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.md) | How — Phases, packages, gates |
 
 ---
 
