@@ -1,0 +1,73 @@
+
+ * ▗ ▗   ▖ ▖ *   Claude Code v2.0.76
+*             *  Opus 4.5 · Claude Max
+ *   ▘▘ ▝▝   *   ~/ai-env/projects/solver-engine
+════════════════════════════════════════════ Conversation compacted · ctrl+o for history ═══════════════════════════════════════════
+  ⎿  Read docs/DECISIONS.md (74 lines)
+  ⎿  Referenced file apps/api/routes/workflows.py
+  ⎿  Read CLAUDE.md (130 lines)
+  ⎿  Read infra/db/migrations/versions/004_add_pending_status.py (35 lines)
+  ⎿  Read apps/api/infrastructure/db/models/enums.py (234 lines)
+  ⎿  Plan file referenced (~/.claude/plans/glowing-rolling-wadler.md)
+
+⏺ Based on the conversation summary, I just completed Patch 12 - updating docs/DECISIONS.md to close the P5.4 "traceability deferred" deviation. Let me verify the update was applied correctly:
+
+⏺ Read(docs/DECISIONS.md)
+  ⎿  Read 74 lines
+
+⏺ The P5.4 entry has been successfully updated to show (RESOLVED 2026-01-05) with the resolution details.
+
+  V2.8.0 Backend Audit — Complete
+
+  All patches from the audit have been implemented:
+
+  | Patch | Description                                                | Status |
+  |-------|------------------------------------------------------------|--------|
+  | 7     | Add pending status DB migration                            | ✅     |
+  | 8     | Fix /re-execute validation to block PENDING                | ✅     |
+  | 9-10  | Align acknowledge-stale to spec (route, request, response) | ✅     |
+  | 11    | Fix SSE payload (add instance_id, actor_id, position)      | ✅     |
+  | 12    | Update DECISIONS.md to close P5.4                          | ✅     |
+
+  Gate Test Summary (29/29 passing):
+  - Gate A (Methodology): 3/3
+  - Gate B (Traceability): 7/7
+  - Gate C (Gating): 4/4
+  - Gate D (Recovery): 2/2
+  - Gate E (API + SSE): 3/3
+  - Gate F (Audit Trail): 5/5
+  - SSE Replay: 5/5
+
+  Remaining Deviations (per DECISIONS.md):
+  - P6.4: Gate D mid-step recovery not tested (awaiting_review checkpoints only)
+  - P6.5: SSE artifact.delta uses synthetic chunks (true LLM streaming deferred)
+  - verify_traces.py tool deferred
+
+  The backend is now aligned with V2.8.0 spec. Per the Development Directive, next phase would be frontend implementation.
+
+> /status 
+  ⎿  Status dialog dismissed
+
+> /exit 
+  ⎿  Bye!
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+>  
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ accept edits on (shift+tab to cycle)
+(.venv) ryan@Mac ai-env % 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

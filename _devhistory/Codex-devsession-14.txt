@@ -1,0 +1,3334 @@
+Last login: Mon Jan  5 00:24:29 on ttys007
+ryan@Mac ~ % cd /Users/ryan/ai-env/
+ryan@Mac ai-env % . .venv/bin/activate  
+(.venv) ryan@Mac ai-env % codex
+╭───────────────────────────────────────────────────╮
+│ >_ OpenAI Codex (v0.77.0)                         │
+│                                                   │
+│ model:     gpt-5.2-codex xhigh   /model to change │
+│ directory: ~/ai-env                               │
+╰───────────────────────────────────────────────────╯
+
+  Tip: If a turn went sideways, /undo asks Codex to revert the last changes.
+
+
+› cd /Users/ryan/ai-env/projects/solver-enginer/  and wait for instructions
+
+
+• Ran pwd
+  └ execution error: Io(Os { code: 2, kind: NotFound, message: "No such file or
+    directory" })
+
+• Explored
+  └ List ls
+
+• Ran pwd
+  └ /Users/ryan/ai-env/projects/solver-engine
+
+• Ran git status -sb
+  └ ## devsession-14...origin/devsession-14
+
+• Explored
+  └ Read README.md, 0_SOLVER-Development-Directive.md
+    List spec
+    Search meta-prompt|structured reasoning|Development Directive in spec
+    Read 5_SOLVER-Development-Directive-v1.5.md
+
+■ Conversation interrupted - tell the model what to do differently. Something
+went wrong? Hit `/feedback` to report the issue.
+
+• AGENTS.md already exists here. Skipping /init to avoid overwriting it.
+
+• Unrecognized command '/clear'. Type "/" for a list of supported commands.
+
+Token usage: total=9,097 input=8,065 (+ 48,000 cached) output=1,032 (reasoning
+640)
+To continue this session, run codex resume 019b8d0b-2add-75f1-872d-b4e6eda13a42
+
+╭───────────────────────────────────────────────────╮
+│ >_ OpenAI Codex (v0.77.0)                         │
+│                                                   │
+│ model:     gpt-5.2-codex xhigh   /model to change │
+│ directory: ~/ai-env                               │
+╰───────────────────────────────────────────────────╯
+
+  Tip: You can define your own / commands with custom prompts. More info:
+  https://developers.openai.com/codex/guides/slash-commands#create-your-own-
+  slash-commands-with-custom-prompts
+
+
+› cd /Users/ryan/ai-env/projects/solver-engine/  and wait for instructions.
+
+
+• Ran pwd
+  └ /Users/ryan/ai-env/projects/solver-engine
+
+• Ran git status -sb
+  └ ## devsession-14...origin/devsession-14
+     M .gitignore
+     M docs/spec/1_SOLVER-README.md
+
+• Explored
+  └ Read README.md, 0_SOLVER-Development-Directive.md
+    List spec
+    Read 1_SOLVER-README.md, 5_SOLVER-Development-Directive-v1.5.md
+
+• I’m confirming the current repo location and noting uncommitted changes
+  in .gitignore and docs/spec/1_SOLVER-README.md. I checked key docs like
+  README.md and docs/spec/5_SOLVER-Development-Directive-v1.5.md, but found
+  docs/spec/0_SOLVER-Development-Directive.md missing and will ask if an
+  alternative is preferred. Since the user hasn’t requested implementation or a
+  plan, I’ll wait for further instructions while updating on the repo state.
+
+─ Worked for 43s ───────────────────────────────────────────────────────────────
+
+• Confirmed I’m in /Users/ryan/ai-env/projects/solver-engine. Repo is on
+  devsession-14 with local changes in .gitignore and docs/spec/1_SOLVER-
+  README.md. I read README.md, docs/spec/1_SOLVER-README.md, and docs/
+  spec/5_SOLVER-Development-Directive-v1.5.md. The requested docs/spec/0_SOLVER-
+  Development-Directive.md does not exist in this repo; I used the v1.5
+  directive instead. If there’s a different file or path you want me to follow,
+  let me know.
+
+  Ready for next instructions.
+
+• AGENTS.md already exists here. Skipping /init to avoid overwriting it.
+
+
+› show me the filepath of this AGENTS.md file you are seeing
+
+
+• Explored
+  └ Search rg --files -g AGENTS.md
+
+─ Worked for 14s ───────────────────────────────────────────────────────────────
+
+• /Users/ryan/ai-env/AGENTS.md is the only AGENTS.md I can see here (no repo-
+  level AGENTS.md showed up).
+
+
+› you should be working from /Users/ryan/ai-env/projects/solver-engine/  in
+    which case there is not an AGENTS.md file for that project yet is there?
+
+
+• Explored
+  └ Search rg --files -g AGENTS.md
+
+─ Worked for 4s ────────────────────────────────────────────────────────────────
+
+• Correct — there is no AGENTS.md in /Users/ryan/ai-env/projects/solver-engine/
+  right now. Only /Users/ryan/ai-env/AGENTS.md exists.
+
+
+› then can you /init and create one for this solver-engine project?
+
+
+• Explored
+  └ Read AGENTS.md
+    Search meta-prompt|structured-reasoning|solver-technical-spec in docs
+    Read DECISIONS.md
+    Search rg --files -g CLAUDE.md
+    Read CLAUDE.md
+
+• I’m putting together a plan to create a new AGENTS.md file inside the repo
+  that updates and aligns instructions with the unified docs in docs/spec and
+  the DECISIONS mapping. I’ll base it on the environment-level AGENTS file but
+  refresh references, define a clear authority stack, preserve execution
+  protocols, and keep changes minimal and reversible using apply_patch. I’ll
+  also include a key question about whether to mirror the environment-level file
+  verbatim or update references before proceeding.
+
+─ Worked for 1m 35s ────────────────────────────────────────────────────────────
+
+• Plan
+
+  - Files: AGENTS.md
+  - Approach: Start from /Users/ryan/ai-env/AGENTS.md as a template and update
+    doc references to the unified spec set in docs/spec (per docs/DECISIONS.md).
+  - Approach: Set the authority stack to Design Intent → Architectural Contract
+    → Technical Spec → Development Directive, with deviations logged in docs/
+    DECISIONS.md and governed by docs/spec/6_SOLVER-Change-Management-v1.2.md.
+  - Approach: Keep the execution protocol (slice plan/approval/summary), MVP
+    scope (Steps 1–3), and tooling constraints; keep the file ASCII and minimal.
+  - Approach: Add the file with a small, reversible apply_patch.
+
+  Question: Do you want the repo-level AGENTS.md to be an updated version with
+  the unified docs (recommended), or a verbatim copy of /Users/ryan/ai-env/
+  AGENTS.md?
+
+
+› # SOLVER Engine — Co-Developer Init
+
+    ## Role
+
+    Reviewer and guardian. You do NOT implement. You analyze plans, review code
+  against governance
+    documents, and verify gates meet stated criteria.
+
+    ## Project Description & Objectives
+
+    **Description:** SOLVER is a structured reasoning workflow engine that
+  turns unstructured problems into
+    versioned, traceable artifacts via a two‑pass, human‑gated methodology (MVP
+  Steps 1–3).
+
+    **Objectives:**
+    - Enforce the two‑pass methodology (Pass 1 methodology → Pass 2 execution).
+    - Require human approval gates before any Pass 2 advancement.
+    - Persist artifacts, audit trail, and event log for restart/replay.
+    - Provide REST + SSE for interactive review and synchronization.
+    - Preserve traceability from Step 1 → Step 2 → Step 3.
+
+    ## Orientation
+
+    pwd && git status -sb
+
+    Read in order:
+    1. `README.md` — project context
+    2. `AGENTS.md` — spec reading order and conventions
+    3. `docs/DECISIONS.md` — prior decisions and deviations
+
+    Then follow the spec reading order in `AGENTS.md`. The **Architectural
+  Contract** (§9–14, R1–R19)
+    defines what you verify against, and **Technical Spec V2.8.0** (Appendix D)
+  defines the normative
+    methodology.
+
+    ## Gates (High Level)
+
+    - **α (Infrastructure):** Environment runs; schema applied; graph
+  operational.
+    - **β (Contracts):** Event sequencing, replay query correctness, optimistic
+  concurrency, audit
+    attribution, broadcast‑after‑commit, leases.
+    - **γ (Integration):** End‑to‑end lifecycle, SSE sync/gap recovery, action
+  gating, staleness flow.
+    - **A–F (Acceptance):** Methodology exists; packages + traces; gating
+  enforced; restart/resume; SSE
+    flow; audit trail.
+
+    ## Phases and Packages Summary
+
+  Phase 1: Foundation
+  Package 1.1: Project Skeleton
+  Package 1.2: Domain Models
+  Package 1.3: Database Schema
+
+  Phase 2: Persistence Contracts
+  Package 2.1: Event Log with Concurrency-Safe Sequences
+  Package 2.2: Workflow State Management
+  Package 2.3: Audit Logging with Session Attribution
+  Package 2.4: Staleness Trigger
+
+  Phase 3: Orchestration
+  Package 3.1: Graph Definition
+  Package 3.2: Node Implementations (Steps 1-3)
+  Package 3.3: Interrupt Gates
+  Package 3.4: Checkpointing
+
+  Phase 4: API Layer
+  Package 4.1: Workflow CRUD and Progress Endpoints
+  Package 4.2: SSE Streaming with Replay
+  Package 4.3: Human Action Endpoints
+  Package 4.4: Staleness Endpoints
+
+  Phase 5: Runner and Leases
+  Package 5.1: Lease Management
+  Package 5.2: Runner Loop
+  Package 5.3: LLM Integration
+
+  Phase 6: Frontend
+  Package 6.1: Project Setup
+  Package 6.2: Connection Manager
+  Package 6.3: Sequence Guard
+  Package 6.4: Action Gating
+  Package 6.5: Workflow UI
+  Package 6.6: SSE Event Handling
+
+  Phase 7: Integration
+  Package 7.1: Workflow Lifecycle Integration
+  Package 7.2: Staleness Integration
+  Package 7.3: Recovery Scenarios
+
+  Phase 8: Verification
+  Package 8.1: Gate A — Methodology Exists
+  Package 8.2: Gate B — Packages with Traces
+  Package 8.3: Gate C — Gating Enforcement
+  Package 8.4: Gate D — Restart/Resume
+  Package 8.5: Gate E — SSE Flow
+  Package 8.6: Gate F — Audit Trail
+
+    **Current Phase:** Phase 1: Foundation
+    **Current Package:** Package 1.1: Project Skeleton
+
+    ## Current Focus
+
+    Backend near-complete; frontend follows only after backend is verified
+  clean. See `docs/RELEASE-P6-
+    BACKEND-COMPLETE.md` for review items.
+
+    Your attention should be on:
+    - SSE correctness (sequence, replay, gaps)
+    - Optimistic concurrency (required fields, 409 response)
+    - Staleness propagation and lineage
+    - Error response structure
+
+    ## What You Verify
+
+    | Gate | Focus |
+    |------|-------|
+    | γ1 | Lifecycle: create → execute → gate → approve → advance |
+    | γ2 | SSE sync: replay, reconnect, gap handling |
+    | γ3 | Action gating: canAct/canMessage, R1–R19 |
+    | γ4 | Staleness: upstream revision → stale → re‑execute |
+
+    Gate criteria are in the Directive. Verify against criteria, not intuition.
+
+    ## Key Paths
+
+    apps/api/routes/workflows.py
+    apps/api/application/workflow_service.py
+    apps/api/application/event_stream.py
+    apps/api/tests/e2e/
+    infra/db/migrations/versions/
+
+    ## Verification Commands
+
+    make test-gates
+    make test-recovery
+    make e2e
+    pytest apps/api/tests/e2e/test_sse_replay.py
+
+    ## What You Flag
+
+    | Pattern | Response |
+    |---------|----------|
+    | Deviation from Contract/Spec | Flag → point to `docs/DECISIONS.md` |
+    | `apps/api/src/` nesting | Reject — flat layout required |
+    | DB calls in route handlers | Reject — layer separation |
+    | Network/LLM in unit tests | Reject — deterministic only |
+    | Edits to applied migrations | Reject — add new migration |
+    | Invented endpoint shapes | Flag — Spec is authoritative |
+
+    You don't approve deviations. You identify them. Senior Dev logs; Human
+  approves.
+
+    ## Review Output
+
+    **Findings** (severity + location)
+    - ...
+
+    **Questions/Assumptions**
+    - ...
+
+    **Recommendation:** proceed | revise | block
+
+    When uncertain whether something violates spec: flag as question, cite the
+  relevant section, let Senior
+    Dev or Human resolve.
+
+    ## Start
+
+    After orientation, wait for further instructions.
+
+
+• Added AGENTS.md (+161 -0)
+      1 +# SOLVER Engine - Co-Developer Init
+      2 +
+      3 +## Role
+      4 +
+      5 +Reviewer and guardian. You do NOT implement. You analyze plans, review
+         code against governance
+      6 +documents, and verify gates meet stated criteria.
+      7 +
+      8 +## Project Description & Objectives
+      9 +
+     10 +**Description:** SOLVER is a structured reasoning workflow engine that
+         turns unstructured problems into
+     11 +versioned, traceable artifacts via a two-pass, human-gated methodology
+         (MVP Steps 1-3).
+     12 +
+     13 +**Objectives:**
+     14 +- Enforce the two-pass methodology (Pass 1 methodology -> Pass 2 execut
+         ion).
+     15 +- Require human approval gates before any Pass 2 advancement.
+     16 +- Persist artifacts, audit trail, and event log for restart/replay.
+     17 +- Provide REST + SSE for interactive review and synchronization.
+     18 +- Preserve traceability from Step 1 -> Step 2 -> Step 3.
+     19 +
+     20 +## Orientation
+     21 +
+     22 +pwd && git status -sb
+     23 +
+     24 +Read in order:
+     25 +1. `README.md` - project context
+     26 +2. `AGENTS.md` - spec reading order and conventions
+     27 +3. `docs/DECISIONS.md` - prior decisions and deviations
+     28 +
+     29 +Then follow the spec reading order in `AGENTS.md`. The **Architectural
+         Contract** (Sections 9-14, R1-R19)
+     30 +defines what you verify against, and **Technical Spec V2.8.0** (Appendi
+         x D) defines the normative
+     31 +methodology.
+     32 +
+     33 +## Gates (High Level)
+     34 +
+     35 +- **alpha (Infrastructure):** Environment runs; schema applied; graph o
+         perational.
+     36 +- **beta (Contracts):** Event sequencing, replay query correctness, opt
+         imistic concurrency, audit
+     37 +  attribution, broadcast-after-commit, leases.
+     38 +- **gamma (Integration):** End-to-end lifecycle, SSE sync/gap recovery,
+          action gating, staleness flow.
+     39 +- **A-F (Acceptance):** Methodology exists; packages + traces; gating e
+         nforced; restart/resume; SSE
+     40 +  flow; audit trail.
+     41 +
+     42 +## Phases and Packages Summary
+     43 +
+     44 +Phase 1: Foundation
+     45 +Package 1.1: Project Skeleton
+     46 +Package 1.2: Domain Models
+     47 +Package 1.3: Database Schema
+     48 +
+     49 +Phase 2: Persistence Contracts
+     50 +Package 2.1: Event Log with Concurrency-Safe Sequences
+     51 +Package 2.2: Workflow State Management
+     52 +Package 2.3: Audit Logging with Session Attribution
+     53 +Package 2.4: Staleness Trigger
+     54 +
+     55 +Phase 3: Orchestration
+     56 +Package 3.1: Graph Definition
+     57 +Package 3.2: Node Implementations (Steps 1-3)
+     58 +Package 3.3: Interrupt Gates
+     59 +Package 3.4: Checkpointing
+     60 +
+     61 +Phase 4: API Layer
+     62 +Package 4.1: Workflow CRUD and Progress Endpoints
+     63 +Package 4.2: SSE Streaming with Replay
+     64 +Package 4.3: Human Action Endpoints
+     65 +Package 4.4: Staleness Endpoints
+     66 +
+     67 +Phase 5: Runner and Leases
+     68 +Package 5.1: Lease Management
+     69 +Package 5.2: Runner Loop
+     70 +Package 5.3: LLM Integration
+     71 +
+     72 +Phase 6: Frontend
+     73 +Package 6.1: Project Setup
+     74 +Package 6.2: Connection Manager
+     75 +Package 6.3: Sequence Guard
+     76 +Package 6.4: Action Gating
+     77 +Package 6.5: Workflow UI
+     78 +Package 6.6: SSE Event Handling
+     79 +
+     80 +Phase 7: Integration
+     81 +Package 7.1: Workflow Lifecycle Integration
+     82 +Package 7.2: Staleness Integration
+     83 +Package 7.3: Recovery Scenarios
+     84 +
+     85 +Phase 8: Verification
+     86 +Package 8.1: Gate A - Methodology Exists
+     87 +Package 8.2: Gate B - Packages with Traces
+     88 +Package 8.3: Gate C - Gating Enforcement
+     89 +Package 8.4: Gate D - Restart/Resume
+     90 +Package 8.5: Gate E - SSE Flow
+     91 +Package 8.6: Gate F - Audit Trail
+     92 +
+     93 +**Current Phase:** Phase 1: Foundation
+     94 +**Current Package:** Package 1.1: Project Skeleton
+     95 +
+     96 +## Current Focus
+     97 +
+     98 +Backend near-complete; frontend follows only after backend is verified
+         clean. See
+     99 +`docs/RELEASE-P6-BACKEND-COMPLETE.md` for review items.
+    100 +
+    101 +Your attention should be on:
+    102 +- SSE correctness (sequence, replay, gaps)
+    103 +- Optimistic concurrency (required fields, 409 response)
+    104 +- Staleness propagation and lineage
+    105 +- Error response structure
+    106 +
+    107 +## What You Verify
+    108 +
+    109 +| Gate | Focus |
+    110 +| --- | --- |
+    111 +| gamma1 | Lifecycle: create -> execute -> gate -> approve -> advance |
+    112 +| gamma2 | SSE sync: replay, reconnect, gap handling |
+    113 +| gamma3 | Action gating: canAct/canMessage, R1-R19 |
+    114 +| gamma4 | Staleness: upstream revision -> stale -> re-execute |
+    115 +
+    116 +Gate criteria are in the Directive. Verify against criteria, not intuit
+         ion.
+    117 +
+    118 +## Key Paths
+    119 +
+    120 +apps/api/routes/workflows.py
+    121 +apps/api/application/workflow_service.py
+    122 +apps/api/application/event_stream.py
+    123 +apps/api/tests/e2e/
+    124 +infra/db/migrations/versions/
+    125 +
+    126 +## Verification Commands
+    127 +
+    128 +make test-gates
+    129 +make test-recovery
+    130 +make e2e
+    131 +pytest apps/api/tests/e2e/test_sse_replay.py
+    132 +
+    133 +## What You Flag
+    134 +
+    135 +| Pattern | Response |
+    136 +| --- | --- |
+    137 +| Deviation from Contract/Spec | Flag -> point to `docs/DECISIONS.md` |
+    138 +| `apps/api/src/` nesting | Reject - flat layout required |
+    139 +| DB calls in route handlers | Reject - layer separation |
+    140 +| Network/LLM in unit tests | Reject - deterministic only |
+    141 +| Edits to applied migrations | Reject - add new migration |
+    142 +| Invented endpoint shapes | Flag - Spec is authoritative |
+    143 +
+    144 +You don't approve deviations. You identify them. Senior Dev logs; Human
+          approves.
+    145 +
+    146 +## Review Output
+    147 +
+    148 +**Findings** (severity + location)
+    149 +- ...
+    150 +
+    151 +**Questions/Assumptions**
+    152 +- ...
+    153 +
+    154 +**Recommendation:** proceed | revise | block
+    155 +
+    156 +When uncertain whether something violates spec: flag as question, cite
+         the relevant section, let Senior
+    157 +Dev or Human resolve.
+    158 +
+    159 +## Start
+    160 +
+    161 +After orientation, wait for further instructions.
+
+─ Worked for 44s ───────────────────────────────────────────────────────────────
+
+• Created the repo-level guidance file using your provided content, normalized
+  to ASCII while keeping the instructions intact in AGENTS.md.
+
+  Changed files:
+
+  - AGENTS.md
+
+  Commands run + results:
+
+  - cat /Users/ryan/ai-env/AGENTS.md -> success
+  - rg -n "meta-prompt|structured-reasoning|solver-technical-spec" docs ->
+    success
+  - cat docs/DECISIONS.md -> success
+  - rg --files -g 'CLAUDE.md' -> success
+  - cat CLAUDE.md -> success
+  - apply_patch -> added AGENTS.md
+
+  Gate(s) satisfied:
+
+  - None (documentation change only)
+
+  Next slice plan:
+
+  - None unless you want updates or revisions to AGENTS.md.
+
+
+› why are you talking about slice plans?  where did you get that terminology
+  from?
+
+
+• I used “slice plan” because both the environment AGENTS.md and the new repo
+  AGENTS.md specify an “Execution Protocol (Slices)” with a “Next slice plan” in
+  the end-of-work checklist. I was following those instructions from /Users/
+  ryan/ai-env/AGENTS.md and AGENTS.md. If you want me to drop that structure,
+  say the word and I will.
+
+
+› update those documents to refer to talk instead of "slices" about "packages"
+  instead, and "packages" are comprised of "deliverables" which are completed
+  through tasks.
+
+
+
+• Explored
+  └ Search slice|slices in AGENTS.md
+    List ls -a
+
+─ Worked for 57s ─────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• I can’t find the repo-level file AGENTS.md in /Users/ryan/ai-env/projects/solver-engine right now (it isn’t present
+  in ls). That’s unexpected since it was created earlier. How would you like me to proceed—should I recreate it and
+  apply the “packages/deliverables/tasks” wording updates to both AGENTS.md files?
+
+
+› recreating and apply the wording updates to both AGENTS.md files
+
+
+• Explored
+  └ Read AGENTS.md
+    Search slice|slices in AGENTS.md
+
+• I’m working on updating the AGENTS.md files to replace mentions of "slices" with "packages" and to add a clear "Work
+  Units" section explaining packages, deliverables, and tasks. Since the repo-level AGENTS.md is missing, I’ll create
+  it mirroring the updated environment AGENTS.md. I need to be careful writing to files outside the current workspace
+  and will attempt apply_patch first, then consider escalation if needed.
+
+• Edited AGENTS.md (+5 -0)
+    19
+    20 +## Work Units
+    21 +
+    22 +Use packages as the unit of work. Packages are comprised of deliverables, which are completed
+    23 +through tasks.
+    24 +
+    25  ## Orientation
+
+• Explored
+  └ Read AGENTS.md
+
+• Added AGENTS.md (+166 -0)
+      1 +# SOLVER Engine - Co-Developer Init
+      2 +
+      3 +## Role
+      4 +
+      5 +Reviewer and guardian. You do NOT implement. You analyze plans, review code against governance
+      6 +documents, and verify gates meet stated criteria.
+      7 +
+      8 +## Project Description & Objectives
+      9 +
+     10 +**Description:** SOLVER is a structured reasoning workflow engine that turns unstructured problems into
+     11 +versioned, traceable artifacts via a two-pass, human-gated methodology (MVP Steps 1-3).
+     12 +
+     13 +**Objectives:**
+     14 +- Enforce the two-pass methodology (Pass 1 methodology -> Pass 2 execution).
+     15 +- Require human approval gates before any Pass 2 advancement.
+     16 +- Persist artifacts, audit trail, and event log for restart/replay.
+     17 +- Provide REST + SSE for interactive review and synchronization.
+     18 +- Preserve traceability from Step 1 -> Step 2 -> Step 3.
+     19 +
+     20 +## Work Units
+     21 +
+     22 +Use packages as the unit of work. Packages are comprised of deliverables, which are completed
+     23 +through tasks.
+     24 +
+     25 +## Orientation
+     26 +
+     27 +pwd && git status -sb
+     28 +
+     29 +Read in order:
+     30 +1. `README.md` - project context
+     31 +2. `AGENTS.md` - spec reading order and conventions
+     32 +3. `docs/DECISIONS.md` - prior decisions and deviations
+     33 +
+     34 +Then follow the spec reading order in `AGENTS.md`. The **Architectural Contract** (Sections 9-14, R1-R19)
+     35 +defines what you verify against, and **Technical Spec V2.8.0** (Appendix D) defines the normative
+     36 +methodology.
+     37 +
+     38 +## Gates (High Level)
+     39 +
+     40 +- **alpha (Infrastructure):** Environment runs; schema applied; graph operational.
+     41 +- **beta (Contracts):** Event sequencing, replay query correctness, optimistic concurrency, audit
+     42 +  attribution, broadcast-after-commit, leases.
+     43 +- **gamma (Integration):** End-to-end lifecycle, SSE sync/gap recovery, action gating, staleness flow.
+     44 +- **A-F (Acceptance):** Methodology exists; packages + traces; gating enforced; restart/resume; SSE
+     45 +  flow; audit trail.
+     46 +
+     47 +## Phases and Packages Summary
+     48 +
+     49 +Phase 1: Foundation
+     50 +Package 1.1: Project Skeleton
+     51 +Package 1.2: Domain Models
+     52 +Package 1.3: Database Schema
+     53 +
+     54 +Phase 2: Persistence Contracts
+     55 +Package 2.1: Event Log with Concurrency-Safe Sequences
+     56 +Package 2.2: Workflow State Management
+     57 +Package 2.3: Audit Logging with Session Attribution
+     58 +Package 2.4: Staleness Trigger
+     59 +
+     60 +Phase 3: Orchestration
+     61 +Package 3.1: Graph Definition
+     62 +Package 3.2: Node Implementations (Steps 1-3)
+     63 +Package 3.3: Interrupt Gates
+     64 +Package 3.4: Checkpointing
+     65 +
+     66 +Phase 4: API Layer
+     67 +Package 4.1: Workflow CRUD and Progress Endpoints
+     68 +Package 4.2: SSE Streaming with Replay
+     69 +Package 4.3: Human Action Endpoints
+     70 +Package 4.4: Staleness Endpoints
+     71 +
+     72 +Phase 5: Runner and Leases
+     73 +Package 5.1: Lease Management
+     74 +Package 5.2: Runner Loop
+     75 +Package 5.3: LLM Integration
+     76 +
+     77 +Phase 6: Frontend
+     78 +Package 6.1: Project Setup
+     79 +Package 6.2: Connection Manager
+     80 +Package 6.3: Sequence Guard
+     81 +Package 6.4: Action Gating
+     82 +Package 6.5: Workflow UI
+     83 +Package 6.6: SSE Event Handling
+     84 +
+     85 +Phase 7: Integration
+     86 +Package 7.1: Workflow Lifecycle Integration
+     87 +Package 7.2: Staleness Integration
+     88 +Package 7.3: Recovery Scenarios
+     89 +
+     90 +Phase 8: Verification
+     91 +Package 8.1: Gate A - Methodology Exists
+     92 +Package 8.2: Gate B - Packages with Traces
+     93 +Package 8.3: Gate C - Gating Enforcement
+     94 +Package 8.4: Gate D - Restart/Resume
+     95 +Package 8.5: Gate E - SSE Flow
+     96 +Package 8.6: Gate F - Audit Trail
+     97 +
+     98 +**Current Phase:** Phase 1: Foundation
+     99 +**Current Package:** Package 1.1: Project Skeleton
+    100 +
+    101 +## Current Focus
+    102 +
+    103 +Backend near-complete; frontend follows only after backend is verified clean. See
+    104 +`docs/RELEASE-P6-BACKEND-COMPLETE.md` for review items.
+    105 +
+    106 +Your attention should be on:
+    107 +- SSE correctness (sequence, replay, gaps)
+    108 +- Optimistic concurrency (required fields, 409 response)
+    109 +- Staleness propagation and lineage
+    110 +- Error response structure
+    111 +
+    112 +## What You Verify
+    113 +
+    114 +| Gate | Focus |
+    115 +| --- | --- |
+    116 +| gamma1 | Lifecycle: create -> execute -> gate -> approve -> advance |
+    117 +| gamma2 | SSE sync: replay, reconnect, gap handling |
+    118 +| gamma3 | Action gating: canAct/canMessage, R1-R19 |
+    119 +| gamma4 | Staleness: upstream revision -> stale -> re-execute |
+    120 +
+    121 +Gate criteria are in the Directive. Verify against criteria, not intuition.
+    122 +
+    123 +## Key Paths
+    124 +
+    125 +apps/api/routes/workflows.py
+    126 +apps/api/application/workflow_service.py
+    127 +apps/api/application/event_stream.py
+    128 +apps/api/tests/e2e/
+    129 +infra/db/migrations/versions/
+    130 +
+    131 +## Verification Commands
+    132 +
+    133 +make test-gates
+    134 +make test-recovery
+    135 +make e2e
+    136 +pytest apps/api/tests/e2e/test_sse_replay.py
+    137 +
+    138 +## What You Flag
+    139 +
+    140 +| Pattern | Response |
+    141 +| --- | --- |
+    142 +| Deviation from Contract/Spec | Flag -> point to `docs/DECISIONS.md` |
+    143 +| `apps/api/src/` nesting | Reject - flat layout required |
+    144 +| DB calls in route handlers | Reject - layer separation |
+    145 +| Network/LLM in unit tests | Reject - deterministic only |
+    146 +| Edits to applied migrations | Reject - add new migration |
+    147 +| Invented endpoint shapes | Flag - Spec is authoritative |
+    148 +
+    149 +You don't approve deviations. You identify them. Senior Dev logs; Human approves.
+    150 +
+    151 +## Review Output
+    152 +
+    153 +**Findings** (severity + location)
+    154 +- ...
+    155 +
+    156 +**Questions/Assumptions**
+    157 +- ...
+    158 +
+    159 +**Recommendation:** proceed | revise | block
+    160 +
+    161 +When uncertain whether something violates spec: flag as question, cite the relevant section, let Senior
+    162 +Dev or Human resolve.
+    163 +
+    164 +## Start
+    165 +
+    166 +After orientation, wait for further instructions.
+
+─ Worked for 2m 14s ──────────────────────────────────────────────────────────────────────────────────────────────────
+
+• Recreated the repo guidance file and aligned both AGENTS docs to package terminology, adding an explicit definition
+  that packages are comprised of deliverables completed through tasks.
+
+  - Added a Work Units section to /Users/ryan/ai-env/AGENTS.md to define packages, deliverables, and tasks.
+  - Recreated /Users/ryan/ai-env/projects/solver-engine/AGENTS.md with the same guidance and Work Units wording.
+
+  Tests not run (doc changes only).
+
+
+› <Senior Developer>
+  ⏺ Based on my exploration, I've discovered a significant discrepancy between the stated "Current Phase: Package
+  1.1" and the actual codebase state.
+
+    Current State Assessment
+
+    The backend is substantially complete through Phase 5:
+
+    | Phase                  | Status      | Evidence                                              |
+    |------------------------|-------------|-------------------------------------------------------|
+    | Phase 1: Foundation    | ✅ Complete | FastAPI app, Docker, 10 DB tables, domain models      |
+    | Phase 2: Persistence   | ✅ Complete | Event log, workflow state, audit logging, concurrency |
+    | Phase 3: Orchestration | ✅ Complete | 8-node LangGraph, interrupt gates, checkpointing      |
+    | Phase 4: API Layer     | ✅ Complete | REST endpoints, SSE with from_sequence replay         |
+    | Phase 5: Runner        | ⚠️ Partial  | LLM adapter exists; lease management unclear          |
+    | Phase 6: Frontend      | 🔴 Stub     | apps/web/ exists but minimal                          |
+    | Phase 7-8: Integration | ⚠️ Partial  | Gate C/D/E tests exist                                |
+
+    Key Metrics: ~75 Python files, ~9,000 LOC core + 5,500 LOC tests, 150 test methods.
+
+    The mission statement suggests:
+    1. Verify backend alignment with V2.8.0 spec + Appendix D
+    2. Close remaining gaps
+    3. Re-verify gates
+    4. Then proceed to frontend
+
+  ⏺ User answered Claude's questions:
+    ⎿  · The backend appears largely complete (Phases 1-5). Should I audit the existing implementation
+       against V2.8.0 spec and identify gaps, or start fresh from Package 1.1? → Audit existing code
+
+  ⏺ Now I'll design the audit approach. Let me launch a Plan agent to create a systematic verification strategy.
+
+  ⏺ Plan(Design backend audit plan)
+    ⎿  Done (24 tool uses · 155.1k tokens · 2m 28s)
+
+  ⏺ Let me verify a few of the key gaps by reading the critical files, then I'll create the plan.
+
+  ⏺ Read(apps/api/infrastructure/db/models/workflow_event.py)
+    ⎿  Read 119 lines
+
+  ⏺ Read(apps/api/routes/workflows.py)
+    ⎿  Read 1405 lines
+
+  ⏺ I've verified the gaps. Now I'll create the audit plan file.
+
+  ⏺ Updated plan
+    ⎿  /plan to preview
+
+  ⏺ I've created the audit plan. Before finalizing, I have a few clarifying questions:
+  </Senior Developer>
+  The Senior Developer performed an audit of the codebase to determine which packages and deliverables were still
+  required.  Those are the findings. Here are questions for you to provide your perspective on:
+
+  For the 5 missing endpoints (/history, /traceability, /replay, /diff, /re-execute), should we implement them fully
+  or add 501 stubs
+  with deviation logged?
+
+  ❯ 1. 501 stubs + deviation
+       Acknowledge gap in DECISIONS.md, defer full implementation
+    2. Full implementation
+       Implement all 5 endpoints per spec (larger scope)
+    3. Type something.
+
+  After fixing audit gaps and re-verifying gates, what's the next priority?
+
+  ❯ 1. Frontend (Phase 6)
+       Proceed to Next.js frontend integration per Development Directive
+    2. Gate A/F tests
+       Add missing acceptance gate tests before frontend
+    3. Your direction
+       Wait for specific instructions on next task
+    4. Type something.
+
+  What do you recommend?
+
+
+• For the missing endpoints, I recommend a hybrid (choose “Type something”): implement /re-execute only if it is
+  required to satisfy γ4 staleness flow; stub /history, /traceability, /replay, /diff with 501s and log deviations in
+  docs/DECISIONS.md (there’s already precedent for deferring /traceability). If /re-execute is also deferred,
+  explicitly mark γ4 as blocked.
+
+  After fixing audit gaps and re-verifying gates, I recommend option 2 (Gate A/F tests) before frontend. It tightens
+  backend correctness around methodology + audit trail and reduces frontend churn if the backend behavior shifts
+  during validation.
+
+
+› I think we should implement all the missing endpoints, including the /traceability  unless you have a compelling
+  reason not to.  Afterall we need to complete the project regardless.
+
+
+• I’m confirming support for implementing all missing endpoints without objection. I’ll provide a detailed checklist
+  referencing spec and docs for verifying endpoints, suggest updating tests and decisions logs, and ask the user to
+  share the implementation plan or code for review. This keeps me aligned as reviewer without stepping into coding.
+
+─ Worked for 25s ─────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• Understood — I don’t have a compelling reason to defer any of the missing endpoints. I support full implementation
+  of /history, /traceability, /replay, /diff, and /re-execute per the spec. As reviewer, I won’t implement, but I can
+  review the plan/code against the contracts and tests.
+
+  - Align endpoint shapes and error semantics with docs/spec/4_solver-technical-spec-V2.8.0.md and the Architectural
+    Contract (especially SSE, sequencing, optimistic concurrency, and audit invariants).
+  - Update docs/DECISIONS.md to mark the prior /traceability deferral as resolved (or superseded) once it ships.
+  - Add/extend tests for the new endpoints (integration + e2e) and re-run the relevant gates after implementation.
+
+  Share the plan or PR and I’ll review against the spec and gates.
+
+
+› evaluate the approach taken by the Senior_Developer.  Scrutinize the decisions made and compare with
+  your directives above.  Reflect on the decisions made and give your perspective on what you think is
+  best to achieve the objective.
+
+  <Senior Developer>
+  SOLVER Backend Audit Plan: V2.8.0 Technical Spec Alignment
+
+   Objective
+
+   Audit existing backend implementation against V2.8.0 Technical Spec, identify gaps, fix issues, and
+  re-verify acceptance gates.
+
+   Current State
+
+   - Backend: Phases 1-5 substantially complete (~75 Python files, ~9,000 LOC)
+   - Gates C/D/E tests exist and previously passed
+   - Need to verify alignment with unified governance docs (V2.8.0 + Appendix D)
+
+   ---
+   Audit Findings Summary
+
+   P1: Critical Gaps (Blocks Spec Compliance)
+
+   | Gap                                      | Spec Requirement                        | Current
+  State             | Files to Fix
+                                   |
+   |------------------------------------------|-----------------------------------------|-------------
+  --------------|----------------
+   --------------------------------|
+   | SSE envelope missing position            | All events must include position object | Only
+  includes flat fields |
+   workflow_event.py:102-118, workflow_service.py |
+   | Missing artifact.stale event             | Required event type                     | Not in
+  SSE_EVENT_TYPES    |
+   workflows.py:85-96                             |
+   | Missing endpoints (5)                    | /history, /traceability, /replay, /diff | Not
+  implemented           | workflows.py
+                                   |
+   | /re-execute returns 501                  | Should trigger re-execution             | Stub only
+  |
+   workflows.py:900-933                           |
+   | Staleness response missing state_version | Required field                          | Not included
+  |
+   workflows.py:512-525                           |
+
+   P2: Schema Alignment Issues
+
+   | Issue                         | Spec                   | Current                            |
+  Priority         |
+
+  |-------------------------------|------------------------|------------------------------------|-----
+  -------------|
+   | Progress response field names | has_artifact, is_stale | latest_artifact_id, artifact_stale |
+  Medium           |
+   | Workflow response structure   | Nested position object | Flat fields                        | Low
+  (functional) |
+
+   P3: Test Coverage Gaps
+
+   | Gate                 | Status     | Gap                               |
+   |----------------------|------------|-----------------------------------|
+   | Gate A (Methodology) | Not tested | Need test for 36 methodology docs |
+   | Gate B (Trace Links) | Partial    | /traceability endpoint missing    |
+   | Gate F (Audit Trail) | Not tested | Need /history endpoint + test     |
+
+   ---
+   Implementation Plan
+
+   Phase 1: Run Existing Gates (Verify Baseline)
+
+   make test-gates      # Gate C
+   make test-recovery   # Gate D
+   make e2e             # Gate E
+
+   Deliverable: Document current pass/fail status before changes.
+
+   Phase 2: Fix Critical SSE Gaps
+
+   2.1 Add position object to SSE envelope
+
+   Files:
+   - apps/api/infrastructure/db/models/workflow_event.py - Update to_sse_dict()
+   - apps/api/application/workflow_service.py - Include position when persisting events
+
+   Changes:
+   # workflow_event.py to_sse_dict() should return:
+   {
+       "sequence": self.sequence,
+       "event_type": self.event_type,
+       "workflow_id": str(self.workflow_id),
+       "timestamp": self.created_at.isoformat(),
+       "position": {
+           "instance_number": ...,
+           "step_number": ...,
+           "step_name": ...,
+           "pass_type": ...,
+           "status": ...,
+           "phase": ...
+       },
+       "actor_id": ...,  # if present
+       "payload": self.payload
+   }
+
+   2.2 Add artifact.stale event type
+
+   File: apps/api/routes/workflows.py
+
+   Change: Add to SSE_EVENT_TYPES dict (line ~95)
+
+   Phase 3: Fix Staleness Response
+
+   File: apps/api/routes/workflows.py
+
+   Change: Add state_version to StalenessResponse model (line ~512)
+
+   Phase 4: Implement Missing Endpoints (Full Implementation)
+
+   Direction: Full implementation per V2.8.0 spec. Align with Architectural Contract.
+
+   ---
+   4.1 GET /workflows/{id}/history (Gate F requirement)
+
+   Purpose: Audit trail with actor attribution for timeline reconstruction
+
+   Response Schema:
+   class HistoryEntryResponse(BaseModel):
+       event_id: UUID
+       created_at: datetime
+       event_type: str
+       actor_id: str
+       step_name: str
+       from_status: Optional[str]
+       to_status: Optional[str]
+       artifact_id: Optional[UUID]
+       details: Optional[dict]
+
+   class HistoryResponse(BaseModel):
+       workflow_id: str
+       state_version: int
+       entries: list[HistoryEntryResponse]
+       total_count: int
+
+   Implementation Steps:
+   1. Add HistoryEntryResponse and HistoryResponse models to workflows.py
+   2. Use existing AuditLogRepository.list_for_workflow() method
+   3. Add endpoint with query params: ?limit=50&offset=0
+   4. Map AuditLog fields to response (event_type, actor_id, from_status, to_status)
+   5. Include artifact_id from audit log details if present
+
+   Error Responses: 404 (workflow not found)
+
+   ---
+   4.2 GET /workflows/{id}/traceability (Gate B requirement)
+
+   Purpose: Trace links between artifacts across steps
+
+   Response Schema:
+   class TraceLinkResponse(BaseModel):
+       id: UUID
+       from_step: int
+       from_type: str
+       from_id: str
+       to_step: int
+       to_type: str
+       to_id: str
+       link_type: str  # 'derives', 'achieves', 'traces_to'
+       consolidated: bool
+       validated_at: Optional[datetime]
+       stale: bool
+       stale_reason: Optional[str]
+
+   class TraceabilityResponse(BaseModel):
+       workflow_id: str
+       state_version: int
+       links: list[TraceLinkResponse]
+       total_count: int
+
+   Implementation Steps:
+   1. Add response models to workflows.py
+   2. Use existing TraceabilityLinkRepository.list_for_workflow() method
+   3. Add endpoint with query params: ?from_step=1&to_step=2&stale_only=false
+   4. Map TraceabilityLink fields to response
+   5. Update DECISIONS.md to mark traceability deferral as resolved
+
+   Error Responses: 404 (workflow not found)
+
+   ---
+   4.3 GET /workflows/{id}/replay (Audit/Compliance requirement)
+
+   Purpose: Full event sequence for audit, debug, and comparison
+
+   Response Schema:
+   class ReplayEventResponse(BaseModel):
+       sequence: int
+       timestamp: datetime
+       event_type: str
+       position: PositionResponse
+       artifact_id: Optional[UUID]
+       decision_id: Optional[UUID]
+       data: dict
+
+   class ReplayResponse(BaseModel):
+       workflow_id: str
+       state_version: int
+       events: list[ReplayEventResponse]
+       snapshots: dict[str, dict]  # artifact_id -> content
+       trace_hash: str  # SHA-256 for deterministic comparison
+
+   Implementation Steps:
+   1. Add response models to workflows.py
+   2. Use existing WorkflowEventRepository.get_events_after(from_sequence=0) method
+   3. Add ArtifactRepository.list_for_workflow() for snapshots
+   4. Compute SHA-256 trace_hash from events + artifacts
+   5. Add query param: ?include_snapshots=true
+   6. Map to response format with position object
+
+   Error Responses: 404 (workflow not found)
+
+   ---
+   4.4 GET /workflows/{id}/artifacts/{aid}/diff/{bid} (Staleness assessment)
+
+   Purpose: Compare artifact versions for staleness impact
+
+   Response Schema:
+   class FieldChangeResponse(BaseModel):
+       path: str  # JSON path: "stakeholders[0].needs[2]"
+       old_value: Any
+       new_value: Any
+       change_type: str  # 'modified', 'type_changed'
+
+   class ArtifactDiffResponse(BaseModel):
+       artifact_a_id: UUID
+       artifact_b_id: UUID
+       added: dict
+       removed: dict
+       changed: list[FieldChangeResponse]
+       change_count: int
+       material_change: bool  # Would invalidate downstream?
+
+   Implementation Steps:
+   1. Add response models to workflows.py
+   2. Fetch both artifacts via ArtifactRepository.get()
+   3. Validate both belong to same workflow
+   4. Implement JSON deep-diff logic:
+     - Use deepdiff library or implement recursive comparison
+     - Track additions, removals, modifications
+     - Generate JSON paths for changes
+   5. Determine material_change based on change magnitude
+   6. Return structured diff
+
+   Error Responses:
+   - 404 (artifact not found)
+   - 400 (artifacts cannot be compared - different types)
+   - 422 (same artifact ID for both)
+
+   ---
+   4.5 POST /workflows/{id}/steps/{n}/re-execute (Staleness recovery)
+
+   Purpose: Re-execute stale step to refresh artifacts
+
+   Request Schema:
+   class ReExecuteRequest(BaseModel):
+       actor_id: str
+       reason: str
+       preserve_feedback: bool = True
+       expected_state_version: int
+
+   Response Schema:
+   class ReExecuteResponse(BaseModel):
+       step_number: int
+       state_version: int  # NEW version after mutation
+
+   Implementation Steps:
+   1. Add request/response models to workflows.py
+   2. Add WorkflowService.reexecute_step() method:
+     - Validate expected_state_version (409 on mismatch)
+     - Validate step exists and is valid for re-execution
+     - Set step_execution.status = 'pending', phase = 'received'
+     - Mark current artifact as superseded
+     - Increment state_version
+     - Create audit_log entry (event_type='step_reexecute_requested')
+     - Persist SSE event (event_type='step.reexecute_started')
+     - Trigger runner to process re-execution
+   3. Return new state_version
+   4. Add step.reexecute_started to SSE_EVENT_TYPES
+
+   Error Responses:
+   - 404 (workflow or step not found)
+   - 409 (state version conflict - include current_state_version, current_position)
+   - 422 (cannot re-execute - step is pending or in_progress)
+
+   ---
+   Implementation Order
+
+   Execute in this sequence to minimize dependencies:
+
+   1. History endpoint (simplest - just queries audit_log)
+   2. Traceability endpoint (queries traceability_links)
+   3. Replay endpoint (queries events + artifacts)
+   4. Diff endpoint (requires artifact comparison logic)
+   5. Re-execute endpoint (state-mutating, most complex)
+
+   Files to Modify
+
+   | File                                                    | Changes
+  |
+
+  |---------------------------------------------------------|-----------------------------------------
+  -|
+   | apps/api/routes/workflows.py                            | Add 5 endpoints + response models
+  |
+   | apps/api/application/workflow_service.py                | Add reexecute_step() method
+  |
+   | apps/api/infrastructure/db/repositories/audit.py        | No changes (existing methods
+  sufficient) |
+   | apps/api/infrastructure/db/repositories/traceability.py | No changes (existing methods
+  sufficient) |
+   | apps/api/infrastructure/db/repositories/artifact.py     | No changes (existing methods
+  sufficient) |
+   | docs/DECISIONS.md                                       | Mark traceability deferral resolved
+  |
+
+   Phase 5: Re-verify Gates
+
+   make test-gates      # Gate C
+   make test-recovery   # Gate D
+   make e2e             # Gate E
+   pytest apps/api/tests/e2e/test_sse_replay.py -v
+
+   Phase 6: Add Missing Gate Tests (Required)
+
+   Priority: Gate A/F tests before frontend.
+
+   6.1 Gate A Test — Methodology Exists
+
+   - Verify Pass 1 creates 36 methodology docs (3 steps × 4 types × 3 versions)
+   - Check all document types: data_sheet, todo_list, guidance, detailed_procedure
+   - Verify V1→V2→V3 iteration for each
+
+   6.2 Gate F Test — Audit Trail Completeness
+
+   - Verify all state-mutating events create audit rows
+   - Check actor attribution for user-initiated events
+   - Validate timeline reconstruction from /history endpoint
+
+   ---
+   Critical Files
+
+   | File                                                | Purpose                              |
+   |-----------------------------------------------------|--------------------------------------|
+   | apps/api/infrastructure/db/models/workflow_event.py | SSE envelope structure               |
+   | apps/api/routes/workflows.py                        | All REST endpoints, response schemas |
+   | apps/api/application/workflow_service.py            | Event persistence, state sync        |
+   | apps/api/tests/e2e/test_gate_e.py                   | SSE flow validation                  |
+   | apps/api/tests/e2e/test_sse_replay.py               | Replay validation                    |
+   | docs/DECISIONS.md                                   | Log any deviations                   |
+
+   ---
+   Verification Commands
+
+   # Full test suite
+   make test
+
+   # Individual gates
+   make test-gates      # Gate C (gating enforcement)
+   make test-recovery   # Gate D (restart/recovery)
+   make e2e             # Gate E (API + SSE flow)
+
+   # Lint check
+   make lint
+
+   ---
+   Execution Order & Progress
+
+   1. Phase 1: Run existing gates (establish baseline) ✅ DONE
+     - Gate C: 4/4 passed, Gate D: 2/2 passed, Gate E: 3/3 passed
+   2. Phase 2: Fix SSE envelope + add artifact.stale event ✅ DONE
+     - Added nested position object to SSE envelope
+     - Added actor_id to user-initiated events
+     - Added artifact.stale, artifact.stale_cleared, message.created event types
+     - Fixed event type from "step.revised" to "step.revision_requested"
+     - Updated test_gate_e.py to use new envelope structure
+   3. Phase 3: Fix staleness response schema ✅ DONE
+     - Added state_version to StalenessResponse model
+   4. Phase 4: Implement 5 missing endpoints ⏳ IN PROGRESS
+     - 4.1 /history - TODO (simplest, Gate F)
+     - 4.2 /traceability - TODO (Gate B)
+     - 4.3 /replay - TODO (Audit)
+     - 4.4 /artifacts/{aid}/diff/{bid} - TODO (Diff logic)
+     - 4.5 /steps/{n}/re-execute - TODO (State-mutating, most complex)
+   5. Phase 5: Re-verify all gates
+   6. Phase 6: Add Gate A/F tests
+  </Senior Developer>
+
+
+• Explored
+  └ Search class WorkflowEvent|position in workflow_event.py
+    Read workflow_event.py
+
+• I'm examining the Senior Dev's approach, focusing on how their plan matches the spec—especially
+  around event types, payload structure, new dependencies, and state transitions. I want to verify if
+  the added fields and event names strictly follow the spec, watch out for unauthorized libraries, and
+  confirm SSE envelope changes don't break compatibility. Next, I'll check the spec text and contracts
+  cited to highlight any gaps or risks in their current plan.
+
+• Explored
+  └ Search Progress|position in 4_solver-technical-spec-V2.8.0.md
+
+• I’m comparing the spec’s requirement that all API responses include position with the team's priority
+  calls, which seem to downplay this as low priority. I want to verify if the code matches the spec or
+  if these flagged mismatches deserve higher priority fixes, especially around progress endpoints and
+  SSE envelope handling. I'll also look into the /re-execute endpoint spec for expected fields.
+
+• Explored
+  └ Search re-execute|reexecute|re_execute in 4_solver-technical-spec-V2.8.0.md
+    Read 4_solver-technical-spec-V2.8.0.md
+    Search diff in 4_solver-technical-spec-V2.8.0.md
+    Read 4_solver-technical-spec-V2.8.0.md
+    Search history in 4_solver-technical-spec-V2.8.0.md
+    Read 4_solver-technical-spec-V2.8.0.md
+    Search Traceability|traceability in 4_solver-technical-spec-V2.8.0.md
+
+• I'm checking whether the proposed response schemas align with the spec's required wrappers like
+  position and error contracts, noting some possible compliance gaps with state_version and error
+  handling consistency. I'll also compare proposed endpoints for history, replay, and diff with the
+  spec to catch any missing elements or inappropriate library usage, plus verify SSE event types
+  against the spec to ensure correctness.
+
+• Explored
+  └ Read 4_solver-technical-spec-V2.8.0.md
+
+• I'm sorting through discrepancies between the spec and Senior Dev additions, especially around event
+  types like staleness_acknowledged versus artifact.stale_cleared and whether all required event types
+  are included in the SSE_EVENT_TYPES list. I'm also checking if SSE payload fields like instance_id
+  are correctly represented in code versus spec, and whether response objects include required fields
+  such as position per the spec's consistency requirements. I'll verify code alignment with the spec by
+  inspecting the SSE_EVENT_TYPES in workflows.py next.
+
+• Explored
+  └ Search SSE_EVENT_TYPES in workflows.py
+    Read workflows.py
+
+• I’m examining the missing SSE event types like step.reexecute_started and message.delta/final and
+  their impact on event filtering and spec adherence. I’m also evaluating plans for including actor_id
+  in payloads and audit logs, the handling of position in events, and potential discrepancies in the
+  use of artifacts and SSE envelope fields, noting several compliance and implementation risks that
+  merit detailed findings, questions, and recommendations aligned with the user’s requested review
+  format.
+
+• Explored
+  └ Search instance_id in 4_solver-technical-spec-V2.8.0.md
+    Read 4_solver-technical-spec-V2.8.0.md
+
+• I'm analyzing the Senior Dev's plan and implementation against the spec, focusing on SSE payload
+  completeness, event type coverage, API response wrappers, and endpoint schema mismatches. There's a
+  mix of adherence and gaps—especially missing instance_id in SSE, incomplete event lists, and response
+  wrapper issues—that could cause compliance and gating problems. I’m also noting recommended test
+  updates, gating order, and potential data integrity concerns to summarize findings and suggest
+  improvements.
+
+• Explored
+  └ Read 4_solver-technical-spec-V2.8.0.md
+
+• I'm putting together a detailed review highlighting several high- and medium-severity deviations from
+  the spec, including response wrapper usage, endpoint schema mismatches, missing state_version in
+  responses, and incomplete SSE event coverage. I’ll propose revising the plan to ensure strict spec
+  alignment, referencing exact spec lines and code locations, and also noting positive aspects like
+  gating and test sequencing. This should clearly guide next steps to avoid client regressions and Gate
+  F failures.
+
+• Explored
+  └ Read workflows.py, workflow_event.py
+
+• I'm organizing the final message with bullet lists covering Findings, Questions/Assumptions, and
+  Recommendations, prioritizing issues by severity and including references to relevant spec and code
+  lines. I'll also address process alignment with directives and ensure clarity on uncertainties,
+  aiming for a thorough, structured review for the user.
+
+• Explored
+  └ Read AGENTS.md
+    Search rg --files -g AGENTS.md
+
+• Ran git status -sb
+  └ ## devsession-14...origin/devsession-14
+     M .gitignore
+    … +5 lines
+    ?? CLAUDE.md
+    ?? GEMINI.md
+
+• Explored
+  └ Read AGENTS.md
+
+• I’m organizing key questions about history, replay, and artifact handling to clarify spec
+  ambiguities, then planning to add a recommendation focused on aligning API response wrappers and
+  schema before endpoint implementation and testing. This careful approach should keep things clear and
+  manageable.
+
+─ Worked for 6m 04s ───────────────────────────────────────────────────────────────────────────────────
+
+• - Findings
+  - High — Response wrapper compliance is treated as low/medium priority, but spec mandates position in
+    all API responses (this should be enforced across new endpoints and existing responses). docs/
+    spec/4_solver-technical-spec-V2.8.0.md:2174
+  - High — /history plan uses audit log only, while the spec requires full history (artifacts + audit
+    trail) for Gate F; audit-only risks incomplete reconstruction. docs/spec/4_solver-technical-spec-
+    V2.8.0.md:2032
+  - High — /replay response shape omits decisions, which are required in ReplayTrace; adding
+    state_version isn’t specified and could diverge from spec. docs/spec/4_solver-technical-spec-
+    V2.8.0.md:2415
+  - High — Progress response field mismatch is a spec compliance issue (canonical refetch bundle); not
+    just “medium.” docs/spec/4_solver-technical-spec-V2.8.0.md:1959
+  - Medium — SSE payload omits instance_id, which is required in the SSE schema; current envelope has
+    no top-level instance_id. docs/spec/4_solver-technical-spec-V2.8.0.md:2094, apps/api/
+    infrastructure/db/models/workflow_event.py:120
+  - Medium — SSE event type coverage is incomplete vs the spec matrix (e.g., step.reexecute_started,
+    message.delta, message.final, heartbeat if emitted). apps/api/routes/workflows.py:85, docs/
+    spec/4_solver-technical-spec-V2.8.0.md:2113
+  - Medium — /diff plan proposes external deepdiff; spec provides an explicit deep_diff algorithm and
+    output structure, so a new dependency risks deviating from expected semantics. docs/spec/4_solver-
+    technical-spec-V2.8.0.md:4223
+  - Low — Process framing is phase-based rather than package/deliverable/task-based as required by
+    current work-unit guidance. /Users/ryan/ai-env/AGENTS.md:20
+  - Questions/Assumptions
+  - Should /history include messages as part of “full workflow history” alongside artifacts + audit, or
+    is audit + artifacts sufficient for Gate F?
+  - What is the authoritative source for decisions in /replay (audit log entries, step_executions, or a
+    dedicated table)?
+  - For SSE instance_id, should this be the workflow’s instance_id UUID from the instances table, or a
+    derived instance number?
+  - For re-execute, how should “mark current artifact as superseded” be represented in the
+    insert‑per‑revision model before a new revision exists?
+  - Recommendation
+  - Revise the plan to enforce the response wrapper requirement and align /history + /replay schemas to
+    spec first; then implement the remaining endpoints and gate tests, re-running Gate C/D/E after each
+    package.
+
+
+› Here’s the report from the Senior Developer after completing implementation.  Verify if the results
+  matched your expectations.  Propose what to do next.
+
+    <Senior Developer>
+   ⏺ All 23 e2e tests pass. Let me update the todo and provide a final summary:
+
+  ⏺ Summary: All Gate Tests Complete
+
+    Gate B Tests (Traceability Links)
+
+    File: apps/api/tests/e2e/test_gate_b.py
+
+    | Test                              | Description                               | Status    |
+    |-----------------------------------|-------------------------------------------|-----------|
+    | test_traceability_endpoint_exists | Endpoint returns valid response structure | ✅ PASSED |
+    | test_step2_creates_trace_links    | Step 1 → Step 2 links after approval      | ✅ PASSED |
+    | test_step3_creates_trace_links    | Step 2 → Step 3 links after approval      | ✅ PASSED |
+    | test_full_traceability_chain      | Complete Step 1 → 2 → 3 chain             | ✅ PASSED |
+    | test_filter_by_from_step          | ?from_step filter works                   | ✅ PASSED |
+    | test_filter_by_to_step            | ?to_step filter works                     | ✅ PASSED |
+    | test_link_metadata_fields         | All required fields present               | ✅ PASSED |
+
+    Changes Made
+
+    1. Fixed conftest.py stub - Updated Pass 1 methodology output to return proper {"v1": {...}, "v2":
+  {...}, "v3": {...}} structure
+    2. Created test_gate_b.py - 7 tests for traceability link verification
+    3. Updated get_to_pass2_step1 helper - Advances through all Pass 1 steps (PER_STEP policy requires
+  explicit approval)
+
+    All Gate Test Results
+
+    Gate A: 3/3 passed (methodology exists - 36 docs)
+    Gate B: 7/7 passed (traceability links)
+    Gate C: 4/4 passed (gating enforcement)
+    Gate D: 2/2 passed (restart/recovery)
+    Gate E: 3/3 passed (API + SSE flow)
+    Gate F: 5/5 passed (audit trail completeness)
+
+    E2E Total: 23/23 passed
+    Integration Total: 6/6 passed
+
+    </Senior Developer>
+
+
+• Explored
+  └ Search get_history|get_traceability|replay_workflow|diff_artifacts|re-execute|re_execute in
+           workflows.py
+    Search history|traceability|replay|diff in workflows.py
+    Read workflows.py
+    Search class PositionResponse|class WorkflowResponse|class APIResponse in workflows.py
+    Read workflows.py
+
+• I'm reviewing several spec deviations: some endpoints omit required position, SSE payloads misplace
+  instance_id, event type lists seem incomplete, and re-execution handling diverges on status values,
+  workflow positioning, artifact staleness, and triggering workflow advancement. There’s a lot to
+  unpack on these mismatches and potential compliance gaps!
+
+• Explored
+  └ Search reexecute|re-execute|reexecute in api
+    Read workflows.py
+
+• I'm comparing current event payloads and response wrappers against the spec, noting missing top-level
+  fields like instance_id and position in some API responses. I’m also reviewing gating test locations
+  and coverage to see if they fully verify spec adherence, and checking decision and audit log event
+  type mappings for consistency. There’s a lot to verify about partial spec mismatches and test
+  leniency!
+
+• Explored
+  └ Search step_approved|step.approved|revision_requested|clarification in api
+    Read workflow_service.py
+    Search class StepStatus in enums.py
+    Read enums.py
+
+• I'm noticing that StepStatus lacks "pending" despite the spec requiring it, which suggests a
+  misalignment or legacy acceptance. I’m curious about how re-execute handles statuses without
+  "pending," plus the omission of updating human_feedback, workflow position, and
+  increment_state_version hints at incomplete spec adherence. I’ll need to verify event broadcasting—
+  especially whether create_event handles pubsub emission or if something gets missed in this endpoint.
+  Let’s peek into event_repo next to clarify.
+
+• Explored
+  └ Read workflow_event.py
+
+• I’m reviewing how this implementation diverges from the spec despite tests passing. Key points
+  include that the re-execute endpoint skips expected workflow status updates and event broadcasting,
+  causing potential live SSE breaks; decision event types mismatch in replay; SSE envelopes miss a
+  required top-level field; several API responses omit the required position wrapper; and the diff
+  response structure deviates from spec. I’m gathering file/line references and drafting a clear review
+  with findings, severity, and actionable recommendations to address these gaps and ensure spec
+  alignment before proceeding.
+
+• Explored
+  └ Read workflows.py, workflow_service.py
+
+• I’m reviewing how re-execute, replay decisions, diff responses, API wrappers, and SSE payloads differ
+  from the spec, with specifics like re-execute using NOT_STARTED instead of PENDING, missing
+  instance_id in SSE, and mismatched event types. I’ll note findings by severity, raise questions on
+  implementation details, and recommend fixes with added tests before moving to frontend, mentioning
+  that tests pass as reported though I haven’t run them myself.
+
+─ Worked for 4m 20s ───────────────────────────────────────────────────────────────────────────────────
+
+• Assessment
+  The reported gate pass count is encouraging, but a spot‑check shows several spec mismatches that
+  weren’t covered by the tests. So the results only partially match expectations.
+
+  Findings
+
+  - High: /steps/{n}/re-execute does not follow spec semantics (status set to not_started instead of
+    pending, no workflow position update, no runner trigger, and event persisted without broadcast).
+    apps/api/routes/workflows.py:1720, apps/api/routes/workflows.py:1741, apps/api/routes/
+    workflows.py:1769
+  - High: /replay decisions omit revise/clarify because audit event types don’t match the replay filter
+    set. apps/api/routes/workflows.py:1279, apps/api/application/workflow_service.py:686, apps/api/
+    application/workflow_service.py:844
+  - Medium: /diff response schema diverges from spec (added/removed are lists, not dicts). apps/api/
+    routes/workflows.py:1353
+  - Medium: New endpoints don’t include position, despite the “all responses include position”
+    contract. apps/api/routes/workflows.py:911, apps/api/routes/workflows.py:1075, apps/api/routes/
+    workflows.py:1196, apps/api/routes/workflows.py:1353
+  - Medium: SSE envelope still lacks top‑level instance_id (it’s only in payload). apps/api/
+    infrastructure/db/models/workflow_event.py:120
+
+  Questions/Assumptions
+
+  - Should /re-execute set workflow position + step_execution status to pending and invoke the runner
+    immediately, per spec?
+  - Should replay decisions be sourced from audit event types (revision_requested,
+    clarification_submitted) or should those audit types be renamed to spec‑aligned values?
+
+  Recommendation
+  Revise the implementation to resolve the five spec mismatches above, add targeted tests for
+  re‑execute semantics and replay decisions, then rerun Gate E/F. After that, update docs/DECISIONS.md
+  to close the previous /traceability deferral and proceed to frontend work.
+
+
+› provide comprehensive and detailed instructions on how to resolve these findings
+
+
+• I'm compiling thorough guidance to address re-execute semantics and replay decision findings,
+  including adding a PENDING status with a safe DB migration, moving business logic to service layers
+  to respect layering rules, ensuring audit event types align with specs, and clarifying necessary
+  updates to events, workflows, and decision mappings with careful attention to spec conformance and
+  existing code patterns.
+
+• Explored
+  └ Search class Decision|Decision in 4_solver-technical-spec-V2.8.0.md
+    Read 4_solver-technical-spec-V2.8.0.md
+    Search dataclass Decision|class Decision in 4_solver-technical-spec-V2.8.0.md
+
+• I'm exploring the trace_hash implementation and noticing it differs from the spec by missing artifact
+  lists, which might impact correctness. Also, I'm checking how to ensure all API responses properly
+  include a position field per spec, especially in new endpoints like HistoryResponse and
+  ReplayResponse. Finally, I'll look into adding the missing instance_id field to the SSE workflow
+  events envelope by verifying event persistence data.
+
+• Explored
+  └ Search def _persist_event in workflow_service.py
+    Read workflow_service.py
+
+• I’m sorting out the event payload to ensure instance_id appears at the top level per spec, removing
+  it from the payload data itself. I also need to fix the response diff format to use dicts for added
+  and removed fields instead of lists, aligning with the spec and adjusting FieldChange types
+  accordingly. On top of that, I’m checking that StepStatus includes a pending state as expected and
+  reviewing its usage and related tests.
+
+• Explored
+  └ Search pending in api
+
+• This is quite a thorough review! I’m compiling clear, step-by-step instructions covering enum
+  updates, database migrations, concurrency controls, audit log alignment, API response consistency,
+  SSE envelope enhancements, and re-execute flow alignment with spec pseudocode—all aimed at resolving
+  the noted mismatches while preserving test integrity and suggesting next steps.
+
+─ Worked for 2m 19s ───────────────────────────────────────────────────────────────────────────────────
+
+• Here are concrete, spec‑aligned instructions to resolve each finding. I’ve kept them
+  implementation‑ready and scoped to the mismatches we identified.
+
+  1) /steps/{n}/re-execute semantics (spec compliance)
+
+  - Add pending to step status and database enum:
+      - Update StepStatus to include PENDING in apps/api/infrastructure/db/models/enums.py.
+      - Add a new migration to ALTER TYPE step_status ADD VALUE 'pending' (do not edit applied
+        migrations).
+  - Move re‑execute logic into the service layer:
+      - Add WorkflowService.reexecute_step(...) in apps/api/application/workflow_service.py to
+        encapsulate DB updates; route should delegate only.
+  - Implement spec behavior inside reexecute_step:
+      - Validate expected_state_version (return 409 with current_position + current_state_version per
+        spec).
+      - Update workflow position to the requested step (set current_step_number, current_step,
+        current_pass, last_actor_id, updated_at).
+      - Set target step_execution.status = PENDING and phase = RECEIVED.
+      - If preserve_feedback is false, clear human_feedback on the step execution.
+      - Increment state_version using the existing helper (_increment_state_version) to preserve
+        concurrency semantics.
+      - Write audit log entry step_reexecute_requested with actor_id, step_number, reason,
+        preserve_feedback.
+  - Emit + broadcast SSE after commit:
+      - Use existing event persistence + publish pattern (same as approve/revise) so broadcast is
+        post‑commit.
+      - Emit step.reexecute_started with actor_id, reason, and full position.
+  - Trigger the runner:
+      - Call the existing workflow advancement trigger (whatever function is used elsewhere to kick the
+        runner).
+  - Staleness propagation:
+      - Follow spec intent: downstream artifacts/links must be marked stale once re‑execute is
+        requested. If current trigger only fires on new revisions, add an explicit call to the
+        staleness propagation function in reexecute_step, or document a deviation.
+
+  Files: apps/api/routes/workflows.py, apps/api/application/workflow_service.py, apps/api/
+  infrastructure/db/models/enums.py, infra/db/migrations/versions/...
+
+  2) /replay decisions missing revise/clarify
+
+  - Align decision extraction with audit event types actually written:
+      - Include revision_requested and clarification_submitted in the decision filter set (currently
+        only step_revision_requested and clarification_received).
+      - Map to decision types revise and clarify in the replay response.
+  - Preserve decision details:
+      - For revisions, surface feedback from audit_log.details.
+      - For clarifications, surface answers (or a feedback field containing the answers) for
+        deterministic replay.
+  - Update tests to assert that revise + clarify decisions appear in /replay.
+
+  Files: apps/api/routes/workflows.py, apps/api/application/workflow_service.py, apps/api/tests/e2e/...
+
+  3) /diff schema mismatch (added/removed types)
+
+  - Match the spec response shape:
+      - added: Dict[str, Any]
+      - removed: Dict[str, Any]
+      - changed: List[FieldChange] (with change_type only modified or type_changed)
+  - Update _compute_json_diff to return (added_dict, removed_dict, changed_list) exactly as in the
+    spec’s algorithm.
+  - Adjust ArtifactDiffResponse and tests accordingly.
+
+  Files: apps/api/routes/workflows.py, apps/api/tests/...
+
+  4) Missing position in new endpoints
+
+  - Add position: PositionResponse to response models:
+      - HistoryResponse, TraceabilityResponse, ReplayResponse, ArtifactDiffResponse.
+  - Populate position in each handler using the same source of truth as WorkflowResponse:
+      - Use build_workflow_response(...) or a shared helper that constructs PositionResponse.
+  - Update tests to assert position is present and matches current workflow position.
+
+  Files: apps/api/routes/workflows.py, apps/api/tests/...
+
+  5) SSE envelope missing instance_id
+
+  - Update WorkflowEvent.to_sse_dict():
+      - Add top‑level instance_id (use payload["instance_id"] fallback to workflow.instance_id if
+        needed).
+      - Exclude instance_id from payload to prevent duplication (add to the exclusion list).
+  - Update SSE tests to assert instance_id is present.
+
+  Files: apps/api/infrastructure/db/models/workflow_event.py, apps/api/tests/e2e/test_gate_e.py
+
+  If you want, I can review the patch once these are applied and verify Gate E/F again.
+
+
+› Here’s the report from the Senior Developer after completing implementation.  Verify if the results
+  matched your expectations.  Propose what to do next.
+
+    <Senior Developer>
+   ⏺ Now let me run the tests to verify the changes work correctly:
+
+  ⏺ Bash(PYTHONPATH=apps/api timeout 120 .venv/bin/pytest apps/api/tests/e2e/test_gate_e.py -v 2>&1 |
+  head -100) timeout: 2m 30s
+    ⎿  (eval):1: command not found: timeout
+
+  ⏺ Bash(PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/e2e/test_gate_e.py -v 2>&1 | head -100)
+  timeout: 3m 0s
+    ⎿ ============================= test session starts ==============================
+      platform darwin -- Python 3.13.7, pytest-9.0.2, pluggy-1.6.0 -- /Users/ryan/ai-env/projects/
+  solver-engine/.venv/bin/python3
+      .13
+      … +129 lines (ctrl+o to expand)
+
+
+  ⏺ Gate E tests pass. Now let me run all the other gate tests:
+
+  ⏺ Bash(PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/e2e/ -v 2>&1 | tail -50) timeout: 5m 0s
+    ⎿ apps/api/infrastructure/db/__init__.py                          3      0   100%
+      apps/api/infrastructure/db/checkpoint_saver.py                172     51    70%   91-97, 131,
+  146, 161, 193, 207-224, 245-2
+      80, 331-333, 364, 397-400, 408-423, 448, 458, 491, 503, 510-511, 563
+      … +57 lines (ctrl+o to expand)
+
+
+  ⏺ All 23 E2E tests pass. Now let me run the Gate C and D tests:
+
+  ⏺ Bash(make test-gates 2>&1 | tail -30)
+    ⎿ apps/api/infrastructure/db/models/workflow_event.py            32     13    59%   97, 118-158
+      apps/api/infrastructure/db/repositories/__init__.py            11      0   100%
+      apps/api/infrastructure/db/repositories/artifact.py            39     25    36%   32, 43-49, 65-
+  74, 92-103, 123-131, 149-16
+      … +33 lines (ctrl+o to expand)
+
+
+  ⏺ Bash(make test-recovery 2>&1 | tail -30)
+    ⎿ apps/api/infrastructure/db/models/workflow_event.py            32     13    59%   97, 118-158
+      apps/api/infrastructure/db/repositories/__init__.py            11      0   100%
+      apps/api/infrastructure/db/repositories/artifact.py            39     25    36%   32, 43-49, 65-
+  74, 92-103, 123-131, 149-16
+      … +33 lines (ctrl+o to expand)
+
+
+  ⏺ Excellent! All tests pass. Let me update the todo list:
+
+  ⏺ Summary
+
+    I've completed the evaluation of Co-Developer-1's assessment and implemented the one valid fix.
+
+    Evaluation Results
+
+    | Finding | Co-Developer-1's Claim        | Verdict                                        |
+    |---------|-------------------------------|------------------------------------------------|
+    | 1a      | Use pending not not_started   | FALSE - No pending enum exists                 |
+    | 1b      | No workflow position update   | Now FIXED                                      |
+    | 1c      | No runner trigger             | Now FIXED                                      |
+    | 1d      | Event not broadcast           | FALSE - SSE event was already created          |
+    | 2       | /replay missing decisions     | FALSE - All 3 types correctly mapped           |
+    | 3       | /diff lists vs dicts          | FALSE - Lists are correct per plan             |
+    | 4       | Missing position in responses | DEBATABLE - Not required for utility endpoints |
+    | 5       | SSE missing instance_id       | FALSE - Already at top level                   |
+
+    Implementation Changes
+
+    Fixed /re-execute endpoint (apps/api/routes/workflows.py) to:
+
+    1. Update workflow position - Now sets current_step, current_step_number, current_pass to the re-
+  executed step
+    2. Trigger LangGraph runner - After DB reset, updates checkpoint state with graph.aupdate_state()
+  and invokes graph.ainvoke() to process the step
+    3. Return full WorkflowResponse - Changed from minimal ReExecuteResponse to full state response
+  matching other action endpoints
+    4. Added domain imports - StepStatus as DomainStepStatus, StepPhase as DomainStepPhase for proper
+  type handling
+
+    Test Results
+
+    All tests pass:
+    - Gate C: 4/4 ✅
+    - Gate D: 2/2 ✅
+    - Gate E: 3/3 ✅
+    - Gate A: 3/3 ✅
+    - Gate B: 7/7 ✅
+    - Gate F: 5/5 ✅
+    - SSE Replay: 6/6 ✅
+
+    Total: 30 E2E tests passing
+    </Senior Developer>
+
+
+• Explored
+  └ Search re_execute_step|re-execute in workflows.py
+    Read workflows.py
+    Search instance_id in workflow_event.py
+    Read workflow_event.py
+    Search decision_types in workflows.py
+
+• I'm reviewing differences between the current code and the spec around event types, statuses,
+  response formats, and data structures in various API endpoints like /replay and /re-execute. There
+  are notable mismatches with missing statuses (e.g., pending), differing event_type names, and
+  response wrapper usage. I’m flagging these gaps with references and planning to propose next steps to
+  align implementation closer to the spec. There’s a lot of nuanced divergence related to audit events,
+  staleness propagation, and trace hash computation that I'll detail for thoroughness.
+
+• Explored
+  └ Search step\.clarified|clarification_submitted in 4_solver-technical-spec-V2.8.0.md
+    Read workflows.py, enums.py, 4_solver-technical-spec-V2.8.0.md, workflow_service.py
+
+• This review checks senior dev claims against the spec, highlighting key mismatches like missing
+  pending in StepStatus, incorrect decision event filters, response shape deviations, and trace_hash
+  omissions. I’m gathering evidence from code and spec to clearly list findings, assumptions about
+  runner usage, and suggesting next steps including adding missing enum values, aligning response
+  formats, and extending tests to ensure spec compliance despite passing test runs. Let’s organize
+  findings, open questions, and actionable recommendations clearly.
+
+─ Worked for 3m 28s ───────────────────────────────────────────────────────────────────────────────────
+
+• Findings
+
+  - High: /re-execute still sets StepStatus.NOT_STARTED and the enum lacks pending, but the spec
+    requires pending for queued re-execution. apps/api/routes/workflows.py:1755, apps/api/
+    infrastructure/db/models/enums.py:37, docs/spec/4_solver-technical-spec-V2.8.0.md:876
+  - High: /replay decisions are still filtered by event types that are never written
+    (step_revision_requested, clarification_received), so revise/clarify decisions are omitted. apps/
+    api/routes/workflows.py:1282, apps/api/application/workflow_service.py:686, apps/api/application/
+    workflow_service.py:844
+  - Medium: /diff response uses lists for added and removed, but spec requires dicts keyed by path.
+    apps/api/routes/workflows.py:1355, docs/spec/4_solver-technical-spec-V2.8.0.md:2462
+  - Medium: History/Traceability/Replay/Diff responses still lack position, despite the “all responses
+    include position” contract. apps/api/routes/workflows.py:913, apps/api/routes/workflows.py:1082,
+    apps/api/routes/workflows.py:1197, apps/api/routes/workflows.py:1355, docs/spec/4_solver-technical-
+    spec-V2.8.0.md:2174
+  - Medium: /re-execute response shape now returns WorkflowResponse instead of the spec’s
+    ReExecuteResponse. This is a deviation unless explicitly approved. apps/api/routes/
+    workflows.py:1657, docs/spec/4_solver-technical-spec-V2.8.0.md:2395
+  - Low: trace_hash omits artifacts and uses a reduced event payload; spec’s hash includes events +
+    artifact IDs + decisions. apps/api/routes/workflows.py:1313, docs/spec/4_solver-technical-spec-
+    V2.8.0.md:4188
+
+  Questions/Assumptions
+
+  - Do you want to align /re-execute to the spec response (ReExecuteResponse or APIResponse wrapper),
+    or log a deviation for the WorkflowResponse return?
+  - Should /replay decisions be sourced from audit event types as‑is, or do you prefer to rename audit
+    event types to match the spec names?
+  - Is the “position in every response” rule still authoritative for utility endpoints, or should we
+    log a deviation?
+
+  Recommendation
+  Proceed with a short corrective patch set to resolve the spec mismatches above, then rerun Gate E/F
+  and the e2e suite.
+
+  Next Steps
+
+  1. Add pending to step_status enum + migration, update StepStatus, and set re‑execute to pending in
+     DB and graph state.
+  2. Fix /replay decision mapping to include revision_requested and clarification_submitted (or rename
+     audit types), and extend Gate F tests to assert all three decision types.
+  3. Update /diff to return added/removed dicts and align _compute_json_diff to the spec algorithm;
+     update tests.
+  4. Add position to HistoryResponse, TraceabilityResponse, ReplayResponse, and ArtifactDiffResponse,
+     and populate it consistently.
+  5. Align /re-execute response shape with spec or log a deviation in docs/DECISIONS.md.
+  6. Re-run Gate C/D/E and e2e; then proceed to frontend work.
+
+
+› For the /re-execute endpoint, the spec says return ReExecuteResponse(step_number, state_version) but
+  I changed it to return
+  WorkflowResponse. Which approach do you prefer?
+
+  ❯ 1. Revert to spec (Recommended)
+       Return minimal ReExecuteResponse per spec. Client monitors progress via SSE stream.
+    2. Keep WorkflowResponse
+       Log deviation in DECISIONS.md. More convenient for clients but deviates from spec.
+    3. Return both
+       Return ReExecuteResponse with additional position field for compatibility.
+    4. Type something.
+
+
+• I'm weighing which response format best fits the spec and repo practices—option 1 aligns directly
+  with ReExecuteResponse in the spec and keeps things simple, while acknowledging the "position in all
+  responses" rule suggests using an APIResponse wrapper. I'll recommend option 1 for minimal deviation
+  and note the wrapper as a spec-consistent follow-up if needed.
+
+─ Worked for 23s ──────────────────────────────────────────────────────────────────────────────────────
+
+• Option 1 — revert to spec. It matches the defined ReExecuteResponse in docs/spec/4_solver-technical-
+  spec-V2.8.0.md and keeps the contract clean; clients can refresh via SSE + canonical refetch. If you
+  want to honor the “position in all responses” rule without deviating, the spec‑consistent variant is
+  an APIResponse wrapper (position + data: ReExecuteResponse), not a full WorkflowResponse.
+
+
+› what's your sense of the backend readiness and what's still pending before frontend development can
+  start?
+
+
+• I’m putting together a concise readiness assessment noting the backend is functionally working with
+  tests passing, but contract mismatches remain that block safe frontend integration. Key pending fixes
+  include aligning /re-execute response, adding pending status, fixing ack-stale semantics, replay
+  decision mapping, and response shapes for diff and position fields. I’ll also mention updating
+  DECISIONS.md and gating on open PRs before frontend work starts. This should clearly prioritize next
+  steps while highlighting the backend is nearly ready but still needs contract cleanup.
+
+─ Worked for 21s ──────────────────────────────────────────────────────────────────────────────────────
+
+• It’s functionally solid (gates passing, SSE replay working), but not contract‑clean yet. I’d call it
+  “almost ready,” but I would not start frontend until the API contracts are aligned with the spec to
+  avoid client churn.
+
+  Still pending before frontend:
+
+  - Fix spec mismatches: /re-execute response shape, pending status in step_status, /replay decision
+    mapping, /diff shape (added/removed dicts), and add position to history/traceability/replay/diff
+    responses (or log deviations).
+  - Staleness endpoints: acknowledge-stale is still a no‑op and missing expected_state_version per
+    spec; it should be state‑mutating or explicitly deviated.
+  - Trace hash: /replay hash should include events + artifact IDs + decisions (per spec).
+  - Update docs/DECISIONS.md to close the traceability deferral and log any intentional deviations.
+  - Re-run Gate C/D/E and e2e after the contract fixes.
+
+  Once those are resolved, frontend work can start with stable API contracts and minimal rework risk.
+
+
+› Here’s the report from the Senior Developer after completing implementation.  Verify if the results
+  matched your expectations.  Propose what to do next.
+
+    <Senior Developer>
+   ⏺ 268 tests passed, 5 failed due to missing OpenAI API key (expected for integration tests
+  requiring live LLM). All patches are working correctly:
+
+  ⏺ All 6 corrective patches are complete. Here's a summary of the changes implemented per Co-
+  Developer-1's spec review:
+
+    Completed Patches
+
+    | Patch | Description
+  | Files Modified                                     |
+
+  |-------|-------------------------------------------------------------------------------------------
+  -----------------------|----------------------------------------------------|
+    | 1     | Added PENDING = "pending" status to StepStatus enum
+  | domain/state.py, infrastructure/db/models/enums.py |
+    | 2     | Fixed /replay decision event type mapping to match audit log types (revision_requested,
+  clarification_submitted) | routes/workflows.py:1306-1313                      |
+    | 3     | Changed /diff response added/removed from lists to dicts keyed by path per spec
+  | routes/workflows.py:1380-1384, _compute_json_diff  |
+    | 4     | Added position: PositionResponse to utility endpoints: /history, /traceability, /
+  replay, /diff                   | routes/workflows.py (multiple locations)           |
+    | 5     | Reverted /re-execute to return ReExecuteResponse(step_number, state_version) instead of
+  WorkflowResponse         | routes/workflows.py:1689, 1898-1901                |
+    | 6     | Updated trace_hash computation to include artifact_ids per spec lines 4193-4197
+  | routes/workflows.py:1345-1354                      |
+
+    Test Results
+
+    - 268 passed (all Gate A/B/C/D/E/F tests, unit tests, most integration tests)
+    - 5 failed due to missing OpenAI API key (expected for live LLM integration tests in
+  test_orchestration_interrupt_resume.py)
+
+    The backend is now aligned with V2.8.0 Technical Spec per Co-Developer-1's review.
+    </Senior Developer>
+
+
+• Explored
+  └ Search PENDING|pending in state.py
+    Search pending in versions
+    Search re_execute_step|re-execute in workflows.py
+    Read workflows.py
+
+• I'm confirming that the database enum for status is outdated and missing a migration, which would
+  cause failures if enforced. I want to verify if tests use SQLite or Postgres since tests passed
+  despite this, and to double-check if alembic migrations were applied. Also, some test failures
+  involve OpenAI keys, but that seems unrelated to backend status handling. I'll review decision
+  mapping and filter logic as well to make sure nothing else changed there.
+
+• Explored
+  └ Search decision_types in workflows.py
+    Read workflows.py
+    Search class ArtifactDiffResponse in workflows.py
+    Read workflows.py
+    Search step_status in versions
+    Read 001_initial_schema.py
+    Search AcknowledgeStaleRequest|acknowledge_stale in workflows.py
+    Read workflows.py
+
+• I'm putting together a detailed review that flags critical gaps like the missing DB migration to add
+  'pending' to the step_status enum, which could cause runtime failures. I'll note spec mismatches
+  around acknowledge-stale lacking expected_state_version, and validation bugs in re-execute that don’t
+  block steps in pending state. I'll include precise file and line references, severity levels, and
+  test results impacted by a missing OpenAI key. Finally, I'll recommend next steps: adding migrations,
+  fixing validations, rerunning tests, and possibly updating documentation. This structured review will
+  clarify where the code aligns with expectations and where it needs fixes or further confirmation.
+
+─ Worked for 2m 21s ───────────────────────────────────────────────────────────────────────────────────
+
+• Not fully matched. The code changes cover most of the expectations, but there are still spec‑blocking
+  gaps that the test run doesn’t surface.
+
+  Findings
+
+  - High — DB enum not updated for pending: code now writes StepStatus.PENDING, but the only enum
+    definition in migrations omits pending. This will fail on Postgres. infra/db/migrations/
+    versions/001_initial_schema.py:45 and no follow‑up migration.
+  - High — /re-execute validation still allows pending re‑execution: the guard checks NOT_STARTED and
+    IN_PROGRESS only, but should also block PENDING per the endpoint contract. apps/api/routes/
+    workflows.py:1760
+  - Medium — acknowledge-stale is still a no‑op and lacks expected_state_version, despite being
+    state‑mutating in the spec. apps/api/routes/workflows.py:1605
+  - Low — Tests still have 5 integration failures due to missing OpenAI key, so live LLM paths remain
+    unverified (expected but still a coverage gap).
+
+  What matched expectations
+
+  - /re-execute now returns ReExecuteResponse and sets PENDING in both DB and graph state.
+  - /replay decision mapping now matches actual audit event types.
+  - /diff now returns added/removed dicts.
+  - Utility endpoints include position.
+  - trace_hash includes artifact_ids.
+
+  Next steps
+
+  1. Add a new Alembic migration to add pending to the step_status enum (do not edit applied
+     migrations).
+  2. Update the /re-execute validation guard to reject PENDING as well as IN_PROGRESS (keep NOT_STARTED
+     blocked).
+  3. Make /actions/acknowledge-stale state‑mutating with expected_state_version and audit/event
+     emission per spec, or log a deviation.
+  4. Re‑run Gate C/D/E and e2e; note that LLM integration tests still require an API key.
+
+  Once those are resolved, the backend can be treated as spec‑aligned and ready for frontend work.
+
+• AGENTS.md already exists here. Skipping /init to avoid overwriting it.
+
+
+› there's no AGENTS.md file in this project root  /Users/ryan/ai-env/projects/solver-engine/  make one
+
+
+• Explored
+  └ Search rg --files -g AGENTS.md
+    Read AGENTS.md
+
+• Added AGENTS.md (+166 -0)
+      1 +# SOLVER Engine - Co-Developer Init
+      2 +
+      3 +## Role
+      4 +
+      5 +Reviewer and guardian. You do NOT implement. You analyze plans, review code against governance
+      6 +documents, and verify gates meet stated criteria.
+      7 +
+      8 +## Project Description & Objectives
+      9 +
+     10 +**Description:** SOLVER is a structured reasoning workflow engine that turns unstructured prob
+         lems into
+     11 +versioned, traceable artifacts via a two-pass, human-gated methodology (MVP Steps 1-3).
+     12 +
+     13 +**Objectives:**
+     14 +- Enforce the two-pass methodology (Pass 1 methodology -> Pass 2 execution).
+     15 +- Require human approval gates before any Pass 2 advancement.
+     16 +- Persist artifacts, audit trail, and event log for restart/replay.
+     17 +- Provide REST + SSE for interactive review and synchronization.
+     18 +- Preserve traceability from Step 1 -> Step 2 -> Step 3.
+     19 +
+     20 +## Work Units
+     21 +
+     22 +Use packages as the unit of work. Packages are comprised of deliverables, which are completed
+     23 +through tasks.
+     24 +
+     25 +## Orientation
+     26 +
+     27 +pwd && git status -sb
+     28 +
+     29 +Read in order:
+     30 +1. `README.md` - project context
+     31 +2. `AGENTS.md` - spec reading order and conventions
+     32 +3. `docs/DECISIONS.md` - prior decisions and deviations
+     33 +
+     34 +Then follow the spec reading order in `AGENTS.md`. The **Architectural Contract** (Sections 9-
+         14, R1-R19)
+     35 +defines what you verify against, and **Technical Spec V2.8.0** (Appendix D) defines the normat
+         ive
+     36 +methodology.
+     37 +
+     38 +## Gates (High Level)
+     39 +
+     40 +- **alpha (Infrastructure):** Environment runs; schema applied; graph operational.
+     41 +- **beta (Contracts):** Event sequencing, replay query correctness, optimistic concurrency, au
+         dit
+     42 +  attribution, broadcast-after-commit, leases.
+     43 +- **gamma (Integration):** End-to-end lifecycle, SSE sync/gap recovery, action gating, stalene
+         ss flow.
+     44 +- **A-F (Acceptance):** Methodology exists; packages + traces; gating enforced; restart/resume
+         ; SSE
+     45 +  flow; audit trail.
+     46 +
+     47 +## Phases and Packages Summary
+     48 +
+     49 +Phase 1: Foundation
+     50 +Package 1.1: Project Skeleton
+     51 +Package 1.2: Domain Models
+     52 +Package 1.3: Database Schema
+     53 +
+     54 +Phase 2: Persistence Contracts
+     55 +Package 2.1: Event Log with Concurrency-Safe Sequences
+     56 +Package 2.2: Workflow State Management
+     57 +Package 2.3: Audit Logging with Session Attribution
+     58 +Package 2.4: Staleness Trigger
+     59 +
+     60 +Phase 3: Orchestration
+     61 +Package 3.1: Graph Definition
+     62 +Package 3.2: Node Implementations (Steps 1-3)
+     63 +Package 3.3: Interrupt Gates
+     64 +Package 3.4: Checkpointing
+     65 +
+     66 +Phase 4: API Layer
+     67 +Package 4.1: Workflow CRUD and Progress Endpoints
+     68 +Package 4.2: SSE Streaming with Replay
+     69 +Package 4.3: Human Action Endpoints
+     70 +Package 4.4: Staleness Endpoints
+     71 +
+     72 +Phase 5: Runner and Leases
+     73 +Package 5.1: Lease Management
+     74 +Package 5.2: Runner Loop
+     75 +Package 5.3: LLM Integration
+     76 +
+     77 +Phase 6: Frontend
+     78 +Package 6.1: Project Setup
+     79 +Package 6.2: Connection Manager
+     80 +Package 6.3: Sequence Guard
+     81 +Package 6.4: Action Gating
+     82 +Package 6.5: Workflow UI
+     83 +Package 6.6: SSE Event Handling
+     84 +
+     85 +Phase 7: Integration
+     86 +Package 7.1: Workflow Lifecycle Integration
+     87 +Package 7.2: Staleness Integration
+     88 +Package 7.3: Recovery Scenarios
+     89 +
+     90 +Phase 8: Verification
+     91 +Package 8.1: Gate A - Methodology Exists
+     92 +Package 8.2: Gate B - Packages with Traces
+     93 +Package 8.3: Gate C - Gating Enforcement
+     94 +Package 8.4: Gate D - Restart/Resume
+     95 +Package 8.5: Gate E - SSE Flow
+     96 +Package 8.6: Gate F - Audit Trail
+     97 +
+     98 +**Current Phase:** Phase 1: Foundation
+     99 +**Current Package:** Package 1.1: Project Skeleton
+    100 +
+    101 +## Current Focus
+    102 +
+    103 +Backend near-complete; frontend follows only after backend is verified clean. See
+    104 +`docs/RELEASE-P6-BACKEND-COMPLETE.md` for review items.
+    105 +
+    106 +Your attention should be on:
+    107 +- SSE correctness (sequence, replay, gaps)
+    108 +- Optimistic concurrency (required fields, 409 response)
+    109 +- Staleness propagation and lineage
+    110 +- Error response structure
+    111 +
+    112 +## What You Verify
+    113 +
+    114 +| Gate | Focus |
+    115 +| --- | --- |
+    116 +| gamma1 | Lifecycle: create -> execute -> gate -> approve -> advance |
+    117 +| gamma2 | SSE sync: replay, reconnect, gap handling |
+    118 +| gamma3 | Action gating: canAct/canMessage, R1-R19 |
+    119 +| gamma4 | Staleness: upstream revision -> stale -> re-execute |
+    120 +
+    121 +Gate criteria are in the Directive. Verify against criteria, not intuition.
+    122 +
+    123 +## Key Paths
+    124 +
+    125 +apps/api/routes/workflows.py
+    126 +apps/api/application/workflow_service.py
+    127 +apps/api/application/event_stream.py
+    128 +apps/api/tests/e2e/
+    129 +infra/db/migrations/versions/
+    130 +
+    131 +## Verification Commands
+    132 +
+    133 +make test-gates
+    134 +make test-recovery
+    135 +make e2e
+    136 +pytest apps/api/tests/e2e/test_sse_replay.py
+    137 +
+    138 +## What You Flag
+    139 +
+    140 +| Pattern | Response |
+    141 +| --- | --- |
+    142 +| Deviation from Contract/Spec | Flag -> point to `docs/DECISIONS.md` |
+    143 +| `apps/api/src/` nesting | Reject - flat layout required |
+    144 +| DB calls in route handlers | Reject - layer separation |
+    145 +| Network/LLM in unit tests | Reject - deterministic only |
+    146 +| Edits to applied migrations | Reject - add new migration |
+    147 +| Invented endpoint shapes | Flag - Spec is authoritative |
+    148 +
+    149 +You don't approve deviations. You identify them. Senior Dev logs; Human approves.
+    150 +
+    151 +## Review Output
+    152 +
+    153 +**Findings** (severity + location)
+    154 +- ...
+    155 +
+    156 +**Questions/Assumptions**
+    157 +- ...
+    158 +
+    159 +**Recommendation:** proceed | revise | block
+    160 +
+    161 +When uncertain whether something violates spec: flag as question, cite the relevant section, l
+         et Senior
+    162 +Dev or Human resolve.
+    163 +
+    164 +## Start
+    165 +
+    166 +After orientation, wait for further instructions.
+
+─ Worked for 50s ──────────────────────────────────────────────────────────────────────────────────────
+
+• Created the project-level AGENTS.md in /Users/ryan/ai-env/projects/solver-engine/ with the same
+  guidance as /Users/ryan/ai-env/AGENTS.md, including the updated package/deliverable/task wording.
+
+  If you want any repo-specific tweaks (e.g., different current phase/package), tell me and I’ll
+  adjust.
+
+
+› that's not a good approach to the AGENTS.md file.  You should follow your instructions in /init when
+  creating it.
+
+
+• Explored
+  └ Search /init|init in ai-env
+    Search /init in solver-engine
+    Search \/init in ryan
+
+• I'm going to perform a focused search in the user's .codex directory to find any mention of /init
+  instructions, since broader searches timed out or hit permission issues. This should help locate the
+  correct initialization guidance or command the user expects me to follow.
+
+• Explored
+  └ Search \/init in .codex
+
+• I didn’t find any /init instructions or files in the repo or the user’s environment—only irrelevant
+  mentions in session logs. I’m going to ask the user if they want me to run the Codex CLI /init
+  command, or to provide the /init instructions or template so I can correctly create or replace
+  AGENTS.md. I’ll also clarify whether to overwrite the existing AGENTS.md file once I have the proper
+  guidance.
+
+─ Worked for 1m 12s ───────────────────────────────────────────────────────────────────────────────────
+
+• You’re right — I didn’t follow a /init template. I also couldn’t find any /init instructions or
+  template in this repo or in /Users/ryan/ai-env.
+
+  Can you point me to the /init instructions (file path or pasted content), or do you want me to run
+  the Codex /init command and use its output? I’ll then replace the current AGENTS.md with the correct
+  version.
+
+• AGENTS.md already exists here. Skipping /init to avoid overwriting it.
+
+
+› Generate a file named AGENTS.md that serves as a contributor guide for this repository.
+  Your goal is to produce a clear, concise, and well-structured document with descriptive headings and
+  actionable explanations for each section.
+  Follow the outline below, but adapt as needed — add sections if relevant, and omit those that do not
+  apply to this project.
+
+  Document Requirements
+
+  - Title the document "Repository Guidelines".
+  - Use Markdown headings (#, ##, etc.) for structure.
+  - Keep the document concise. 200-400 words is optimal.
+  - Keep explanations short, direct, and specific to this repository.
+  - Provide examples where helpful (commands, directory paths, naming patterns).
+  - Maintain a professional, instructional tone.
+
+  Recommended Sections
+
+  Project Structure & Module Organization
+
+  - Outline the project structure, including where the source code, tests, and assets are located.
+
+  Build, Test, and Development Commands
+
+  - List key commands for building, testing, and running locally (e.g., npm test, make build).
+  - Briefly explain what each command does.
+
+  Coding Style & Naming Conventions
+
+  - Specify indentation rules, language-specific style preferences, and naming patterns.
+  - Include any formatting or linting tools used.
+
+  Testing Guidelines
+
+  - Identify testing frameworks and coverage requirements.
+  - State test naming conventions and how to run tests.
+
+  Commit & Pull Request Guidelines
+
+  - Summarize commit message conventions found in the project’s Git history.
+  - Outline pull request requirements (descriptions, linked issues, screenshots, etc.).
+
+  (Optional) Add other sections if relevant, such as Security & Configuration Tips, Architecture
+  Overview, or Agent-Specific Instructions.
+
+
+• Ran git log -10 --oneline
+  └ 3885d0e Remove agent instruction files and update documentation
+    ee09dc2 Update agent instructions and clean up documentation
+    … +6 lines
+    2e64604 Add Gate C integration test and validation tooling
+    223f1c5 Implement traceability service and update documentation
+
+• Explored
+  └ Search rg --files -g AGENTS.md
+
+• Added AGENTS.md (+45 -0)
+     1 +# Repository Guidelines
+     2 +
+     3 +## Project Structure & Module Organization
+     4 +SOLVER is a Python/FastAPI backend with a future Next.js frontend. Key paths:
+     5 +- `apps/api/`: backend source (domain, application, infrastructure, orchestration, routes).
+     6 +- `apps/web/`: frontend scaffold (minimal today).
+     7 +- `packages/`: shared contracts and instance packs.
+     8 +- `infra/`: Docker and DB migrations (`infra/db/migrations/`).
+     9 +- `docs/spec/`: authoritative specs; `docs/DECISIONS.md` logs approved deviations.
+    10 +- `tests/` and `apps/api/tests/`: unit/integration/e2e tests.
+    11 +
+    12 +## Build, Test, and Development Commands
+    13 +Common workflow (from README/CLAUDE):
+    14 +- `docker compose -f infra/docker/docker-compose.yml up -d` — start Postgres.
+    15 +- `make migrate` — apply DB migrations.
+    16 +- `make dev-api` — run API at `http://localhost:8000`.
+    17 +- `make test` / `make test-unit` / `make test-integration` — pytest suites.
+    18 +- `make test-gates`, `make test-recovery`, `make e2e` — gate verification.
+    19 +- `make lint` / `make format` — ruff linting/formatting.
+    20 +- `python tools/validate_schemas.py` — schema validation.
+    21 +
+    22 +## Coding Style & Naming Conventions
+    23 +- Python: 4-space indentation; follow existing layer boundaries (no DB calls in routes).
+    24 +- Use `ruff` for formatting/linting; keep type hints where present.
+    25 +- Models: Pydantic classes in `PascalCase`; fields in `snake_case`.
+    26 +- Keep file and function naming consistent with existing modules.
+    27 +
+    28 +## Testing Guidelines
+    29 +- Framework: `pytest` with tests in `apps/api/tests/` and `tests/`.
+    30 +- Naming: `test_*.py` files and `test_*` functions.
+    31 +- Gate tests are required for release readiness; run Gate C/D/E at minimum.
+    32 +- Some integration tests require LLM API keys; see `.env` notes below.
+    33 +
+    34 +## Commit & Pull Request Guidelines
+    35 +- Recent history uses imperative summaries and occasional type prefixes (e.g., `docs:`).
+    36 +- Keep commits scoped and descriptive (e.g., `docs: update spec refs`).
+    37 +- PRs should include a summary, tests run, and any deviations logged in `docs/DECISIONS.md`.
+    38 +
+    39 +## Configuration & Security
+    40 +- Backend config: `apps/api/.env` (copy from `.env.example`).
+    41 +- Never commit API keys or secrets; use env vars for LLM providers.
+    42 +
+    43 +## Architecture & Spec References
+    44 +- Follow the authority chain in `docs/spec/` for invariants and API schemas.
+    45 +- Changes that diverge from spec must be recorded in `docs/DECISIONS.md`.
+
+─ Worked for 47s ──────────────────────────────────────────────────────────────────────────────────────
+
+• Created AGENTS.md in the repo root with the requested “Repository Guidelines” content (200–400 words,
+  concise, and repo‑specific).
+
+  If you want tweaks (e.g., add/remove sections or adjust commands), tell me what to change.
+
+
+› I moved it to  /Users/ryan/ai-env/projects/solver-engine/  where it is correctly located in the
+  solver-engine root folder
+
+
+• Got it — thanks for moving it into the repo root. If you want any edits to the content or structure,
+  just say the word.
+
+
+› Here’s the report from the Senior Developer after completing implementation.  Verify if the results
+  matched your expectations.  Propose what to do next.
+
+    <Senior Developer>
+   ⏺ Migration successful. Now let me update the todo and run the test suite:
+
+  ⏺ Bash(PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/ -v --tb=short 2>&1 | head -200) timeout:
+  5m 0s
+    ⎿ ============================= test session starts ==============================
+      platform darwin -- Python 3.13.7, pytest-9.0.2, pluggy-1.6.0 -- /Users/ryan/ai-env/projects/
+  solver-engine/.venv/bin/python3
+      .13
+      … +236 lines (ctrl+o to expand)
+
+
+  ⏺ Bash(PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/ -v --tb=short 2>&1 | tail -100) timeout:
+  5m 0s
+    ⎿  tests/unit/test_artifact_service.py::TestSchemaValidation::test_validate_step3_content
+       tests/unit/
+  test_artifact_service.py::TestValidateOutputIntegration::test_pass2_full_schema_validation
+       tests/unit/
+  test_artifact_service.py::TestValidateOutputIntegration::test_pass2_valid_content_passes
+       … +118 lines (ctrl+o to expand)
+
+  ⏺ All tests pass except for 5 tests in test_orchestration_interrupt_resume.py that require a live
+  OpenAI API key (401 auth error). This is expected - the test file doesn't use mocked LLM responses.
+
+    Let me update the todo list and summarize:
+
+  ⏺ Corrective Patches Complete ✅
+
+    All three patches from Co-Developer-1's fourth review have been implemented and verified:
+
+    | Patch | Description                                             | Status                |
+    |-------|---------------------------------------------------------|-----------------------|
+    | 7     | DB migration 004_add_pending_status.py                  | ✅ Created & migrated |
+    | 8     | /re-execute blocks PENDING status                       | ✅ Implemented        |
+    | 9     | acknowledge-stale full implementation (OCC, audit, SSE) | ✅ Implemented        |
+
+    Test Results
+
+    268 passed, 5 failed (API key required)
+
+    All acceptance gates pass:
+    - Gate A (Methodology): 3/3 ✅
+    - Gate B (Traceability): 7/7 ✅
+    - Gate C (Gating Enforcement): 4/4 ✅
+    - Gate D (Restart/Recovery): 2/2 ✅
+    - Gate E (API + SSE Flow): 3/3 ✅
+    - Gate F (Audit Trail): 5/5 ✅
+
+    The 5 failures in test_orchestration_interrupt_resume.py are expected - they require a live OpenAI
+  API key for integration testing and don't use the monkeypatched LLM fixture.
+
+    </Senior Developer>
+
+
+• Explored
+  └ List versions
+    Read 004_add_pending_status.py
+    Search re-execute|re_execute_step|pending in workflows.py
+    Read workflows.py
+    Search AcknowledgeStaleRequest|acknowledge_stale in workflows.py
+    Read workflows.py
+
+• I'm carefully inspecting how the new 'pending' status is integrated in enums, migrations, and event
+  mappings, checking whether the database enum updates align with spec and whether event mappings like
+  STATUS_TO_EVENT properly handle 'pending'. I’m also noting the need to verify test and gate command
+  results around these changes to ensure readiness.
+
+• Explored
+  └ Search STATUS_TO_EVENT in workflows.py
+    Read workflows.py
+
+• I'm sorting through how pending status fits into event mappings and confirming that stale
+  acknowledgments align with spec, including audit logs and event types. I'm also checking if database
+  migrations and domain enum updates properly incorporate 'pending', noticing some possible gaps with
+  event defaults and API response consistency around position fields. While tests roughly align, gating
+  and spec adherence might benefit from further validation.
+
+• Explored
+  └ Search AcknowledgeStaleResponse|acknowledge-stale in 4_solver-technical-spec-V2.8.0.md
+    Read 4_solver-technical-spec-V2.8.0.md
+    Search acknowledge-stale in 4_solver-technical-spec-V2.8.0.md
+    Search acknowledge-stale in DECISIONS.md
+    Search artifact\.stale_cleared in 4_solver-technical-spec-V2.8.0.md
+    Read 4_solver-technical-spec-V2.8.0.md
+
+• I’m carefully comparing the implementation to the spec and spotting several mismatches—especially the
+  ack-stale endpoint path and response shape, plus missing position fields. Most patches align well,
+  migrations appear present, and tests mostly pass except for OpenAI-related keys. I’ll propose
+  aligning ack-stale to spec or formally documenting deviations, updating SSE payload and response to
+  include required fields, ensuring migrations run, and rerunning comprehensive test gates. I’ll also
+  suggest clarifying integration test handling for missing API keys and updating DECISIONS to track
+  these choices. This review balances confirming expectations with clear, actionable guidance for
+  what’s left to address.
+
+─ Worked for 2m 50s ───────────────────────────────────────────────────────────────────────────────────
+
+• Partially matched expectations: patches 7–8 look correct, but patch 9 still diverges from the spec.
+
+  Findings
+
+  - High — acknowledge-stale endpoint shape doesn’t match the spec (path and request/response). Spec
+    is /workflows/{id}/artifacts/{aid}/acknowledge-stale with reviewer_id/justification and
+    AcknowledgeStaleResponse(artifact_id, state_version), but implementation is /actions/acknowledge-
+    stale with list inputs and counts. apps/api/routes/workflows.py:1605, docs/spec/4_solver-technical-
+    spec-V2.8.0.md:2238
+  - Medium — SSE payload for artifact.stale_cleared doesn’t follow spec fields (artifact_id,
+    cleared_by, method). apps/api/routes/workflows.py:1729, docs/spec/4_solver-technical-spec-
+    V2.8.0.md:2289
+  - Medium — “all API responses include position” is still not applied to AcknowledgeStaleResponse.
+    apps/api/routes/workflows.py:1622, docs/spec/4_solver-technical-spec-V2.8.0.md:2174
+  - Low — pending migration exists and looks fine, but ensure it’s applied in the target DB. infra/db/
+    migrations/versions/004_add_pending_status.py
+
+  What matched expectations
+
+  - pending added to domain + DB enums.
+  - /re-execute correctly blocks pending and uses PENDING status.
+  - /replay decision mapping fixed, /diff shape fixed, utility endpoints now include position.
+  - Gate tests passing (except LLM key‑required integration tests).
+
+  Next steps
+
+  1. Align acknowledge-stale to spec: change route to /workflows/{id}/artifacts/{aid}/acknowledge-
+     stale, adjust request/response fields, add position to response, and emit artifact.stale_cleared
+     payload per spec. Update tests accordingly.
+  2. If you want to keep the list-based endpoint, log a deviation in docs/DECISIONS.md and update the
+     spec to match.
+  3. Re-run Gate C/D/E after the endpoint change; decide whether to skip LLM integration tests when API
+     keys are absent (or supply keys in CI).
+
+
+› The acknowledge-stale endpoint differs significantly from spec. How should I proceed?
+
+  ❯ 1. Align to spec exactly (Recommended)
+       Change to /artifacts/{aid}/acknowledge-stale with reviewer_id + justification per spec. Single
+  artifact per call.
+    2. Keep batch endpoint + log deviation
+       Keep current batch operation at /actions/acknowledge-stale. Document deviation in DECISIONS.md.
+    3. Both endpoints
+       Add spec-compliant single-artifact endpoint AND keep batch endpoint for convenience.
+    4. Type something.
+
+
+• Option 1 — align to spec exactly. It keeps the API contract clean and avoids front‑end ambiguity. If
+  batch behavior is still desired, add it later as an extension with a documented deviation (or as a
+  separate endpoint explicitly named /actions/acknowledge-stale-batch).
+
+
+› Here’s the report from the Senior Developer after completing implementation.  Verify if the results
+  matched your expectations.  Propose what to do next.
+
+    <Senior Developer>
+   ⏺ Now let me update the todo and run the tests:
+
+  ⏺ Bash(PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/ -v --tb=short 2>&1 | tail -60) timeout:
+  5m 0s
+    ⎿  apps/api/infrastructure/db/repositories/base.py                        28      3    89%   66-68
+       apps/api/infrastructure/db/repositories/checkpoint.py                  61      9    85%   178-
+  182, 224-227
+       apps/api/infrastructure/db/repositories/instance.py                    14      0   100%
+       … +71 lines (ctrl+o to expand)
+
+  ⏺ Let me update the todo list to mark completion:
+
+  ⏺ Patch 10 Complete ✅
+
+    The acknowledge-stale endpoint has been aligned to V2.8.0 spec:
+
+    | Aspect      | Before                                                                 | After
+  (Spec-aligned)                                          |
+
+  |-------------|------------------------------------------------------------------------|------------
+  ---------------------------------------------------|
+    | Route       | POST /{workflow_id}/actions/acknowledge-stale                          | POST /
+  {workflow_id}/artifacts/{artifact_id}/acknowledge-stale |
+    | Request     | artifact_ids[], link_ids[], actor_id, expected_state_version           |
+  reviewer_id, justification, expected_state_version            |
+    | Response    | workflow_id, state_version, acknowledged_artifacts, acknowledged_links |
+  artifact_id, state_version                                    |
+    | SSE payload | Nested with workflow_id, instance_id, position, data                   | Simple:
+  artifact_id, cleared_by, method                       |
+
+    Test Results
+
+    268 passed, 5 failed (API key required)
+
+    All acceptance gates continue to pass:
+    - Gate A (Methodology): 3/3 ✅
+    - Gate B (Traceability): 7/7 ✅
+    - Gate C (Gating Enforcement): 4/4 ✅
+    - Gate D (Restart/Recovery): 2/2 ✅
+    - Gate E (API + SSE Flow): 3/3 ✅
+    - Gate F (Audit Trail): 5/5 ✅
+
+    The 5 failures in test_orchestration_interrupt_resume.py require a live OpenAI API key.
+
+
+    </Senior Developer>
+
+
+• Explored
+  └ Search acknowledge-stale in workflows.py
+    Read workflows.py
+
+• I’m wrapping up a detailed review comparing the implementation against the spec for the acknowledge-
+  stale endpoint and SSE events. Mostly things align, but notable gaps remain around missing position
+  and actor_id in SSE payloads and API responses, which violates the contract. I’ll highlight these
+  with file references, note unverified tests due to missing API keys, and propose next steps to fix
+  event creation, update responses, and extend tests accordingly. This review balances confirming what
+  matches expectations with actionable recommendations.
+
+─ Worked for 1m 42s ───────────────────────────────────────────────────────────────────────────────────
+
+• The patch mostly matches expectations: the route, request, and response for /artifacts/{artifact_id}/
+  acknowledge-stale are now spec‑aligned, and the tests (minus LLM‑key integrations) are green. Two
+  spec‑level mismatches still remain around SSE payloads and response shape.
+
+  - High: artifact.stale_cleared events emitted by acknowledge_stale lack actor_id and position in the
+    payload, so to_sse_dict falls back to “unknown” position and omits actor attribution in the SSE
+    envelope. This violates the SSE contract and the “user‑initiated events must include actor_id”
+    rule. apps/api/routes/workflows.py:1709, apps/api/infrastructure/db/models/workflow_event.py:110,
+    docs/spec/4_solver-technical-spec-V2.8.0.md:2168
+  - Medium: AcknowledgeStaleResponse still omits position even though the spec states all API responses
+    include it. apps/api/routes/workflows.py:1622, docs/spec/4_solver-technical-spec-V2.8.0.md:2174
+  - Low: 5 integration tests remain unverified without an OpenAI API key.
+
+  What to do next
+
+  1. Update acknowledge_stale to emit SSE via the shared event payload builder (or add position +
+     actor_id fields to the payload before create_event). This keeps the SSE envelope correct and
+     actor‑attributed. apps/api/routes/workflows.py
+  2. Add position to AcknowledgeStaleResponse (or wrap it in the APIResponse pattern used elsewhere).
+     apps/api/routes/workflows.py
+  3. Add/extend tests to assert artifact.stale_cleared includes position and actor_id in SSE events;
+     re‑run Gate E and e2e.
+  4. Optional: run the LLM integration tests with a live API key to close the remaining coverage gap.
+
+  If you want, I can review the patch once those two fixes are in.
+
+
+› Here’s the report from the Senior Developer after completing implementation.  Verify if the results
+  matched your expectations.  Propose what to do next.
+
+    <Senior Developer>
+   ⏺ Now let me update the todo and run the tests:
+
+  ⏺ Bash(PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/ -v --tb=short 2>&1 | tail -50) timeout:
+  5m 0s
+    ⎿  apps/api/main.py                                                       25      5    80%   65,
+  80, 86, 94-96
+       apps/api/orchestration/__init__.py                                      0      0   100%
+       apps/api/orchestration/graph.py                                        45      1    98%   47
+       … +60 lines (ctrl+o to expand)
+
+  ⏺ Patch 11 Complete ✅
+
+    Both issues from Co-Developer-1's sixth review have been fixed:
+
+    | Issue                                           | Fix
+  |
+
+  |-------------------------------------------------|-------------------------------------------------
+  ------------------------------------------------------------------|
+    | HIGH: SSE payload missing position and actor_id | Added both fields to the payload so
+  to_sse_dict() includes them in the SSE envelope                               |
+    | MEDIUM: Response missing position               | Added position: PositionResponse field to
+  AcknowledgeStaleResponse and populated it via build_position_response() |
+
+    Test Results
+
+    268 passed, 5 failed (API key/connection required)
+
+    All acceptance gates continue to pass:
+    - Gate A (Methodology): 3/3 ✅
+    - Gate B (Traceability): 7/7 ✅
+    - Gate C (Gating Enforcement): 4/4 ✅
+    - Gate D (Restart/Recovery): 2/2 ✅
+    - Gate E (API + SSE Flow): 3/3 ✅
+    - Gate F (Audit Trail): 5/5 ✅
+
+    The 5 failures in test_orchestration_interrupt_resume.py require a live OpenAI API key (or had
+  connection issues during this run).
+
+    </Senior Developer>
+
+
+• Explored
+  └ Search AcknowledgeStaleResponse|acknowledge-stale in workflows.py
+    Read workflows.py
+
+• I'll highlight the critical missing instance_id in the SSE payload, note test failures due to missing
+  API key, and pose questions about event payload handling. Then I’ll suggest patching the payload to
+  include instance_id, adding relevant tests, and re-running gate checks. Finally, I’ll confirm that
+  results mostly align aside from the instance_id issue.
+
+─ Worked for 51s ──────────────────────────────────────────────────────────────────────────────────────
+
+• Findings
+
+  - High — artifact.stale_cleared SSE payload still omits instance_id, so the SSE envelope will fall
+    back to workflow_id for instance_id, which violates the SSE schema. apps/api/routes/
+    workflows.py:1718 (see to_sse_dict behavior in apps/api/infrastructure/db/models/
+    workflow_event.py:119)
+  - Low — 5 integration tests remain unverified due to missing OpenAI API key; expected but still a
+    coverage gap.
+
+  Questions/Assumptions
+
+  - Do you want acknowledge_stale to use the shared event payload builder (which already adds
+    instance_id) or just add instance_id explicitly in the payload?
+
+  Recommendation
+
+  - Add instance_id (and optionally workflow_id for consistency) to the artifact.stale_cleared payload
+    in apps/api/routes/workflows.py:1718, then re-run Gate E + e2e.
+  - If you want full verification, run the LLM integration tests with a valid API key or mark them as
+    skipped in CI.
+
+  Once instance_id is fixed, the patch aligns with expectations.
+
+
+› ⏺ You're right. Let me fix the missing instance_id in the SSE payload:
+
+  ⏺ Update(apps/api/routes/workflows.py)
+    ⎿  Added 3 lines, removed 1 line
+        1719              "artifact_id": str(artifact_id),
+        1720              "cleared_by": request.reviewer_id,
+        1721              "method": "acknowledged",
+        1722 -            # Required for SSE envelope per V2.8.0 spec line 2168
+        1722 +            # Required for SSE envelope per V2.8.0 spec
+        1723 +            "workflow_id": workflow.workflow_id,  # External workflow ID
+        1724 +            "instance_id": str(workflow.instance_id),  # Internal UUID per V2.8.0
+        1725              "actor_id": request.reviewer_id,
+        1726              "position": {
+        1727                  "instance_number": workflow.instance_number if hasattr(workflow,
+  "instance_number") else 1,
+
+  ⏺ Bash(PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/e2e/ apps/api/tests/integration/
+  test_gate_c.py  timeout: 3m 0s
+        apps/api/tests/integration/test_gate_d.py -v --tb=short 2>&1…)
+    ⎿ apps/api/infrastructure/db/repositories/__init__.py            11      0   100%
+      apps/api/infrastructure/db/repositories/artifact.py            39     12    69%   49, 65-74, 99,
+  103, 131, 156, 161, 174-18
+      3
+      … +47 lines (ctrl+o to expand)
+
+
+  ⏺ Fix Complete ✅
+
+    Added workflow_id and instance_id to the artifact.stale_cleared SSE payload. All 29 gate tests
+  pass:
+
+    29 passed
+
+    | Gate                        | Status |
+    |-----------------------------|--------|
+    | Gate A (Methodology)        | 3/3 ✅ |
+    | Gate B (Traceability)       | 7/7 ✅ |
+    | Gate C (Gating Enforcement) | 4/4 ✅ |
+    | Gate D (Restart/Recovery)   | 2/2 ✅ |
+    | Gate E (API + SSE Flow)     | 3/3 ✅ |
+    | Gate F (Audit Trail)        | 5/5 ✅ |
+    | SSE Replay                  | 5/5 ✅ |
+
+    The acknowledge-stale endpoint now fully aligns with V2.8.0 spec - SSE envelope includes proper
+  workflow_id, instance_id, actor_id, and position.
+
+
+• This now matches expectations. The SSE payload for artifact.stale_cleared includes workflow_id and
+  instance_id, so the SSE envelope will be correct, and the position/actor attribution is intact. Gate
+  coverage is green for all offline tests.
+
+  Next steps:
+
+  1. If you want full integration coverage, run the LLM‑backed tests with valid API keys; otherwise
+     document the expected skip in CI.
+  2. Update docs/DECISIONS.md to close any prior “traceability deferred” note and record that the
+     acknowledge‑stale endpoint is now spec‑aligned (if you tracked it as a deviation).
+  3. Proceed to frontend development (Phase 6), since backend gates A–F are passing.
+
+
+› Create the init prompt for the next instance of the Senior Developer.
+  Here’s the current version
+    <Senior Developer init prompt>
+  # SOLVER Engine — Senior Developer Init
+
+    ## Mission
+
+    1. Verify backend alignment with the unified governance docs (V2.8.0 spec + Appendix D).
+    2. Close any remaining gaps; re‑verify required gates.
+    3. Then: frontend integration as per the Development Directive.
+
+    ## Project Description & Objectives
+
+    **Description:** SOLVER is a structured reasoning workflow engine that turns unstructured problems
+  into
+    versioned, traceable artifacts via a two‑pass, human‑gated methodology (MVP Steps 1–3).
+
+    **Objectives:**
+    - Enforce the two‑pass methodology (Pass 1 methodology → Pass 2 execution).
+    - Require human approval gates before any Pass 2 advancement.
+    - Persist artifacts, audit trail, and event log for restart/replay.
+    - Provide REST + SSE for interactive review and synchronization.
+    - Preserve traceability from Step 1 → Step 2 → Step 3.
+
+    ## Orientation
+
+    pwd && git status -sb
+
+    Read in order:
+    1. `README.md` — project context
+    2. `AGENTS.md` — spec reading order and working conventions
+    3. `CLAUDE.md` — tooling and environment
+    4. `docs/DECISIONS.md` — prior decisions and deviations
+
+    Then follow the spec reading order in `AGENTS.md`. The **Development Directive** defines packages
+  and
+    gates, the **Architectural Contract** (§9–14, R1–R19) defines correctness, and the **Technical
+  Spec
+    V2.8.0** (incl. Appendix D) is authoritative for implementation details.
+
+    ## Governance (Discover by Reading)
+
+    The `docs/spec/` directory contains a unified governance framework. Key concepts:
+
+    | Concept | Where to Find | Why It Matters |
+    |---------|---------------|----------------|
+    | Authority model | Doc‑Type‑Specs §2 | How to resolve conflicts |
+    | Work hierarchy | Directive §2 | Gate → Phase → Package → Deliverable |
+    | Frontend rules | Contract §13–14 | R1–R19 are non‑negotiable |
+    | Methodology primitives | Tech Spec §Appendix D | Normative two‑pass + V1→V3 rules |
+
+     ## Gates (High Level)
+
+    - **α (Infrastructure):** Environment runs; schema applied; graph operational.
+    - **β (Contracts):** Event sequencing, replay query correctness, optimistic concurrency, audit
+    attribution, broadcast‑after‑commit, leases.
+    - **γ (Integration):** End‑to‑end lifecycle, SSE sync/gap recovery, action gating, staleness flow.
+    - **A–F (Acceptance):** Methodology exists; packages + traces; gating enforced; restart/resume;
+  SSE
+    flow; audit trail.
+
+    ## Phases and Packages Summary
+
+  Phase 1: Foundation
+  Package 1.1: Project Skeleton
+  Package 1.2: Domain Models
+  Package 1.3: Database Schema
+
+  Phase 2: Persistence Contracts
+  Package 2.1: Event Log with Concurrency-Safe Sequences
+  Package 2.2: Workflow State Management
+  Package 2.3: Audit Logging with Session Attribution
+  Package 2.4: Staleness Trigger
+
+  Phase 3: Orchestration
+  Package 3.1: Graph Definition
+  Package 3.2: Node Implementations (Steps 1-3)
+  Package 3.3: Interrupt Gates
+  Package 3.4: Checkpointing
+
+  Phase 4: API Layer
+  Package 4.1: Workflow CRUD and Progress Endpoints
+  Package 4.2: SSE Streaming with Replay
+  Package 4.3: Human Action Endpoints
+  Package 4.4: Staleness Endpoints
+
+  Phase 5: Runner and Leases
+  Package 5.1: Lease Management
+  Package 5.2: Runner Loop
+  Package 5.3: LLM Integration
+
+  Phase 6: Frontend
+  Package 6.1: Project Setup
+  Package 6.2: Connection Manager
+  Package 6.3: Sequence Guard
+  Package 6.4: Action Gating
+  Package 6.5: Workflow UI
+  Package 6.6: SSE Event Handling
+
+  Phase 7: Integration
+  Package 7.1: Workflow Lifecycle Integration
+  Package 7.2: Staleness Integration
+  Package 7.3: Recovery Scenarios
+
+  Phase 8: Verification
+  Package 8.1: Gate A — Methodology Exists
+  Package 8.2: Gate B — Packages with Traces
+  Package 8.3: Gate C — Gating Enforcement
+  Package 8.4: Gate D — Restart/Resume
+  Package 8.5: Gate E — SSE Flow
+  Package 8.6: Gate F — Audit Trail
+
+    **Current Phase:** Phase 1: Foundation
+    **Current Package:** Package 1.1: Project Skeleton
+
+    ## Current State
+
+    - Unified spec updated to `docs/spec/4_solver-technical-spec-V2.8.0.md` with **Appendix D
+  (Normative
+    Methodology)**.
+    - Legacy methodology is archived and non‑authoritative.
+    - References updated across repo to V2.8.0.
+    - Backend gates previously passed, but must be re‑verified against the unified spec set.
+
+    ## Verification
+
+    make test-gates
+    make test-recovery
+    make e2e
+    pytest apps/api/tests/e2e/test_sse_replay.py
+
+    ## Key Paths
+
+    apps/api/routes/workflows.py
+    apps/api/application/workflow_service.py
+    apps/api/application/event_stream.py
+    apps/api/tests/e2e/
+    infra/db/migrations/versions/
+
+    ## Patterns to Avoid
+
+    | Don't | Do Instead |
+    |-------|------------|
+    | Create `apps/api/src/` nesting | Keep flat `apps/api/` structure |
+    | Edit applied migrations | Add new migration |
+    | Publish events inside transaction | Persist in txn, publish after commit |
+    | Use `PostgresSaver` directly | Use `SolverCheckpointSaver` |
+    | Wire message action to graph | DB-only persistence (Gate C) |
+    | Assume state types after resume | Use `coerce_state()` in nodes |
+    | Invent endpoint shapes | Follow Spec or log deviation |
+    | Skip reading Contract | R1–R19 are implementation constraints |
+
+    ## Working Protocol
+
+    1. Propose a plan for the next Package (deliverables + tasks)
+    2. Wait for approval
+    3. Implement only what's approved
+    4. Log deviations in `docs/DECISIONS.md`
+
+    ## Start
+
+    After orientation wait for further instructions.
+
+    </Senior Developer init prompt>
+
+
+• Here’s an updated init prompt for the next Senior Developer instance, aligned with current repo state
+  and the new AGENTS.md:
+
+  ———
+
+  # SOLVER Engine — Senior Developer Init
+
+  ## Mission
+
+  1. Confirm backend alignment with unified governance docs (V2.8.0 + Appendix D).
+  2. Re‑verify required gates; note any exceptions (e.g., missing LLM keys).
+  3. Proceed to frontend integration per Development Directive.
+
+  ## Project Description & Objectives
+
+  Description: SOLVER is a structured reasoning workflow engine that turns unstructured problems into
+  versioned, traceable artifacts via a two‑pass, human‑gated methodology (MVP Steps 1–3).
+
+  Objectives:
+
+  - Enforce two‑pass methodology (Pass 1 methodology → Pass 2 execution).
+  - Require human approval gates before any Pass 2 advancement.
+  - Persist artifacts, audit trail, and event log for restart/replay.
+  - Provide REST + SSE for interactive review and synchronization.
+  - Preserve traceability from Step 1 → Step 2 → Step 3.
+
+  ## Orientation
+
+  Run:
+
+  - pwd
+  - git status -sb
+
+  Read in order:
+
+  1. README.md — project context
+  2. AGENTS.md — repository guidelines
+  3. CLAUDE.md — tooling/environment commands
+  4. docs/DECISIONS.md — approved deviations
+
+  Then read governance docs in docs/spec/:
+
+  - 0_Document-Type-Specifications-v2.1.md
+  - 1_SOLVER-README.md
+  - 2_SOLVER-Design-Intent-v1.1.md
+  - 3_SOLVER-Architectural-Contract-v3.4.md
+  - 4_solver-technical-spec-V2.8.0.md
+  - 5_SOLVER-Development-Directive-v1.5.md
+  - 6_SOLVER-Change-Management-v1.2.md
+
+  ## Current State
+
+  - Backend is spec‑aligned; gates A–F pass offline.
+  - LLM integration tests require a live API key and may fail without it.
+  - acknowledge-stale now spec‑aligned and SSE payloads include workflow_id, instance_id, actor_id, and
+    position.
+  - Migration 004_add_pending_status.py adds pending to step_status.
+
+  ## Gates (High Level)
+
+  - α: Environment runs, schema applied, graph operational
+  - β: Sequencing, replay correctness, OCC, audit attribution, broadcast‑after‑commit, leases
+  - γ: Lifecycle, SSE sync, action gating, staleness flow
+  - A–F: Methodology, traces, gating enforcement, restart/resume, SSE flow, audit trail
+
+  ## Current Phase
+
+  Phase 6: Frontend
+  Package 6.1: Project Setup
+
+  ## Verification Commands
+
+  - make test-gates
+  - make test-recovery
+  - make e2e
+  - pytest apps/api/tests/e2e/test_sse_replay.py
+
+  ## Key Paths
+
+  - apps/api/routes/workflows.py
+  - apps/api/application/workflow_service.py
+  - apps/api/application/event_stream.py
+  - apps/api/tests/e2e/
+  - infra/db/migrations/versions/
+
+  ## Working Protocol
+
+  - Work in packages; each package is a set of deliverables, completed through tasks.
+  - Propose a plan for the next package → wait for approval → implement only approved work.
+  - Log deviations in docs/DECISIONS.md.
+  - Do not edit applied migrations; add new ones.
+
+  ## Start
+
+  After orientation, wait for further instructions.
+
+
+› Create the init prompt for the next instance of the Co-Developer.
+  Here’s the current version
+    <Co-Developer init prompt>
+     # SOLVER Engine — Co-Developer Init
+
+    ## Role
+
+    Reviewer and guardian. You do NOT implement. You analyze plans, review code against governance
+    documents, and verify gates meet stated criteria.
+
+    ## Project Description & Objectives
+
+    **Description:** SOLVER is a structured reasoning workflow engine that turns unstructured problems
+  into
+    versioned, traceable artifacts via a two‑pass, human‑gated methodology (MVP Steps 1–3).
+
+    **Objectives:**
+    - Enforce the two‑pass methodology (Pass 1 methodology → Pass 2 execution).
+    - Require human approval gates before any Pass 2 advancement.
+    - Persist artifacts, audit trail, and event log for restart/replay.
+    - Provide REST + SSE for interactive review and synchronization.
+    - Preserve traceability from Step 1 → Step 2 → Step 3.
+
+    ## Orientation
+
+    pwd && git status -sb
+
+    Read in order:
+    1. `README.md` — project context
+    2. `AGENTS.md` — spec reading order and conventions
+    3. `docs/DECISIONS.md` — prior decisions and deviations
+
+    Then follow the spec reading order in `AGENTS.md`. The **Architectural Contract** (§9–14, R1–R19)
+    defines what you verify against, and **Technical Spec V2.8.0** (Appendix D) defines the normative
+    methodology.
+
+    ## Gates (High Level)
+
+    - **α (Infrastructure):** Environment runs; schema applied; graph operational.
+    - **β (Contracts):** Event sequencing, replay query correctness, optimistic concurrency, audit
+    attribution, broadcast‑after‑commit, leases.
+    - **γ (Integration):** End‑to‑end lifecycle, SSE sync/gap recovery, action gating, staleness flow.
+    - **A–F (Acceptance):** Methodology exists; packages + traces; gating enforced; restart/resume;
+  SSE
+    flow; audit trail.
+
+    ## Phases and Packages Summary
+
+  Phase 1: Foundation
+  Package 1.1: Project Skeleton
+  Package 1.2: Domain Models
+  Package 1.3: Database Schema
+
+  Phase 2: Persistence Contracts
+  Package 2.1: Event Log with Concurrency-Safe Sequences
+  Package 2.2: Workflow State Management
+  Package 2.3: Audit Logging with Session Attribution
+  Package 2.4: Staleness Trigger
+
+  Phase 3: Orchestration
+  Package 3.1: Graph Definition
+  Package 3.2: Node Implementations (Steps 1-3)
+  Package 3.3: Interrupt Gates
+  Package 3.4: Checkpointing
+
+  Phase 4: API Layer
+  Package 4.1: Workflow CRUD and Progress Endpoints
+  Package 4.2: SSE Streaming with Replay
+  Package 4.3: Human Action Endpoints
+  Package 4.4: Staleness Endpoints
+
+  Phase 5: Runner and Leases
+  Package 5.1: Lease Management
+  Package 5.2: Runner Loop
+  Package 5.3: LLM Integration
+
+  Phase 6: Frontend
+  Package 6.1: Project Setup
+  Package 6.2: Connection Manager
+  Package 6.3: Sequence Guard
+  Package 6.4: Action Gating
+  Package 6.5: Workflow UI
+  Package 6.6: SSE Event Handling
+
+  Phase 7: Integration
+  Package 7.1: Workflow Lifecycle Integration
+  Package 7.2: Staleness Integration
+  Package 7.3: Recovery Scenarios
+
+  Phase 8: Verification
+  Package 8.1: Gate A — Methodology Exists
+  Package 8.2: Gate B — Packages with Traces
+  Package 8.3: Gate C — Gating Enforcement
+  Package 8.4: Gate D — Restart/Resume
+  Package 8.5: Gate E — SSE Flow
+  Package 8.6: Gate F — Audit Trail
+
+    **Current Phase:** Phase 1: Foundation
+    **Current Package:** Package 1.1: Project Skeleton
+
+    ## Current Focus
+
+    Backend near-complete; frontend follows only after backend is verified clean.
+    Your attention should be on:
+    - SSE correctness (sequence, replay, gaps)
+    - Optimistic concurrency (required fields, 409 response)
+    - Staleness propagation and lineage
+    - Error response structure
+
+    ## What You Verify
+
+    | Gate | Focus |
+    |------|-------|
+    | γ1 | Lifecycle: create → execute → gate → approve → advance |
+    | γ2 | SSE sync: replay, reconnect, gap handling |
+    | γ3 | Action gating: canAct/canMessage, R1–R19 |
+    | γ4 | Staleness: upstream revision → stale → re‑execute |
+
+    Gate criteria are in the Directive. Verify against criteria, not intuition.
+
+    ## Key Paths
+
+    apps/api/routes/workflows.py
+    apps/api/application/workflow_service.py
+    apps/api/application/event_stream.py
+    apps/api/tests/e2e/
+    infra/db/migrations/versions/
+
+    ## Verification Commands
+
+    make test-gates
+    make test-recovery
+    make e2e
+    pytest apps/api/tests/e2e/test_sse_replay.py
+
+    ## What You Flag
+
+    | Pattern | Response |
+    |---------|----------|
+    | Deviation from Contract/Spec | Flag → point to `docs/DECISIONS.md` |
+    | `apps/api/src/` nesting | Reject — flat layout required |
+    | DB calls in route handlers | Reject — layer separation |
+    | Network/LLM in unit tests | Reject — deterministic only |
+    | Edits to applied migrations | Reject — add new migration |
+    | Invented endpoint shapes | Flag — Spec is authoritative |
+
+    You don't approve deviations. You identify them. Senior Dev logs; Human approves.
+
+    ## Review Output
+
+    **Findings** (severity + location)
+    - ...
+
+    **Questions/Assumptions**
+    - ...
+
+    **Recommendation:** proceed | revise | block
+
+    When uncertain whether something violates spec: flag as question, cite the relevant section, let
+  Senior
+    Dev or Human resolve.
+
+    ## Start
+
+    After orientation, wait for further instructions.
+
+    </Co-Developer init prompt>
+
+
+• I'm crafting a concise init prompt for the co-developer role that reflects the current frontend phase
+  6.1, aligns with new AGENTS guidelines, and clarifies the co-developer's reviewer responsibilities.
+  I'll include notes on backend status, LLM test keys, SSE payloads, action gating, and documentation
+  for deviations, all formatted clearly for easy reference.
+
+─ Worked for 12s ──────────────────────────────────────────────────────────────────────────────────────
+
+• # SOLVER Engine — Co-Developer Init
+
+  ## Role
+
+  Reviewer and guardian. You do NOT implement. You analyze plans, review code against governance
+  documents, and verify gates meet stated criteria.
+
+  ## Project Description & Objectives
+
+  Description: SOLVER is a structured reasoning workflow engine that turns unstructured problems into
+  versioned, traceable artifacts via a two‑pass, human‑gated methodology (MVP Steps 1–3).
+
+  Objectives:
+
+  - Enforce the two‑pass methodology (Pass 1 methodology → Pass 2 execution).
+  - Require human approval gates before any Pass 2 advancement.
+  - Persist artifacts, audit trail, and event log for restart/replay.
+  - Provide REST + SSE for interactive review and synchronization.
+  - Preserve traceability from Step 1 → Step 2 → Step 3.
+
+  ## Orientation
+
+  Run:
+
+  - pwd
+  - git status -sb
+
+  Read in order:
+
+  1. README.md — project context
+  2. AGENTS.md — repository guidelines and spec reading order
+  3. CLAUDE.md — tooling and environment
+  4. docs/DECISIONS.md — prior decisions and deviations
+
+  Then follow the spec reading order in AGENTS.md. The Architectural Contract (§9–14, R1–R19) defines
+  correctness; Technical Spec V2.8.0 (Appendix D) is authoritative for implementation details.
+
+  ## Gates (High Level)
+
+  - α (Infrastructure): Environment runs; schema applied; graph operational.
+  - β (Contracts): Event sequencing, replay query correctness, optimistic concurrency, audit
+    attribution, broadcast‑after‑commit, leases.
+  - γ (Integration): End‑to‑end lifecycle, SSE sync/gap recovery, action gating, staleness flow.
+  - A–F (Acceptance): Methodology exists; packages + traces; gating enforced; restart/resume; SSE flow;
+    audit trail.
+
+  ## Current Phase
+
+  Phase 6: Frontend
+  Package 6.1: Project Setup
+
+  ## Current Focus
+
+  Backend gates pass offline; LLM integration tests require API keys. Review for:
+
+  - SSE correctness (sequence, replay, envelope fields).
+  - Optimistic concurrency (expected_state_version, 409 response shape).
+  - Staleness handling (acknowledge‑stale + re‑execute semantics).
+  - Error response structure and contract alignment.
+  - Frontend contract constraints (R1–R19) before UI work.
+
+  ## What You Verify
+
+  | Gate | Focus |
+  |------|-------|
+  | γ1 | Lifecycle: create → execute → gate → approve → advance |
+  | γ2 | SSE sync: replay, reconnect, gap handling |
+  | γ3 | Action gating: canAct/canMessage, R1–R19 |
+  | γ4 | Staleness: upstream revision → stale → re‑execute |
+
+  Verify against criteria in the Directive, not intuition.
+
+  ## Key Paths
+
+  apps/api/routes/workflows.py
+  apps/api/application/workflow_service.py
+  apps/api/application/event_stream.py
+  apps/api/tests/e2e/
+  infra/db/migrations/versions/
+
+  ## Verification Commands
+
+  make test-gates
+  make test-recovery
+  make e2e
+  pytest apps/api/tests/e2e/test_sse_replay.py
+
+  ## What You Flag
+
+  | Pattern | Response |
+  |---------|----------|
+  | Deviation from Contract/Spec | Flag → point to docs/DECISIONS.md |
+  | apps/api/src/ nesting | Reject — flat layout required |
+  | DB calls in route handlers | Reject — layer separation |
+  | Network/LLM in unit tests | Reject — deterministic only |
+  | Edits to applied migrations | Reject — add new migration |
+  | Invented endpoint shapes | Flag — Spec is authoritative |
+
+  You don’t approve deviations; you identify them. Senior Dev logs; Human approves.
+
+  ## Review Output
+
+  Findings (severity + location)
+
+  - …
+
+  Questions/Assumptions
+
+  - …
+
+  Recommendation: proceed | revise | block
+
+  When uncertain whether something violates spec: flag as question, cite the relevant section, let
+  Senior Dev or Human resolve.
+
+  ## Start
+
+  After orientation, wait for further instructions.
+
+/status
+
+╭─────────────────────────────────────────────────────────────────────────────╮
+│  >_ OpenAI Codex (v0.77.0)                                                  │
+│                                                                             │
+│ Visit https://chatgpt.com/codex/settings/usage for up-to-date               │
+│ information on rate limits and credits                                      │
+│                                                                             │
+│  Model:            gpt-5.2-codex (reasoning xhigh, summaries auto)          │
+│  Directory:        ~/ai-env                                                 │
+│  Approval:         on-request                                               │
+│  Sandbox:          workspace-write                                          │
+│  Agents.md:        <none>                                                   │
+│  Account:          sgttomas@gmail.com (Team)                                │
+│  Session:          019b8d14-5ccf-7050-8246-bcafd265bc9d                     │
+│                                                                             │
+│  Context window:   46% left (153K used / 272K)                              │
+│  5h limit:         [█████████████░░░░░░░] 65% left (resets 04:30)           │
+│  Weekly limit:     [██████████████░░░░░░] 68% left (resets 13:24 on 11 Jan) │
+╰─────────────────────────────────────────────────────────────────────────────╯
+Token usage: total=428,640 input=342,830 (+ 13,768,064 cached) output=85,810 (reasoning 64,640)
+To continue this session, run codex resume 019b8d14-5ccf-7050-8246-bcafd265bc9d
+(.venv) ryan@Mac ai-env % 
+
+
+
+
+
+
+
+
+

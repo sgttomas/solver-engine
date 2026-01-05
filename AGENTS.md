@@ -1,9 +1,9 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-SOLVER is a Python/FastAPI backend with a future Next.js frontend. Key paths:
+SOLVER is a Python/FastAPI backend with a Next.js frontend. Key paths:
 - `apps/api/`: backend source (domain, application, infrastructure, orchestration, routes).
-- `apps/web/`: frontend scaffold (minimal today).
+- `apps/web/`: Next.js frontend (TanStack Query, Zustand, Tailwind).
 - `packages/`: shared contracts and instance packs.
 - `infra/`: Docker and DB migrations (`infra/db/migrations/`).
 - `docs/spec/`: authoritative specs; `docs/spec/DECISIONS.md` logs approved deviations.
@@ -14,9 +14,11 @@ Common workflow (from README/CLAUDE):
 - `docker compose -f infra/docker/docker-compose.yml up -d` — start Postgres.
 - `make migrate` — apply DB migrations.
 - `make dev-api` — run API at `http://localhost:8000`.
+- `make dev-web` — run Next.js at `http://localhost:3000`.
 - `make test` / `make test-unit` / `make test-integration` — pytest suites.
 - `make test-gates`, `make test-recovery`, `make e2e` — gate verification.
-- `make lint` / `make format` — ruff linting/formatting.
+- `make lint` / `make format` — ruff linting/formatting (API).
+- `make lint-web` / `make format-web` — ESLint/Prettier (frontend).
 - `python tools/validate_schemas.py` — schema validation.
 
 ## Coding Style & Naming Conventions

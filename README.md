@@ -76,31 +76,42 @@ SOLVER applies the step's V3 methodology to produce the deliverable artifact, th
 
 ### Ten-Step Workflow
 
-Currently only Steps 1 - 3 are implemented in the SOLVER engine, which is sufficient to define the objectives and start the BUILD PHASE.  Additional steps will be built post-MVP.
+Currently only Steps 1–3 are implemented in the SOLVER engine. Steps 4–10 are part of the full
+methodology but are not yet defined in code. Build work happens concurrently and is not itself a
+workflow step.
 
 ```
-╔═══════════════════════════════════════════════════════════════════╗
-║  DEFINITION PHASE — "What are we solving?"                        ║
-╠═══════════════════════════════════════════════════════════════════╣
-║  Step 1: Problem Definition    → Scope, constraints, success      ║
-║  Step 2: Requirements          → What the solution must do        ║
-║  Step 3: Objectives            → What success looks like          ║
-╠═══════════════════════════════════════════════════════════════════╣
-║  BUILD PHASE — "Build internally and verify"                              ║
-╠═══════════════════════════════════════════════════════════════════╣
-║  VERIFICATION PHASE — "How will we know it works?"                ║
-╠═══════════════════════════════════════════════════════════════════╣
-║  Step 4: Verification Design   → Correctness checks               ║
-║  Step 5: Validation Design     → Fitness checks                   ║
-║  Step 6: Evaluation Criteria   → Success metrics                  ║
-║  Step 7: Assessment Protocol   → Measurement process              ║
-╠═══════════════════════════════════════════════════════════════════╣
-║  EXECUTION PHASE — "Implement for end users and learn"                              ║
-╠═══════════════════════════════════════════════════════════════════╣
-║  Step 8: Implementation        → Build the solution               ║
-║  Step 9: Reflection            → Assess results                   ║
-║  Step 10: Resolution           → Conclude with findings           ║
-╚═══════════════════════════════════════════════════════════════════╝
+SOLVER Workflow
+
+Definition
+  1. Problem Definition — scope, constraints, success criteria
+  2. Requirements — what the solution must do
+  3. Objectives — what success looks like
+
+Build (domain-specific construction, ongoing)
+
+Verification
+  4. Verification Design — correctness checks
+  5. Validation Design — fitness checks
+  6. Evaluation Criteria — success metrics
+  7. Assessment Protocol — measurement process
+
+Execution
+  8. Implementation — deploy the solution
+  9. Reflection — assess results
+  10. Resolution — conclude with findings
+
+1. Problem Definition      ┐
+2. Requirements            ├─ Definition
+3. Objectives              ┘
+   ─── Build (concurrent) ───
+4. Verification Design     ┐
+5. Validation Design       │
+6. Evaluation Criteria     ├─ Verification
+7. Assessment Protocol     ┘
+8. Implementation          ┐
+9. Reflection              ├─ Execution
+10. Resolution             ┘
 ```
 
 ---
@@ -175,7 +186,7 @@ solver-engine/
 │   │   ├── infrastructure/     # DB, LLM adapters
 │   │   ├── tests/              # API tests (pytest)
 │   │   └── routes/             # REST routes
-│   └── web/                    # Next.js frontend (future)
+│   └── web/                    # Next.js frontend
 ├── packages/
 │   ├── contracts/              # Shared schemas
 │   └── instance_packs/
@@ -194,7 +205,7 @@ solver-engine/
 
 ---
 
-Checkpoint persistence uses a custom saver aligned to the current schema; see `docs/spec/DECISIONS.md` (Decision #5).
+Checkpoint persistence uses a custom saver aligned to the current schema; see `docs/spec/DECISIONS.md` for the SolverCheckpointSaver deviation.
 
 ## API Overview
 
@@ -255,8 +266,9 @@ make dev-api
 
 ## Development
 
-Authority order and change-control are defined in:
+Authority order and change control are defined in:
 - `docs/spec/0_Document-Type-Specifications-v2.1.1.md`
+- `docs/spec/6_SOLVER-Change-Management-v2.0.1.md`
 
 
 ### With AI Coding Agent
@@ -271,11 +283,15 @@ Work proceeds in packages comprised of deliverables.
 ### Manual Development
 
 ```bash
+# Install API dependencies
 cd apps/api
 pip install -e ".[dev]"
+
+# From repo root
+cd ../..
 make test    # Run tests
 make lint    # Run linting
-make dev     # Start dev server
+make dev-api # Start API server
 ```
 
 ### Verification

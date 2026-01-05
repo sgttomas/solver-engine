@@ -15,9 +15,11 @@ SOLVER (Structured Reasoning Workflow Engine) is a deterministic supervisor for 
 docker compose -f infra/docker/docker-compose.yml up -d   # Start PostgreSQL
 make migrate                                               # Run migrations
 make install-api                                           # Install API deps
+make install-web                                           # Install Web deps
 
 # Development
 make dev-api                    # Start API server (localhost:8000)
+make dev-web                    # Start Next.js dev server (localhost:3000)
 
 # Testing
 make test                       # Run all tests
@@ -33,6 +35,8 @@ PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/unit/test_artifact_service.p
 # Code quality
 make lint                       # ruff + mypy
 make format                     # ruff format + fix
+make lint-web                   # ESLint for frontend
+make format-web                 # Prettier for frontend
 ```
 
 ## Architecture
@@ -47,6 +51,12 @@ apps/api/
 ├── orchestration/    # LangGraph state machine, nodes, prompts
 ├── routes/           # REST API endpoints
 └── tests/            # unit/, integration/, e2e/
+
+apps/web/
+├── app/              # Next.js App Router pages
+├── components/       # React components
+├── lib/              # Utilities (api.ts, utils.ts)
+└── stores/           # Zustand state stores
 ```
 
 ### Core Execution Model
@@ -95,7 +105,7 @@ Approved deviations from specs are recorded in `docs/spec/DECISIONS.md`.
 
 - **Insert-per-revision model:** Each artifact revision creates a new row with `supersedes`/`superseded_by` links
 - **Optimistic concurrency:** `state_version` field for conflict detection (409 on mismatch)
-- **Custom checkpoint saver:** `SolverCheckpointSaver` instead of upstream PostgresSaver (see DECISIONS.md #5)
+- **Custom checkpoint saver:** `SolverCheckpointSaver` instead of upstream PostgresSaver (see `docs/spec/DECISIONS.md`)
 - **State transitions are code-controlled:** LLM cannot influence gate approvals or step advancement
 
 ## Environment

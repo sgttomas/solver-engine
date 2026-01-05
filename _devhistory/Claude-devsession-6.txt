@@ -1,0 +1,1282 @@
+
+ * ▗ ▗   ▖ ▖ *   Claude Code v2.0.76
+*             *  Opus 4.5 · Claude Max
+ *   ▘▘ ▝▝   *   ~/ai-env/projects/solver-engine
+═══════════════════════════════════════ Conversation compacted · ctrl+o for history ══════════════════════════════════════
+  ⎿  Read infra/db/migrations/alembic.ini (42 lines)
+  ⎿  Read infra/db/seed.sql (12 lines)
+  ⎿  Read Makefile (253 lines)
+  ⎿  Read infra/db/migrations/versions/001_initial_schema.py (372 lines)
+  ⎿  Read infra/db/migrations/script.py.mako (26 lines)
+  ⎿  Todo list read (10 items)
+  ⎿  Plan file referenced (~/.claude/plans/swirling-dancing-key.md)
+
+⏺ Based on the session summary, P1.3 has been completed successfully. Let me mark the final task as complete and provide you with a summary.
+  ⎿  Loaded CLAUDE.md
+
+⏺ P1.3: Database Schema — Complete ✓
+
+  Exit criterion satisfied: make migrate passes
+
+  Summary
+
+  Successfully implemented the full database schema per Doc 3 §7:
+
+  | Component  | Status                                             |
+  |------------|----------------------------------------------------|
+  | Extensions | uuid-ossp, pgcrypto, vector                        |
+  | ENUMs      | 13 types (pass_type, step_name, step_status, etc.) |
+  | Tables     | 9 tables + alembic_version                         |
+  | Triggers   | record_step_audit() on step_executions             |
+  | Instance 0 | Seeded (Universal Methodology)                     |
+
+  Files Created/Modified
+
+  | File                                               | Action                                     |
+  |----------------------------------------------------|--------------------------------------------|
+  | apps/api/config.py                                 | Created (refactored per Doc 3 §12)         |
+  | apps/api/config/                                   | Deleted (replaced by config.py)            |
+  | infra/db/migrations/alembic.ini                    | Created                                    |
+  | infra/db/migrations/env.py                         | Created                                    |
+  | infra/db/migrations/script.py.mako                 | Created                                    |
+  | infra/db/migrations/versions/001_initial_schema.py | Created                                    |
+  | Makefile                                           | Updated (PYTHONPATH + correct config path) |
+  | infra/db/seed.sql                                  | Updated (extensions only)                  |
+
+  Verification Results
+
+  INFO  [alembic.runtime.migration] Running upgrade -> 001, Initial SOLVER database schema
+  ✓ Migrations applied
+
+  Tables created: 10 (9 schema + alembic_version)
+  Instance 0: instance_number=0, instance_type='universal', name='Universal Methodology'
+
+  Gate Progress
+
+  - Gate D (Restart): Checkpoint tables created for LangGraph persistence
+  - Gate F (Audit): audit_log table and trigger created
+
+  ---
+  Ready for the next slice when you are.
+
+> Generate a synopsis of the work performed and the current state of the repo, with respect to the 
+0_SOLVER-Developement-Directive.md plan. Assert  your expectations for the implementation of "P2: Persistence".  This 
+will be used as context for your next instance, as I am going to end this session and clear  your context window. 
+Write your response in the form of information for your next instance. Here is the approach that Co-Developer-1 and 
+Co-Developer-2 worked on.  You can use this for reference but you are the Senior Developer most familiar with the 
+codebase.  
+
+<Co-Developers Proposal>
+   1. Assert Current State   
+   2. Constraint Reminder   
+   3. Gate Focus
+
+  File Reading Recommendation
+
+  For Phase 2 (Persistence), I recommend this precise reading list in this order:
+
+   1. `0_SOLVER-Development-Directive.md` (Essential)
+       * Why: Establishes role, authority, and the specific deliverables for P2.1, P2.2,
+         P2.3.
+   2. `3_solver-technical-spec.md` (Essential)
+       * Why: Contains the Core Tables definition (§7) which dictates the SQLAlchemy
+         models, and the Repository Layer requirements. It is the blueprint.
+      - ## 7. Database Schema (PostgreSQL)
+      - ## 11. Repository Structure
+      - ## 12. Configuration
+   3. `2_structured-reasoning-architecture.md` (Contextual/Highly Recommended)
+       * Why: Section §7 (Persistence) and §8.2 (Step Execution)  explain how the data is
+         used (e.g., "why do we need a checkpoint table?"). It provides the "Why" behind
+         the "What" of Doc 3.
+   4. `apps/api/config.py` (Implementation Context)
+       * Why: The agent needs to see the actual Settings class to know how to connect to
+         the DB.
+   5. `infra/db/migrations/versions/001_initial_schema.py` (Implementation Context)
+       * Why: The SQLAlchemy models (P2.1) MUST match the Raw SQL schema (P1.3) exactly.
+         Reading this file ensures the ORM mapping aligns with the actual database
+         tables.
+         
+  Nice‑to‑have context for P2
+
+  - Makefile (migrate/test targets)
+  - current migrations under infra/db/migrations/
+  - apps/api/config.py or apps/api/config/settings.py (DB URL source)
+  - docs/DECISIONS.md (if any deviations were logged)
+
+
+  Files to SKIP:
+   * 1_meta-prompt-structured-reasoning.md: Still largely irrelevant for writing database
+     adapters. Save tokens.
+</Co-Developers Proposal> 
+
+⏺ SOLVER Engine — Session Handoff Document
+
+  Date: 2026-01-02
+  From: Senior Developer (outgoing session)
+  To: Next Instance (incoming session)
+  Subject: P1 Complete → P2 Persistence Implementation
+
+  ---
+  1. Current State vs Development Directive
+
+  Completed Phases
+
+  | Phase | Slice                | Status      | Exit Criterion              | Notes                         |
+  |-------|----------------------|-------------|-----------------------------|-------------------------------|
+  | P1.1  | Directory Structure  | ✅ Complete | tree matches Doc 3 §11      | Standard monorepo layout      |
+  | P1.2  | Docker + Environment | ✅ Complete | docker compose up starts DB | PostgreSQL + pgvector running |
+  | P1.3  | Database Schema      | ✅ Complete | make migrate passes         | Full Doc 3 §7 schema in place |
+
+  Next Phase: P2 — Persistence
+
+  | Slice | Deliverable        | Exit Criterion              | Spec Reference |
+  |-------|--------------------|-----------------------------|----------------|
+  | P2.1  | SQLAlchemy Models  | Models import without error | Doc 3 §7       |
+  | P2.2  | Repository Layer   | Unit tests pass (mocked DB) | Doc 3 §11      |
+  | P2.3  | Checkpoint Adapter | LangGraph saver round-trips | Doc 2 §7       |
+
+  ---
+  2. Critical Implementation Context
+
+  Database Schema Already Exists (Raw SQL)
+
+  The migration infra/db/migrations/versions/001_initial_schema.py contains the authoritative schema. Your SQLAlchemy models in P2.1 MUST match exactly:
+
+  13 ENUMs:
+  pass_type, step_name, step_status, step_phase, workflow_status,
+  instance_type, gate_policy, document_type, document_version,
+  message_role, human_action, requirement_category, objective_category
+
+  9 Tables:
+  instances, workflows, step_executions, artifacts, traceability_links,
+  messages, audit_log, checkpoints, checkpoint_writes
+
+  Key Constraints to Honor:
+  - instances.valid_instance_hierarchy CHECK constraint
+  - artifacts.valid_artifact_type CHECK constraint
+  - step_executions UNIQUE on (workflow_id, pass_type, step_name)
+  - messages.embedding is vector(1536) type (pgvector)
+
+  Config Location (Refactored in P1.3)
+
+  apps/api/config.py          # ← CORRECT (Doc 3 §12 compliant)
+  apps/api/config/settings.py # ← DELETED (do not recreate)
+
+  The Settings class provides:
+  - settings.postgres_url — async URL for application (postgresql+asyncpg://...)
+  - settings.postgres_url_sync — sync URL for Alembic (postgresql://...)
+
+  Makefile Migrate Command
+
+  migrate:
+      PYTHONPATH=apps/api alembic -c infra/db/migrations/alembic.ini upgrade head
+
+  The PYTHONPATH=apps/api is required because env.py imports from config import settings.
+
+  ---
+  3. P2 Implementation Expectations
+
+  P2.1: SQLAlchemy Models
+
+  Location: apps/api/src/solver_api/infrastructure/db/models/
+
+  Approach: Declarative ORM mapping to existing tables (do NOT create new migrations)
+
+  Structure Recommendation:
+  apps/api/src/solver_api/infrastructure/db/
+  ├── models/
+  │   ├── __init__.py          # Export all models
+  │   ├── enums.py             # SQLAlchemy Enum mappings
+  │   ├── instance.py          # Instance model
+  │   ├── workflow.py          # Workflow model
+  │   ├── step_execution.py    # StepExecution model
+  │   ├── artifact.py          # Artifact model
+  │   ├── traceability.py      # TraceabilityLink model
+  │   ├── message.py           # Message model
+  │   ├── audit.py             # AuditLog model
+  │   └── checkpoint.py        # Checkpoint + CheckpointWrite models
+  └── base.py                  # DeclarativeBase, async engine/session
+
+  Critical: Use sqlalchemy.Enum with create_type=False since ENUMs already exist in DB.
+
+  P2.2: Repository Layer
+
+  Location: apps/api/src/solver_api/infrastructure/db/repositories/
+
+  Pattern: Repository per aggregate root (Workflow, Instance)
+
+  Expected Repositories:
+  class WorkflowRepository:
+      async def create(self, workflow: Workflow) -> Workflow
+      async def get_by_id(self, workflow_id: UUID) -> Optional[Workflow]
+      async def get_by_thread_id(self, thread_id: str) -> Optional[Workflow]
+      async def update_state(self, workflow_id: UUID, pass_type: PassType, step_name: StepName, status: WorkflowStatus) -> None
+
+  class StepExecutionRepository:
+      async def create(self, step: StepExecution) -> StepExecution
+      async def get_current(self, workflow_id: UUID) -> Optional[StepExecution]
+      async def update_status(self, step_id: UUID, status: StepStatus, phase: StepPhase) -> None
+
+  class ArtifactRepository:
+      async def create(self, artifact: Artifact) -> Artifact
+      async def get_latest(self, workflow_id: UUID, step_name: StepName) -> Optional[Artifact]
+
+  class AuditLogRepository:
+      async def append(self, entry: AuditLog) -> None
+      async def get_timeline(self, workflow_id: UUID) -> List[AuditLog]
+
+  Testing: Unit tests with mocked async sessions (no real DB needed for P2.2 exit criterion).
+
+  P2.3: Checkpoint Adapter
+
+  Purpose: LangGraph PostgresSaver compatible adapter for checkpoints/checkpoint_writes tables.
+
+  Location: apps/api/src/solver_api/infrastructure/db/checkpoint_saver.py
+
+  Exit Criterion: Round-trip test — save checkpoint, retrieve checkpoint, verify equality.
+
+  Note: LangGraph has a built-in PostgresSaver class. Evaluate whether to:
+  1. Use LangGraph's PostgresSaver directly (configure with our connection)
+  2. Write custom adapter implementing BaseSaver interface
+
+  Check LangGraph docs for langgraph.checkpoint.postgres.PostgresSaver — if it matches our schema, use it directly.
+
+  ---
+  4. Files to Read (Priority Order)
+
+  | Priority | File                                                      | Why                                       |
+  |----------|-----------------------------------------------------------|-------------------------------------------|
+  | 1        | docs/spec/0_SOLVER-Development-Directive.md               | Role, authority, P2 slice definitions     |
+  | 2        | docs/spec/3_solver-technical-spec.md §7, §11, §12         | Schema blueprint, repository requirements |
+  | 3        | infra/db/migrations/versions/001_initial_schema.py        | Authoritative — models must match this    |
+  | 4        | apps/api/config.py                                        | DB connection settings                    |
+  | 5        | docs/spec/2_structured-reasoning-architecture.md §7, §8.2 | Why persistence matters (context)         |
+
+  Skip: 1_meta-prompt-structured-reasoning.md — irrelevant for DB adapters.
+
+  ---
+  5. Constraints and Decisions
+
+  Authority Stack (ALWAYS APPLY)
+
+  Doc 1 (Meta-Prompt) > Doc 2 (Architecture) > Doc 3 (Technical Spec)
+
+  Decisions Made in P1.3
+
+  1. Config Refactor: config/settings.py → config.py per Doc 3 §12
+  2. Instance 0 Location: Seeded in migration only (not in seed.sql) to avoid duplicate key violations
+  3. Alembic Location: infra/db/migrations/ (not apps/api/alembic/)
+
+  Constraints for P2
+
+  1. No new migrations — P2.1 models map to existing tables
+  2. Async-first — Use asyncpg driver, AsyncSession
+  3. Repository pattern — No raw SQL in application layer
+  4. Gate tables ready — audit_log trigger already active; checkpoint tables exist for LangGraph
+
+  ---
+  6. Verification Commands
+
+  # Verify DB is running
+  docker compose -f infra/docker/docker-compose.yml ps
+
+  # Verify migrations applied
+  docker exec solver-db psql -U solver -d solver -c "\dt"
+  # Expected: 10 tables (9 schema + alembic_version)
+
+  # Verify Instance 0 exists
+  docker exec solver-db psql -U solver -d solver -c "SELECT * FROM instances"
+  # Expected: 1 row, instance_number=0, instance_type='universal'
+
+  # Run make migrate (should be idempotent)
+  make migrate
+  # Expected: "✓ Migrations applied" (no changes)
+
+  ---
+  7. Gate Progress
+
+  | Gate | Status          | P2 Contribution                         |
+  |------|-----------------|-----------------------------------------|
+  | A    | Not started     | —                                       |
+  | B    | Not started     | —                                       |
+  | C    | Not started     | —                                       |
+  | D    | Foundation laid | P2.3 checkpoint adapter enables restart |
+  | E    | Not started     | —                                       |
+  | F    | Foundation laid | audit_log table + trigger exist         |
+
+  ---
+  8. Session Artifacts
+
+  Key Files Created/Modified in P1.3
+
+  apps/api/config.py                                    # Settings class
+  infra/db/migrations/alembic.ini                       # Alembic config
+  infra/db/migrations/env.py                            # Migration environment
+  infra/db/migrations/script.py.mako                    # Template
+  infra/db/migrations/versions/001_initial_schema.py    # Full schema
+  infra/db/seed.sql                                     # Extensions only
+  Makefile                                              # Updated migrate targets
+
+  pyproject.toml Dependencies (Already Declared)
+
+  dependencies = [
+      "sqlalchemy[asyncio]>=2.0.0",
+      "asyncpg>=0.29.0",
+      "alembic>=1.13.0",
+      "pgvector>=0.2.0",
+      # ...
+  ]
+
+  ---
+  9. Recommended Approach for P2
+
+  1. Start with P2.1 — Create models that import cleanly
+  2. Validate against migration — Every model field must match 001_initial_schema.py
+  3. Add base infrastructure — base.py with engine, session factory
+  4. Then P2.2 — Repository interfaces with unit tests (mock sessions)
+  5. Finally P2.3 — Checkpoint adapter, integration test with real DB
+
+  Exit Criterion Verification:
+  - P2.1: python -c "from solver_api.infrastructure.db.models import *" succeeds
+  - P2.2: pytest tests/unit/repositories/ -v passes
+  - P2.3: pytest tests/integration/checkpoint_saver_test.py -v passes
+
+  ---
+  10. Summary
+
+  You are the Senior Developer on SOLVER.
+
+  P1 (Foundation) is complete. The database schema exists as raw SQL in migration 001. Your job in P2 is to create the ORM layer that maps to this schema, build the repository abstraction, and wire up LangGraph checkpointing.
+
+  The schema is authoritative — do not deviate. If you find discrepancies between spec and migration, the migration wins (it's what's in the database).
+
+  Good luck.
+
+> Do you agree this is a   Discrepancy: `apps/api/src/` vs `apps/api/`
+
+   * Your Document States:
+      > Location: apps/api/src/solver_api/infrastructure/db/models/
+   * Actual State (P1.1): We explicitly decided on the flat layout (apps/api/), removing
+     the src and solver_api nested folders to align with Doc 3 §11.
+   * Correction: The paths should be:
+       * apps/api/infrastructure/db/models/
+       * apps/api/infrastructure/db/repositories/
+       * apps/api/infrastructure/db/base.py
+
+  If you hand this off as written, the new Senior Developer will likely re-create the
+  src/solver_api nesting, undoing our P1.1 work and causing import chaos. 
+
+⏺ Yes, you're correct. That's a significant error in my handoff document.
+
+  Correct paths per Doc 3 §11 and P1.1:
+
+  apps/api/infrastructure/db/
+  ├── models/
+  │   ├── __init__.py
+  │   ├── enums.py
+  │   ├── instance.py
+  │   ├── workflow.py
+  │   ├── step_execution.py
+  │   ├── artifact.py
+  │   ├── traceability.py
+  │   ├── message.py
+  │   ├── audit.py
+  │   └── checkpoint.py
+  ├── repositories/
+  │   ├── __init__.py
+  │   ├── workflow.py
+  │   ├── step_execution.py
+  │   ├── artifact.py
+  │   └── audit.py
+  ├── base.py
+  └── checkpoint_saver.py
+
+  NOT apps/api/src/solver_api/infrastructure/db/...
+
+  The src/solver_api/ nesting pattern is a common Python convention but we explicitly chose the flat layout. Handing off the wrong paths would indeed cause the next instance to recreate incorrect structure.
+
+  Should I regenerate the handoff document with corrected paths, or do you want to make that correction when providing context to the next session?
+
+> update the README.md if appropriate.  Do not make the document confounding by trying to include too much.  Follow 
+best practices for writing a README for a project of this nature. 
+
+⏺ Read(README.md)
+  ⎿  Read 380 lines
+
+⏺ The README is already well-structured. I'll make minimal updates to reflect current implementation status without adding complexity.
+
+⏺ Update(README.md)
+  ⎿  Added 11 lines, removed 2 lines                                                                               
+      364  
+      365  ## Status
+      366  
+      367 -**Current:** Design complete, implementation in progress                                                
+      367 +**Phase:** P1 Foundation complete, P2 Persistence in progress                                           
+      368  
+      369 -**Focus:** Steps 1–3 with two-pass workflow, persistence, gates, streaming, and auditability            
+      369 +| Phase | Status | Description |                                                                        
+      370 +|-------|--------|-------------|                                                                        
+      371 +| P1 Foundation | Complete | Directory structure, Docker, database schema |                             
+      372 +| P2 Persistence | In Progress | SQLAlchemy models, repositories, checkpoint adapter |                  
+      373 +| P3 Orchestration | Planned | LangGraph state machine, interrupt handling |                            
+      374 +| P4 LLM | Planned | Claude/OpenAI integration, prompt templates |                                      
+      375 +| P5 API | Planned | REST endpoints, SSE streaming |                                                    
+      376 +| P6 Integration | Planned | End-to-end testing, gate verification |                                    
+      377  
+      378 +**MVP Focus:** Steps 1–3 with two-pass workflow, persistence, gates, streaming, and auditability        
+      379 +                                                                                                        
+      380  ---
+      381  
+      382  ## License
+
+⏺ Update(README.md)
+  ⎿  Added 6 lines, removed 19 lines                                                                               
+      251  cp .env.example .env
+      252  # Add ANTHROPIC_API_KEY, OPENAI_API_KEY, or GOOGLE_API_KEY to .env
+      253  
+      254 -# Start services                                                                                        
+      255 -docker-compose up -d                                                                                    
+      254 +# Start database                                                                                        
+      255 +docker compose -f infra/docker/docker-compose.yml up -d                                                 
+      256  
+      257  # Run migrations
+      258  make migrate
+      259  
+      260 -# Verify                                                                                                
+      261 -curl http://localhost:8000/health                                                                       
+      262 -# → {"status": "ok", "database": "connected"}                                                           
+      260 +# Verify database                                                                                       
+      261 +docker exec solver-db psql -U solver -d solver -c "\dt"                                                 
+      262 +# → 10 tables (9 schema + alembic_version)                                                              
+      263  ```
+      264  
+      265 -### Create a Workflow                                                                                   
+      265 +> **Note:** API endpoints are not yet implemented. See [Status](#status) for current progress.          
+      266  
+      267 -```bash                                                                                                 
+      268 -# Create                                                                                                
+      269 -curl -X POST http://localhost:8000/api/v1/workflows \                                                   
+      270 -  -H "Content-Type: application/json" \                                                                 
+      271 -  -d '{"problem": "Design a notification system", "instance_id": 1}'                                    
+      272 -                                                                                                        
+      273 -# Stream events                                                                                         
+      274 -curl -N http://localhost:8000/api/v1/workflows/{id}/stream                                              
+      275 -                                                                                                        
+      276 -# Approve step                                                                                          
+      277 -curl -X POST http://localhost:8000/api/v1/workflows/{id}/actions/approve                                
+      278 -```                                                                                                     
+      279 -                                                                                                        
+      267  ---
+      268  
+      269  ## Development
+
+⏺ Updated the README with two targeted changes:
+
+  1. Status section — Now shows phase progress table (P1 complete, P2 in progress, P3-P6 planned)
+  2. Quick Start section — Reflects actual current state (database setup only, removed non-functional API examples)
+
+  The project structure section already shows the correct flat layout (apps/api/domain/, not apps/api/src/solver_api/), so no changes needed there.
+
+> update the CLAUDE.md if appropriate.  Do not make the document confounding by trying to include too much.  Follow 
+best practices for writing a CLAUDE.md for a project of this nature. 
+
+⏺ Read(CLAUDE.md)
+  ⎿  Read 531 lines
+
+⏺ The CLAUDE.md is too long and duplicates README content. A good CLAUDE.md should be a focused quick-start for the AI agent, not a comprehensive manual. Let me streamline it.
+
+⏺ Write(CLAUDE.md)
+  ⎿  Added 78 lines, removed 475 lines                                                                             
+        1  # CLAUDE.md — AI Development Guide for SOLVER
+        2  
+        3 -## Project Overview                                                                                     
+        3 +## What Is This Project?                                                                                
+        4  
+        5 -**SOLVER** is a Structured Reasoning Workflow Engine that acts as a deterministic supervisor for stochas
+          -tic agents. This is NOT a typical agent framework—it optimizes for **rigor, traceability, and human over
+          -sight** rather than speed and autonomy.                                                                 
+        5 +**SOLVER** is a Structured Reasoning Workflow Engine — a deterministic supervisor for stochastic agents.
+          + It prioritizes **rigor, traceability, and human oversight** over speed and autonomy.                   
+        6  
+        7 -### Core Principles                                                                                     
+        7 +**Key Constraint:** LLMs cannot advance workflow state. Only external API calls from authenticated actor
+          +s can approve gates.                                                                                    
+        8  
+        9 -1. **Method and Content are Separate** — Two-pass execution model                                       
+       10 -2. **Human Gates are Mandatory** — LLMs cannot advance workflow states                                  
+       11 -3. **Everything is Traceable** — Persistent artifacts, audit logs, version tracking                     
+       12 -4. **Schema Conformance** — All outputs must validate against defined schemas                           
+       13 -5. **Stateless LLM Design** — All state lives in PostgreSQL, not conversation history                   
+       14 -                                                                                                        
+       15 -### Trust Boundary                                                                                      
+       16 -                                                                                                        
+       17 -**What LLMs CAN Influence:**                                                                            
+       18 -- Artifact content (methodology documents, deliverables)                                                
+       19 -- Reasoning text and explanations                                                                       
+       20 -- Clarification questions                                                                               
+       21 -- Revision attempts                                                                                     
+       22 -                                                                                                        
+       23 -**What LLMs CANNOT Influence:**                                                                         
+       24 -- State transitions between steps                                                                       
+       25 -- Gate approvals (approve/revise/message)                                                               
+       26 -- Step advancement                                                                                      
+       27 -- Workflow completion status                                                                            
+       28 -                                                                                                        
+       29 -Even if an LLM outputs "I approve this" or "ready to advance," the system ignores it. Only external API 
+          -calls from authenticated actors can advance the workflow.                                               
+       30 -                                                                                                        
+        9  ---
+       10  
+       11  ## Authority Stack (CRITICAL)
+       12  
+       35 -When working on this codebase, you MUST follow the document hierarchy:                                  
+       13 +When documents conflict, higher priority wins:                                                          
+       14  
+       37 -| Priority | Document | Governs | Location |                                                            
+       38 -|----------|----------|---------|----------|                                                            
+       39 -| **1st** | Meta-Prompt | **Why** — Logic, reasoning rules, gates | `docs/spec/1_meta-prompt-structured-
+          -reasoning.md` |                                                                                         
+       40 -| **2nd** | Architecture | **Where** — Components, layers, boundaries | `docs/spec/2_structured-reasonin
+          -g-architecture.md` |                                                                                    
+       41 -| **3rd** | Technical Spec | **What** — Tables, endpoints, schemas | `docs/spec/3_solver-technical-spec.
+          -md` |                                                                                                   
+       42 -| **4th** | Development Directive | **How** — AI agent instructions, slices | `docs/spec/0_SOLVER-Develo
+          -pment-Directive.md` |                                                                                   
+       15 +| Priority | Document | Governs |                                                                       
+       16 +|----------|----------|---------|                                                                       
+       17 +| 1st | `docs/spec/1_meta-prompt-structured-reasoning.md` | **Why** — Logic, gates |                    
+       18 +| 2nd | `docs/spec/2_structured-reasoning-architecture.md` | **Where** — Components |                   
+       19 +| 3rd | `docs/spec/3_solver-technical-spec.md` | **What** — Tables, schemas |                           
+       20 +| 4th | `docs/spec/0_SOLVER-Development-Directive.md` | **How** — Slices, workflow |                    
+       21  
+       44 -### Authority Rules                                                                                     
+       22 +Deviations require approval and entry in `docs/DECISIONS.md`.                                           
+       23  
+       46 -- If documents conflict, **higher priority wins**                                                       
+       47 -- All deviations require approval and entry in `docs/DECISIONS.md`                                      
+       48 -- Before implementing ANY feature, read relevant spec sections                                          
+       49 -- When in doubt, ask for clarification rather than making assumptions                                   
+       50 -                                                                                                        
+       24  ---
+       25  
+       53 -## Two-Pass Execution Model                                                                             
+       26 +## Current Status                                                                                       
+       27  
+       55 -Every step in the 10-step workflow executes in two passes:                                              
+       28 +**P1 Foundation:** Complete                                                                             
+       29 +**P2 Persistence:** In Progress                                                                         
+       30  
+       57 -### Pass 1: Methodology Generation                                                                      
+       31 +| Slice | Deliverable | Exit Criterion |                                                                
+       32 +|-------|-------------|----------------|                                                                
+       33 +| P2.1 | SQLAlchemy Models | Models import without error |                                              
+       34 +| P2.2 | Repository Layer | Unit tests pass (mocked DB) |                                               
+       35 +| P2.3 | Checkpoint Adapter | LangGraph saver round-trips |                                             
+       36  
+       59 -Generate and refine four methodology documents through V1 → V2 → V3:                                    
+       37 +### Key Context for P2                                                                                  
+       38  
+       61 -| Document | Purpose |                                                                                  
+       62 -|----------|---------|                                                                                  
+       63 -| **Data Sheet** | Input/output contracts, schemas, validation rules |                                  
+       64 -| **To Do List** | Task decomposition, checkpoints, validation hooks |                                  
+       65 -| **Guidance** | Context, principles, anti-patterns, quality criteria |                                 
+       66 -| **Detailed Procedure** | State machine, algorithms, decision logic, gates |                           
+       39 +- **Schema is authoritative:** `infra/db/migrations/versions/001_initial_schema.py` defines the database
+          +. Models must match exactly.                                                                            
+       40 +- **Config location:** `apps/api/config.py` (not `apps/api/config/settings.py` — that was deleted)      
+       41 +- **Flat layout:** `apps/api/infrastructure/db/` (not `apps/api/src/solver_api/`)                       
+       42  
+       68 -### Pass 2: Supervised Execution                                                                        
+       69 -                                                                                                        
+       70 -Apply the V3 methodology to produce the deliverable artifact, then **interrupt** for human review:      
+       71 -                                                                                                        
+       72 -- **Approve**: Advance to next step                                                                     
+       73 -- **Revise**: Re-run step with feedback                                                                 
+       74 -- **Message**: Record commentary without state change                                                   
+       75 -                                                                                                        
+       43  ---
+       44  
+       78 -## MVP Scope                                                                                            
+       79 -                                                                                                        
+       80 -**Current Focus:** Steps 1–3 only (Definition Phase)                                                    
+       81 -                                                                                                        
+       82 -| Step | Output | Description |                                                                         
+       83 -|------|--------|-------------|                                                                         
+       84 -| **Step 1** | `ProblemDefinitionPackage` | Canonical problem statement, stakeholders, constraints, scop
+          -e, success criteria |                                                                                   
+       85 -| **Step 2** | `RequirementsPackage` | FR, NFR, CR, IR requirements with traceability and verification m
+          -ethods |                                                                                                
+       86 -| **Step 3** | `ObjectivesPackage` | CAP, QUAL, COMP, INTF objectives with success criteria and key resu
+          -lts |                                                                                                   
+       87 -                                                                                                        
+       88 -**Out of scope for MVP:** Steps 4–10 (Verification and Execution phases)                                
+       89 -                                                                                                        
+       90 ----                                                                                                     
+       91 -                                                                                                        
+       92 -## Acceptance Gates                                                                                     
+       93 -                                                                                                        
+       94 -MVP completion requires ALL gates to pass:                                                              
+       95 -                                                                                                        
+       96 -| Gate | Criterion | Verification Method |                                                              
+       97 -|------|-----------|---------------------|                                                              
+       98 -| **A** | Methodology exists | 36 docs (3 steps × 4 types × 3 versions) present |                       
+       99 -| **B** | Packages with traces | Schema validation + trace link verification |                          
+      100 -| **C** | Gating enforced | Cannot advance without approve; message doesn't bypass |                    
+      101 -| **D** | Restart works | State survives process kill and resumes correctly |                           
+      102 -| **E** | API + SSE works | Full interactive flow (UI optional) |                                       
+      103 -| **F** | Audit complete | Timeline reconstructable from audit_log table |                              
+      104 -                                                                                                        
+      105 -When implementing features, always consider which gate(s) your work satisfies.                          
+      106 -                                                                                                        
+      107 ----                                                                                                     
+      108 -                                                                                                        
+       45  ## Project Structure
+       46  
+       47  ```
+      112 -solver-engine/                                                                                          
+      113 -├── docs/                                                                                               
+      114 -│   └── spec/                           # Authority documents (READ THESE FIRST)                        
+      115 -│       ├── 0_SOLVER-Development-Directive.md                                                           
+      116 -│       ├── 1_meta-prompt-structured-reasoning.md                                                       
+      117 -│       ├── 2_structured-reasoning-architecture.md                                                      
+      118 -│       └── 3_solver-technical-spec.md                                                                  
+      119 -├── apps/                                                                                               
+      120 -│   ├── api/                            # FastAPI backend                                               
+      121 -│   │   ├── domain/                     # Pure domain models (no external deps)                         
+      122 -│   │   ├── application/                # Use cases / services                                          
+      123 -│   │   ├── infrastructure/             # DB adapters, LLM clients                                      
+      124 -│   │   └── api/                        # REST routes, SSE handlers                                     
+      125 -│   └── web/                            # Next.js frontend (future)                                     
+      126 -├── packages/                                                                                           
+      127 -│   ├── contracts/                      # Shared schemas (Pydantic/TypeScript)                          
+      128 -│   └── instance_packs/                                                                                 
+      129 -│       └── instance_0/                 # Seed methodology pack                                         
+      130 -├── infra/                                                                                              
+      131 -│   ├── docker-compose.yml                                                                              
+      132 -│   └── db/migrations/                  # SQL migration files                                           
+      133 -├── tests/                                                                                              
+      134 -│   ├── unit/                                                                                           
+      135 -│   ├── integration/                                                                                    
+      136 -│   └── e2e/                            # Gate verification tests                                       
+      137 -└── tools/                              # Validation scripts                                            
+      138 -```                                                                                                     
+       48 +apps/api/                                                                                               
+       49 +├── domain/           # Pure domain models                                                              
+       50 +├── application/      # Use cases, orchestration                                                        
+       51 +├── infrastructure/   # DB, LLM adapters                                                                
+       52 +│   └── db/                                                                                             
+       53 +│       ├── models/   # SQLAlchemy models (P2.1)                                                        
+       54 +│       └── repositories/  # Repository pattern (P2.2)                                                  
+       55 +├── api/              # REST routes                                                                     
+       56 +└── config.py         # Settings (pydantic-settings)                                                    
+       57  
+      140 ----                                                                                                     
+      141 -                                                                                                        
+      142 -## Architecture Layers                                                                                  
+      143 -                                                                                                        
+      144 -### 1. Frontend Layer                                                                                   
+      145 -- **Tech:** Next.js 14+, Vercel AI SDK, assistant-ui                                                    
+      146 -- **Role:** User interface, SSE client for streaming                                                    
+      147 -- **Status:** Future work (MVP uses API directly)                                                       
+      148 -                                                                                                        
+      149 -### 2. API Layer                                                                                        
+      150 -- **Tech:** FastAPI, Python 3.11+                                                                       
+      151 -- **Role:** REST endpoints, SSE streaming, request validation                                           
+      152 -- **Location:** `apps/api/api/`                                                                         
+      153 -                                                                                                        
+      154 -### 3. Orchestration Layer                                                                              
+      155 -- **Tech:** LangGraph 1.0+                                                                              
+      156 -- **Role:** State machine, interrupts, checkpointing, workflow control                                  
+      157 -- **Location:** `apps/api/application/`                                                                 
+      158 -- **Critical:** This layer enforces gates—LLM cannot bypass                                             
+      159 -                                                                                                        
+      160 -### 4. Persistence Layer                                                                                
+      161 -- **Tech:** PostgreSQL + pgvector                                                                       
+      162 -- **Role:** Artifacts, audit logs, embeddings, checkpoints                                              
+      163 -- **Location:** `apps/api/infrastructure/db/`                                                           
+      164 -- **Tables:** workflows, workflow_state, artifacts, audit_log, methodology_docs                         
+      165 -                                                                                                        
+      166 -### 5. LLM Layer                                                                                        
+      167 -- **Tech:** Claude API (Anthropic) or OpenAI API                                                        
+      168 -- **Role:** Generate methodology docs and deliverable artifacts                                         
+      169 -- **Location:** `apps/api/infrastructure/llm/`                                                          
+      170 -- **Constraint:** Cannot influence state transitions                                                    
+      171 -                                                                                                        
+      172 -### 6. Observability Layer                                                                              
+      173 -- **Tech:** LangSmith / Langfuse                                                                        
+      174 -- **Role:** Tracing, debugging, cost tracking                                                           
+      175 -- **Status:** To be implemented                                                                         
+      176 -                                                                                                        
+      177 ----                                                                                                     
+      178 -                                                                                                        
+      179 -## Development Workflow                                                                                 
+      180 -                                                                                                        
+      181 -### Before Starting Work                                                                                
+      182 -                                                                                                        
+      183 -1. **Read the specs** in `docs/spec/` relevant to your task                                             
+      184 -2. **Check existing structure** before creating new files                                               
+      185 -3. **Follow the authority stack** when making decisions                                                 
+      186 -4. **Verify which gate(s)** your work will satisfy                                                      
+      187 -                                                                                                        
+      188 -### Implementation Approach                                                                             
+      189 -                                                                                                        
+      190 -Work in **small slices**. Each slice should:                                                            
+      191 -                                                                                                        
+      192 -1. Have a clear, testable outcome                                                                       
+      193 -2. Reference which spec section it implements                                                           
+      194 -3. Satisfy or progress toward a specific gate                                                           
+      195 -4. Include verification commands and results                                                            
+      196 -                                                                                                        
+      197 -### After Completing Work                                                                               
+      198 -                                                                                                        
+      199 -Each slice should produce:                                                                              
+      200 -                                                                                                        
+      201 -1. **Changed files list** with brief description                                                        
+      202 -2. **Commands run** + their results (tests, lints, etc.)                                                
+      203 -3. **Which gate(s) satisfied** or progressed                                                            
+      204 -4. **Next slice plan** (what comes next)                                                                
+      205 -                                                                                                        
+      206 ----                                                                                                     
+      207 -                                                                                                        
+      208 -## API Overview                                                                                         
+      209 -                                                                                                        
+      210 -All endpoints under `/api/v1`.                                                                          
+      211 -                                                                                                        
+      212 -### REST Endpoints                                                                                      
+      213 -                                                                                                        
+      214 -| Method | Endpoint | Purpose |                                                                         
+      215 -|--------|----------|---------|                                                                         
+      216 -| POST | `/workflows` | Create workflow (problem + instance) |                                          
+      217 -| GET | `/workflows/{id}` | Current state + position |                                                  
+      218 -| POST | `/workflows/{id}/resume` | Resume from checkpoint |                                            
+      219 -| POST | `/workflows/{id}/actions/approve` | Approve gate |                                             
+      220 -| POST | `/workflows/{id}/actions/revise` | Request revision with feedback |                            
+      221 -| POST | `/workflows/{id}/actions/message` | Comment without state change |                             
+      222 -| GET | `/workflows/{id}/history` | Artifacts + audit trail |                                           
+      223 -| GET | `/workflows/{id}/staleness` | Staleness report |                                                
+      224 -                                                                                                        
+      225 -### SSE Stream Events                                                                                   
+      226 -                                                                                                        
+      227 -`GET /workflows/{id}/stream` emits:                                                                     
+      228 -                                                                                                        
+       58 +infra/db/migrations/  # Alembic migrations                                                              
+       59 +docs/spec/            # Authority documents                                                             
+       60  ```
+      230 -workflow.started                                                                                        
+      231 -step.started                                                                                            
+      232 -artifact.delta              # Streaming chunk during generation                                         
+      233 -artifact.final              # Complete artifact ready                                                   
+      234 -step.awaiting_review        # Human gate triggered                                                      
+      235 -step.approved                                                                                           
+      236 -step.revision_requested                                                                                 
+      237 -artifact.stale                                                                                          
+      238 -workflow.completed                                                                                      
+      239 -error                                                                                                   
+      240 -```                                                                                                     
+       61  
+       62  ---
+       63  
+      244 -## Key Design Decisions                                                                                 
+       64 +## Development Pattern                                                                                  
+       65  
+      246 -### 1. Why Two-Pass Execution?                                                                          
+       66 +### Before Starting                                                                                     
+       67  
+      248 -Separating methodology from content prevents:                                                           
+      249 -- Inconsistent application of reasoning steps                                                           
+      250 -- Hidden assumptions in deliverables                                                                    
+      251 -- Difficulty auditing "how we got here"                                                                 
+       68 +1. Read `docs/spec/0_SOLVER-Development-Directive.md` for your slice                                    
+       69 +2. Read relevant sections of Doc 3 (Technical Spec)                                                     
+       70 +3. Check existing code before creating new files                                                        
+       71  
+      253 -### 2. Why Human Gates?                                                                                 
+       72 +### Working on a Slice                                                                                  
+       73  
+      255 -LLMs cannot reliably self-assess quality. External approval ensures:                                    
+      256 -- Human oversight of critical decisions                                                                 
+      257 -- Ability to course-correct before compounding errors                                                   
+      258 -- Audit trail of who approved what and when                                                             
+       74 +1. Create a plan file or use TodoWrite to track tasks                                                   
+       75 +2. Implement in small, testable increments                                                              
+       76 +3. Verify against exit criterion                                                                        
+       77 +4. Document which gate(s) your work advances                                                            
+       78  
+      260 -### 3. Why Stateless LLM Design?                                                                        
+       79 +### After Completing                                                                                    
+       80  
+      262 -Conversation history is not durable or queryable. Persistent artifacts enable:                          
+      263 -- Process restart without loss                                                                          
+      264 -- Parallel workflow execution                                                                           
+      265 -- Historical analysis and learning                                                                      
+      266 -- Regulatory compliance                                                                                 
+       81 +Report: files changed, commands run, gates satisfied, next slice.                                       
+       82  
+      268 -### 4. Why Schema Enforcement?                                                                          
+      269 -                                                                                                        
+      270 -Freeform outputs resist automation. Schemas enable:                                                     
+      271 -- Automated validation and quality checks                                                               
+      272 -- Reliable trace link extraction                                                                        
+      273 -- Integration with downstream tools                                                                     
+      274 -- Consistent audit log format                                                                           
+      275 -                                                                                                        
+       83  ---
+       84  
+      278 -## Common Pitfalls (AVOID THESE)                                                                        
+       85 +## Key Commands                                                                                         
+       86  
+      280 -### ❌ DON'T                                                                                            
+      281 -                                                                                                        
+      282 -1. **Skip reading the specs** — "I'll just look at the code"                                            
+      283 -2. **Let LLM control state** — "Just let Claude/OpenAI decide when to advance"                          
+      284 -3. **Make assumptions about schemas** — "This field probably means..."                                  
+      285 -4. **Hardcode workflow logic** — "Step 3 always comes after Step 2"                                     
+      286 -5. **Ignore trace links** — "We don't need full traceability yet"                                       
+      287 -6. **Skip gate tests** — "We'll add approval enforcement later"                                         
+      288 -7. **Mix concerns across layers** — "Let's put LLM calls in the API route"                              
+      289 -8. **Optimize for speed** — "Let's auto-approve trivial steps"                                          
+      290 -                                                                                                        
+      291 -### ✅ DO                                                                                               
+      292 -                                                                                                        
+      293 -1. **Read authority docs first** — Start with specs, not code                                           
+      294 -2. **Enforce gates strictly** — Only API calls can advance state                                        
+      295 -3. **Validate against schemas** — Every artifact, every time                                            
+      296 -4. **Make workflow data-driven** — Read step definitions from DB/config                                 
+      297 -5. **Track everything** — Audit log for all state changes                                               
+      298 -6. **Test gate enforcement** — Verify LLM cannot bypass approvals                                       
+      299 -7. **Respect layer boundaries** — Domain → Application → Infrastructure → API                           
+      300 -8. **Prioritize correctness** — Slow and right beats fast and wrong                                     
+      301 -                                                                                                        
+      302 ----                                                                                                     
+      303 -                                                                                                        
+      304 -## Testing Strategy                                                                                     
+      305 -                                                                                                        
+      306 -### Unit Tests                                                                                          
+       87  ```bash
+      308 -cd apps/api                                                                                             
+      309 -make test                                                                                               
+      310 -```                                                                                                     
+       88 +# Database                                                                                              
+       89 +docker compose -f infra/docker/docker-compose.yml up -d   # Start DB                                    
+       90 +make migrate                                               # Run migrations                             
+       91  
+      312 -Test domain logic in isolation. No external dependencies.                                               
+      313 -                                                                                                        
+      314 -### Integration Tests                                                                                   
+      315 -```bash                                                                                                 
+      316 -make test-integration                                                                                   
+       92 +# Development                                                                                           
+       93 +make dev-api          # Start API server                                                                
+       94 +make test             # Run tests                                                                       
+       95 +make lint             # Run linting                                                                     
+       96 +make format           # Format code                                                                     
+       97  ```
+       98  
+      319 -Test layer interactions (e.g., LangGraph → DB, API → LLM).                                              
+      320 -                                                                                                        
+      321 -### Gate Tests                                                                                          
+      322 -```bash                                                                                                 
+      323 -make test-gates                                                                                         
+      324 -```                                                                                                     
+      325 -                                                                                                        
+      326 -**Critical:** Verify that:                                                                              
+      327 -- LLM output claiming "approved" doesn't advance state                                                  
+      328 -- Only `/actions/approve` endpoint advances workflow                                                    
+      329 -- `/actions/message` doesn't change state                                                               
+      330 -                                                                                                        
+      331 -### End-to-End Tests                                                                                    
+      332 -```bash                                                                                                 
+      333 -make e2e                                                                                                
+      334 -```                                                                                                     
+      335 -                                                                                                        
+      336 -Run full workflow through Steps 1–3, verifying:                                                         
+      337 -- All 36 methodology docs generated                                                                     
+      338 -- Schema validation passes                                                                              
+      339 -- Trace links present                                                                                   
+      340 -- Audit log complete                                                                                    
+      341 -                                                                                                        
+      342 -### Recovery Tests                                                                                      
+      343 -```bash                                                                                                 
+      344 -make test-recovery                                                                                      
+      345 -```                                                                                                     
+      346 -                                                                                                        
+      347 -Verify state survives:                                                                                  
+      348 -- Process kill and restart                                                                              
+      349 -- Database connection loss and reconnection                                                             
+      350 -- Checkpoint restore                                                                                    
+      351 -                                                                                                        
+       99  ---
+      100  
+      354 -## Environment Setup                                                                                    
+      101 +## Common Pitfalls                                                                                      
+      102  
+      356 -### Prerequisites                                                                                       
+      357 -- Docker & Docker Compose                                                                               
+      358 -- Python 3.11+                                                                                          
+      359 -- Anthropic API key                                                                                     
+      103 +| Don't | Do |                                                                                          
+      104 +|-------|-----|                                                                                         
+      105 +| Skip reading specs | Read authority docs first |                                                      
+      106 +| Create `apps/api/src/` nesting | Use flat `apps/api/` layout |                                        
+      107 +| Let LLM control state | Only API calls advance gates |                                                
+      108 +| Assume schema fields | Check migration file |                                                         
+      109 +| Create new migrations for P2 | Map to existing tables |                                               
+      110  
+      361 -### Quick Start                                                                                         
+      362 -                                                                                                        
+      363 -```bash                                                                                                 
+      364 -# Clone and configure                                                                                   
+      365 -cd /Users/ryan/ai-env/projects/solver-engine                                                            
+      366 -cp .env.example .env                                                                                    
+      367 -# Add ANTHROPIC_API_KEY to .env                                                                         
+      368 -                                                                                                        
+      369 -# Start services                                                                                        
+      370 -docker-compose up -d                                                                                    
+      371 -                                                                                                        
+      372 -# Run migrations                                                                                        
+      373 -make migrate                                                                                            
+      374 -                                                                                                        
+      375 -# Verify                                                                                                
+      376 -curl http://localhost:8000/health                                                                       
+      377 -# Expected: {"status": "ok", "database": "connected"}                                                   
+      378 -```                                                                                                     
+      379 -                                                                                                        
+      380 -### Development Commands                                                                                
+      381 -                                                                                                        
+      382 -```bash                                                                                                 
+      383 -make dev              # Start dev server with hot reload                                                
+      384 -make test             # Run unit tests                                                                  
+      385 -make lint             # Run linting (ruff, mypy)                                                        
+      386 -make format           # Auto-format code                                                                
+      387 -make migrate          # Run DB migrations                                                               
+      388 -make test-gates       # Test gate enforcement                                                           
+      389 -make e2e              # End-to-end tests                                                                
+      390 -python tools/validate_schemas.py   # Validate artifact schemas                                          
+      391 -```                                                                                                     
+      392 -                                                                                                        
+      111  ---
+      112  
+      395 -## Working with Specs                                                                                   
+      113 +## Acceptance Gates                                                                                     
+      114  
+      397 -### Reading Order for New Features                                                                      
+      115 +| Gate | Criterion |                                                                                    
+      116 +|------|-----------|                                                                                    
+      117 +| A | 36 methodology docs exist |                                                                       
+      118 +| B | Packages validate + trace links work |                                                            
+      119 +| C | Cannot advance without approve |                                                                  
+      120 +| D | State survives restart |                                                                          
+      121 +| E | API + SSE works |                                                                                 
+      122 +| F | Audit log complete |                                                                              
+      123  
+      399 -1. **Development Directive** (`0_SOLVER-Development-Directive.md`) — Understand slice-based workflow    
+      400 -2. **Meta-Prompt** (`1_meta-prompt-structured-reasoning.md`) — Understand reasoning rules and gates     
+      401 -3. **Architecture** (`2_structured-reasoning-architecture.md`) — Understand system components           
+      402 -4. **Technical Spec** (`3_solver-technical-spec.md`) — Understand implementation details                
+      403 -                                                                                                        
+      404 -### When to Update Specs                                                                                
+      405 -                                                                                                        
+      406 -If you discover:                                                                                        
+      407 -- Ambiguity or contradiction between specs                                                              
+      408 -- Missing critical information                                                                          
+      409 -- Implementation decision not covered by specs                                                          
+      410 -                                                                                                        
+      411 -**Process:**                                                                                            
+      412 -1. Note the issue in your response                                                                      
+      413 -2. Propose a resolution aligned with SOLVER principles                                                  
+      414 -3. Wait for human approval                                                                              
+      415 -4. Add entry to `docs/DECISIONS.md`                                                                     
+      416 -5. Update relevant spec if needed                                                                       
+      417 -                                                                                                        
+      124  ---
+      125  
+      420 -## Design Tradeoffs                                                                                     
+      126 +## Quick Reference                                                                                      
+      127  
+      422 -SOLVER makes deliberate tradeoffs favoring **correctness over speed**:                                  
+      128 +- **Database tables:** 9 tables defined in `001_initial_schema.py`                                      
+      129 +- **Instance 0:** Already seeded (Universal Methodology)                                                
+      130 +- **Async DB:** Use `asyncpg` driver, `AsyncSession`                                                    
+      131 +- **ENUMs exist:** Use `create_type=False` in SQLAlchemy                                                
+      132  
+      424 -| Dimension | SOLVER Choice | Consequence |                                                             
+      425 -|-----------|---------------|-------------|                                                             
+      426 -| Speed vs Correctness | **Correctness** | 10-step process is slow |                                    
+      427 -| Flexibility vs Rigor | **Rigor** | Cannot skip steps |                                                
+      428 -| Autonomy vs Control | **Control** | Human gates required |                                            
+      429 -| Simplicity vs Auditability | **Auditability** | More persistence overhead |                           
+      430 -                                                                                                        
+      431 -### Good Fit                                                                                            
+      432 -- High-stakes decisions                                                                                 
+      433 -- Regulated domains (healthcare, finance, legal)                                                        
+      434 -- Complex multi-step reasoning                                                                          
+      435 -- Audit requirements                                                                                    
+      436 -- Research and analysis                                                                                 
+      437 -                                                                                                        
+      438 -### Poor Fit                                                                                            
+      439 -- Quick questions or simple lookups                                                                     
+      440 -- Time-critical responses                                                                               
+      441 -- Low-stakes decisions                                                                                  
+      442 -- Simple CRUD operations                                                                                
+      443 -                                                                                                        
+      444 ----                                                                                                     
+      445 -                                                                                                        
+      446 -## Instance Hierarchy                                                                                   
+      447 -                                                                                                        
+      448 -| Instance | Name | Role |                                                                              
+      449 -|----------|------|------|                                                                              
+      450 -| **Instance 0** | Universal Methodology | Defines 10-step process + schemas + "4 Documents" scaffold | 
+      451 -| **Instance 1** | SOLVER Software | Implements Instance 0 as executable runtime (this repo) |          
+      452 -| **Instance N** | Domain Specialization | Adds domain schemas/templates without changing core |        
+      453 -                                                                                                        
+      454 -**Current Work:** Implementing Instance 1 (the software runtime)                                        
+      455 -                                                                                                        
+      456 -**Future Work:** Enable Instance N creation (e.g., "Instance 2: Medical Diagnosis Solver")              
+      457 -                                                                                                        
+      458 ----                                                                                                     
+      459 -                                                                                                        
+      460 -## Contribution Guidelines                                                                              
+      461 -                                                                                                        
+      462 -### Code Style                                                                                          
+      463 -- Follow PEP 8 for Python                                                                               
+      464 -- Use type hints throughout                                                                             
+      465 -- Prefer explicit over implicit                                                                         
+      466 -- Document "why" not "what" in comments                                                                 
+      467 -                                                                                                        
+      468 -### Commit Messages                                                                                     
+      469 -```                                                                                                     
+      470 -feat(domain): add ProblemDefinitionPackage schema                                                       
+      471 -test(gates): verify approve-only advancement                                                            
+      472 -fix(api): correct SSE event serialization                                                               
+      473 -docs(spec): clarify trace link requirements                                                             
+      474 -```                                                                                                     
+      475 -                                                                                                        
+      476 -### Pull Request Template                                                                               
+      477 -1. **Spec Reference:** Which spec section(s) does this implement?                                       
+      478 -2. **Gate Progress:** Which gate(s) does this satisfy/advance?                                          
+      479 -3. **Changed Files:** List with brief purpose                                                           
+      480 -4. **Testing:** Commands run + results                                                                  
+      481 -5. **Next Steps:** What comes after this is merged?                                                     
+      482 -                                                                                                        
+      483 ----                                                                                                     
+      484 -                                                                                                        
+      485 -## Current Status                                                                                       
+      486 -                                                                                                        
+      487 -**Phase:** Implementation in progress                                                                   
+      488 -**Focus:** MVP (Steps 1–3 with two-pass execution, gates, persistence, streaming)                       
+      489 -**Next Milestones:**                                                                                    
+      490 -1. Gate A: Generate all 36 methodology documents                                                        
+      491 -2. Gate B: Schema validation + trace links working                                                      
+      492 -3. Gate C: Gate enforcement verified (approve-only advancement)                                         
+      493 -4. Gate D: Checkpoint/restart working                                                                   
+      494 -5. Gate E: Full API + SSE flow working                                                                  
+      495 -6. Gate F: Complete audit trail                                                                         
+      496 -                                                                                                        
+      497 ----                                                                                                     
+      498 -                                                                                                        
+      499 -## Questions to Ask Before Implementing                                                                 
+      500 -                                                                                                        
+      501 -1. **Which spec covers this?** Have I read the relevant sections?                                       
+      502 -2. **Which gate does this advance?** How will I verify it works?                                        
+      503 -3. **What's the authority?** If specs conflict, which takes precedence?                                 
+      504 -4. **Where does this live?** Which layer/directory is correct?                                          
+      505 -5. **How is this traced?** What goes in the audit log?                                                  
+      506 -6. **Can LLM bypass this?** If it's a gate, how do I enforce it?                                        
+      507 -7. **What's the schema?** Is this artifact validated?                                                   
+      508 -8. **Is this testable?** Can I verify this works in isolation?                                          
+      509 -                                                                                                        
+      510 -## Summary for AI Coding Agents                                                                         
+      511 -                                                                                                        
+      512 -You are working on **SOLVER**, a structured reasoning engine that prioritizes rigor over speed. Key poin
+          -ts:                                                                                                     
+      513 -                                                                                                        
+      514 -1. **Read specs first** (`docs/spec/`) before implementing anything                                     
+      515 -2. **Follow authority stack** (Meta-Prompt > Architecture > Technical Spec)                             
+      516 -3. **Enforce gates strictly** — LLMs cannot advance workflow state                                      
+      517 -4. **Validate everything** — All artifacts must conform to schemas                                      
+      518 -5. **Work in small slices** — Testable increments that satisfy gates                                    
+      519 -6. **Audit all changes** — State transitions go to audit_log                                            
+      520 -7. **Test gate enforcement** — Critical that LLM cannot bypass approvals                                
+      521 -8. **Respect layer boundaries** — Domain → Application → Infrastructure → API                           
+      522 -9. **Prioritize correctness** — Slow and auditable beats fast and opaque                                
+      523 -10. **Ask when unsure** — Better to clarify than assume                                                 
+      524 -                                                                                                        
+      525 -**Remember:** This is not a typical agent framework. SOLVER is designed for high-stakes reasoning where 
+          -trustworthiness and traceability matter more than speed or autonomy.                                    
+      526 -                                                                                                        
+      527 ----                                                                                                     
+      528 -                                                                                                        
+      529 -*Generated for SOLVER — Structured Reasoning Workflow Engine*                                           
+      530 -*Last Updated: 2026-01-02*                                                                              
+      133 +For full details, see `README.md` and the spec documents.                                               
+
+⏺ Streamlined CLAUDE.md from ~530 lines to ~130 lines. Changes:
+
+  1. Removed duplication — Cut sections that duplicated README (full architecture, API overview, two-pass explanation, design tradeoffs)
+  2. Added P2 context — Current status, key constraints for incoming instance (schema authoritative, flat layout, config location)
+  3. Added pitfalls table — Critical mistakes to avoid (especially the src/solver_api nesting issue)
+  4. Focused on action — What to read, how to work, what commands to run
+
+  The new CLAUDE.md is a quick-start guide that points to detailed docs rather than duplicating them.
+
+> ?  Edit projects/solver-engine/Makefile: dev-api:... => dev-api:...                 ← │
+│                                                                                       │
+│ ... first 6 lines hidden ...                                                          │
+│  90                                                                                   │
+│  91   dev-web:                                                                        │
+│  92       @echo "Starting Next.js dev server..."                                      │
+│ ═════════════════════════════════════════════════════════════════════════════════════ │
+│ 121                                                                                   │
+│ 122   test-coverage:                                                                  │
+│ 123       @echo "Running tests with coverage..."                                      │
+│ 124 -     cd apps/api && pytest tests/ --cov=solver_api --cov-report=html             │
+│     --cov-report=term                                                                 │
+│ 124 +     cd apps/api && pytest tests/ --cov=. --cov-report=html --cov-report=term    │
+│ 125       @echo "✓ Coverage report generated in apps/api/htmlcov/index.html"          │
+│ 126                                                                                   │
+│ 127   # ============================================================================  │
+│ 133                                                                                   │
+│ 134   lint-api:                                                                       │
+│ 135       @echo "Linting Python code..."                                              │
+│ 136 -     cd apps/api && ruff check src/ tests/                                       │
+│ 137 -     cd apps/api && mypy src/solver_api                                          │
+│ 136 +     cd apps/api && ruff check . tests/                                          │
+│ 137 +     cd apps/api && mypy .                                                       │
+│ 138                                                                                   │
+│ 139   lint-web:                                                                       │
+│ 140       @echo "Linting TypeScript code..."                                          │
+│ 145                                                                                   │
+│ 146   format-api:                                                                     │
+│ 147       @echo "Formatting Python code..."                                           │
+│ 148 -     cd apps/api && ruff format src/ tests/                                      │
+│ 149 -     cd apps/api && ruff check --fix src/ tests/                                 │
+│ 148 +     cd apps/api && ruff format . tests/                                         │
+│ 149 +     cd apps/api && ruff check --fix . tests/                                    │
+│ 150                                                                                   │
+│ 151   format-web:                                                                     │
+│ 152       @echo "Formatting TypeScript code..."                                       │
+│ 154                                                                                   │
+│ 155   typecheck:                                                                      │
+│ 156       @echo "Running type checks..."                                              │
+│ 157 -     cd apps/api && mypy src/solver_api                                          │
+│ 157 +     cd apps/api && mypy .                                                       │
+│ 158       @echo "✓ Type checking passed"                                              │
+│ 159                                                                                   │
+│ 160   # ============================================================================  │
+│                                                                                       │
+│ Apply this change?                                                                    │ 
+
+⏺ Yes, these changes are correct. The Makefile still references the old src/solver_api paths that don't exist. Let me apply these fixes:
+
+⏺ Read(Makefile)
+  ⎿  Read 253 lines
+
+⏺ Update(Makefile)
+  ⎿  Added 1 line, removed 1 line                                                                                  
+      121  
+      122  test-coverage:
+      123    @echo "Running tests with coverage..."
+      124 -  cd apps/api && pytest tests/ --cov=solver_api --cov-report=html --cov-report=term                     
+      124 +  cd apps/api && pytest tests/ --cov=. --cov-report=html --cov-report=term                              
+      125    @echo "✓ Coverage report generated in apps/api/htmlcov/index.html"
+      126  
+      127  # ============================================================================
+
+⏺ Update(Makefile)
+  ⎿  Added 2 lines, removed 2 lines                                                                                
+      133  
+      134  lint-api:
+      135    @echo "Linting Python code..."
+      136 -  cd apps/api && ruff check src/ tests/                                                                 
+      137 -  cd apps/api && mypy src/solver_api                                                                    
+      136 +  cd apps/api && ruff check . tests/                                                                    
+      137 +  cd apps/api && mypy .                                                                                 
+      138  
+      139  lint-web:
+      140    @echo "Linting TypeScript code..."
+
+⏺ Update(Makefile)
+  ⎿  Added 2 lines, removed 2 lines                                                                                
+      145  
+      146  format-api:
+      147    @echo "Formatting Python code..."
+      148 -  cd apps/api && ruff format src/ tests/                                                                
+      149 -  cd apps/api && ruff check --fix src/ tests/                                                           
+      148 +  cd apps/api && ruff format . tests/                                                                   
+      149 +  cd apps/api && ruff check --fix . tests/                                                              
+      150  
+      151  format-web:
+      152    @echo "Formatting TypeScript code..."
+
+⏺ Update(Makefile)
+  ⎿  Added 1 line, removed 1 line                                                                                  
+      154  
+      155  typecheck:
+      156    @echo "Running type checks..."
+      157 -  cd apps/api && mypy src/solver_api                                                                    
+      157 +  cd apps/api && mypy .                                                                                 
+      158    @echo "✓ Type checking passed"
+      159  
+      160  # ============================================================================
+
+⏺ Also need to fix the dev-api path:
+
+⏺ Update(Makefile)
+  ⎿  Added 1 line, removed 1 line                                                                                  
+      86  
+      87  dev-api:
+      88    @echo "Starting API server..."
+      89 -  cd apps/api && uvicorn solver_api.main:app --reload --host 0.0.0.0 --port 8000                         
+      89 +  cd apps/api && uvicorn main:app --reload --host 0.0.0.0 --port 8000                                    
+      90  
+      91  dev-web:
+      92    @echo "Starting Next.js dev server..."
+
+⏺ Done. Updated Makefile paths:
+
+  | Target        | Old                         | New         |
+  |---------------|-----------------------------|-------------|
+  | dev-api       | solver_api.main:app         | main:app    |
+  | test-coverage | --cov=solver_api            | --cov=.     |
+  | lint-api      | src/ tests/, src/solver_api | . tests/, . |
+  | format-api    | src/ tests/                 | . tests/    |
+  | typecheck     | src/solver_api              | .           |
+
+  All paths now align with the flat apps/api/ layout.
+
+> /context 
+  ⎿  
+      Context Usage
+     ⛁ ⛀ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁   claude-opus-4-5-20251101 · 115k/200k tokens (57%)
+     ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ 
+     ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁   ⛁ System prompt: 3.2k tokens (1.6%)
+     ⛁ ⛁ ⛁ ⛁ ⛁ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ System tools: 14.8k tokens (7.4%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ Messages: 51.9k tokens (25.9%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛶ Free space: 85k (42.5%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛝ Autocompact buffer: 45.0k tokens (22.5%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛝ ⛝ ⛝ 
+     ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ 
+     ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ 
+     
+     Skills and slash commands · /skills
+     
+     
+
+> /exit 
+  ⎿  Goodbye!
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+>  
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ accept edits on (shift+tab to cycle)
+(.venv) ryan@Mac ai-env % 
+
+
+
+
+
+
+
+
+
