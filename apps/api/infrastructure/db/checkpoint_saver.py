@@ -3,7 +3,7 @@ SolverCheckpointSaver - Custom LangGraph checkpoint saver for SOLVER.
 
 Implements BaseCheckpointSaver interface using SOLVER's existing schema.
 This is a deviation from Doc 3's reference to PostgresSaver due to
-schema incompatibility (see docs/DECISIONS.md P2.3 entry).
+schema incompatibility (see docs/spec/DECISIONS.md P2.3 entry).
 
 Key differences from langgraph-checkpoint-postgres:
 - No checkpoint_ns column (hardcoded to "")

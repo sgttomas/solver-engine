@@ -3,6 +3,9 @@
 This log records approved deviations from specification documents per
 `docs/spec/6_SOLVER-Change-Management-v1.2.md`.
 
+Note: filenames in this log reflect the names at the time of each decision.
+Current canonical filenames may differ; see `docs/spec/` for the latest names.
+
 ---
 
 ## 2026-01-04 - Governance Transition: Unified Specification Set

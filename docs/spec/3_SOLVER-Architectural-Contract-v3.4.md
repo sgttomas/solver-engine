@@ -11,7 +11,7 @@
 **Document Hierarchy:**
 - **Design Intent (Why²):** `SOLVER-Design-Intent-v1.1.md` — Design rationale, first principles, rejected alternatives
 - **This document (Why):** Architectural Contract — What must be true for correctness
-- **Technical Specification (What):** `4_solver-technical-spec-V2.8.0.md` — Schemas, endpoints, implementation details
+- **Technical Specification (What):** `4_SOLVER-Technical-Spec-V2.8.0.md` — Schemas, endpoints, implementation details
 - **Development Directive (How):** `SOLVER-Development-Directive-v1.5.md` — Build phases, packages, execution order
 
 **Document Structure:**

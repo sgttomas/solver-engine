@@ -3,7 +3,7 @@ SOLVER API - LangGraph Node Implementations
 
 Node implementations per Doc 3 Section 8.4.
 Deviation: human_decision clearing moved from process_decision_node to
-branch-specific nodes (see docs/DECISIONS.md P3.3).
+branch-specific nodes (see docs/spec/DECISIONS.md P3.3).
 """
 
 import logging

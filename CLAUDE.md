@@ -88,7 +88,7 @@ Authoritative docs in `docs/spec/` (read in order for full context):
 
 **Authority order:** Specs (docs/spec/) → DECISIONS.md → README.md
 
-Approved deviations from specs are recorded in `docs/DECISIONS.md`.
+Approved deviations from specs are recorded in `docs/spec/DECISIONS.md`.
 
 
 ## Key Patterns

@@ -4,12 +4,12 @@
 
 **Target Audience:** AI coding agents and developers implementing the system.
 
-**Entry Point:** For project orientation, start with `README.md` (or `SOLVER-Project-Orientation-v1.0.md`).
+**Entry Point:** For project orientation, start with `README.md` (or `SOLVER-README-v1.0.md`).
 
 **Document Hierarchy:**
 - **Design Intent (Why²):** `SOLVER-Design-Intent-v1.1.md` — Design rationale, first principles
 - **Architectural Contract (Why):** `SOLVER-Architectural-Contract-v3.4.md` — What must be true
-- **Technical Specification (What):** `4_solver-technical-spec-V2.8.0.md` — Schemas, endpoints, code
+- **Technical Specification (What):** `4_SOLVER-Technical-Spec-V2.8.0.md` — Schemas, endpoints, code
 - **This document (How):** Development Directive — Build phases, packages, execution order
 
 ---

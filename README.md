@@ -161,13 +161,13 @@ graph TD
 solver-engine/
 ├── docs/
 │   └── spec/
-│       ├── 0_Document-Type-Specifications-v2.1.md  # Governance framework
-│       ├── 1_SOLVER-README.md                      # Project orientation
+│       ├── 0_Document-Type-Specifications-v2.1.1.md  # Governance framework
+│       ├── 1_SOLVER-README-v1.0.md                   # Project orientation
 │       ├── 2_SOLVER-Design-Intent-v1.1.md          # Why² — Design rationale
 │       ├── 3_SOLVER-Architectural-Contract-v3.4.md # Why — Invariants
-│       ├── 4_solver-technical-spec-V2.8.0.md       # What — Schemas, endpoints
+│       ├── 4_SOLVER-Technical-Spec-V2.8.0.md       # What — Schemas, endpoints
 │       ├── 5_SOLVER-Development-Directive-v1.5.md  # How — Phases, gates
-│       └── 6_SOLVER-Change-Management-v1.2.md      # Process — Change control
+│       └── 6_SOLVER-Change-Management-v2.0.md      # Process — Change control
 ├── apps/
 │   ├── api/                    # FastAPI backend
 │   │   ├── domain/             # Pure domain models
@@ -194,7 +194,7 @@ solver-engine/
 
 ---
 
-Checkpoint persistence uses a custom saver aligned to the current schema; see `docs/DECISIONS.md` (Decision #5).
+Checkpoint persistence uses a custom saver aligned to the current schema; see `docs/spec/DECISIONS.md` (Decision #5).
 
 ## API Overview
 
@@ -202,7 +202,7 @@ All endpoints under `/api/v1`.
 
 ### REST Endpoints
 
-Endpoints listed here  `docs/spec/4_solver-technical-spec-V2.8.0.md`.
+Endpoints listed here `docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md`.
 
 ### SSE Stream
 
@@ -216,7 +216,7 @@ Events are persisted to the database with monotonic sequence numbers. The `from_
 
 MVP is complete when all gates pass.
 
-Approved deviations from gate scenarios (if any) are recorded in `docs/DECISIONS.md`.
+Approved deviations from gate scenarios (if any) are recorded in `docs/spec/DECISIONS.md`.
 
 ---
 
@@ -256,7 +256,7 @@ make dev-api
 ## Development
 
 Authority order and change-control are defined in:
-- `docs/spec/0_Document-Type-Specifications-v2.1.md`
+- `docs/spec/0_Document-Type-Specifications-v2.1.1.md`
 
 
 ### With AI Coding Agent
@@ -296,11 +296,13 @@ python tools/validate_schemas.py   # Schema validation
 |----------|---------|
 | [CLAUDE.md](CLAUDE.md) | Claude Code development guide |
 | [AGENTS.md](AGENTS.md) | Repo-level instructions for AI coding agents |
+| [Document-Type Specifications](docs/spec/0_Document-Type-Specifications-v2.1.1.md) | Documentation governance model |
 | [SOLVER README](docs/spec/1_SOLVER-README-v1.0.md) | Conceptual navigation |
 | [Design Intent](docs/spec/2_SOLVER-Design-Intent-v1.1.md) | Why² — Design rationale |
 | [Architectural Contract](docs/spec/3_SOLVER-Architectural-Contract-v3.4.md) | Why — Invariants, constraints |
-| [Technical Spec](docs/spec/4_solver-technical-spec-V2.8.0.md) | What — Schemas, endpoints |
+| [Technical Spec](docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md) | What — Schemas, endpoints |
 | [Development Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.md) | How — Phases, packages, gates |
+| [Change Management](docs/spec/6_SOLVER-Change-Management-v2.0.md) | Governance — change control |
 
 ---
 
@@ -308,7 +310,7 @@ python tools/validate_schemas.py   # Schema validation
 
 **MVP Focus:** Steps 1–3 with two-pass workflow, persistence, gates, streaming, and auditability
 
-Deferred items are tracked in `docs/DECISIONS.md`.
+Deferred items are tracked in `docs/spec/DECISIONS.md`.
 
 ---
 

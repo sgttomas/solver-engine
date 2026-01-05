@@ -5,7 +5,7 @@
 
 **Target Audience:** AI coding agents and developers implementing the system.
 
-**Entry Point:** For project orientation, start with `README.md` (or `SOLVER-Project-Orientation-v1.0.md`).
+**Entry Point:** For project orientation, start with `README.md` (or `SOLVER-README-v1.0.md`).
 
 ---
 

@@ -6,7 +6,7 @@ SOLVER is a Python/FastAPI backend with a future Next.js frontend. Key paths:
 - `apps/web/`: frontend scaffold (minimal today).
 - `packages/`: shared contracts and instance packs.
 - `infra/`: Docker and DB migrations (`infra/db/migrations/`).
-- `docs/spec/`: authoritative specs; `docs/DECISIONS.md` logs approved deviations.
+- `docs/spec/`: authoritative specs; `docs/spec/DECISIONS.md` logs approved deviations.
 - `tests/` and `apps/api/tests/`: unit/integration/e2e tests.
 
 ## Build, Test, and Development Commands
@@ -34,7 +34,7 @@ Common workflow (from README/CLAUDE):
 ## Commit & Pull Request Guidelines
 - Recent history uses imperative summaries and occasional type prefixes (e.g., `docs:`).
 - Keep commits scoped and descriptive (e.g., `docs: update spec refs`).
-- PRs should include a summary, tests run, and any deviations logged in `docs/DECISIONS.md`.
+- PRs should include a summary, tests run, and any deviations logged in `docs/spec/DECISIONS.md`.
 
 ## Configuration & Security
 - Backend config: `apps/api/.env` (copy from `.env.example`).
@@ -42,4 +42,4 @@ Common workflow (from README/CLAUDE):
 
 ## Architecture & Spec References
 - Follow the authority chain in `docs/spec/` for invariants and API schemas.
-- Changes that diverge from spec must be recorded in `docs/DECISIONS.md`.
+- Changes that diverge from spec must be recorded in `docs/spec/DECISIONS.md`.
