@@ -300,11 +300,12 @@ To exit freeze state and allow semantic changes:
 
 | Property | Value |
 |----------|-------|
-| **State** | `PENDING` (freeze gates not yet executed) |
-| **Baseline ID** | *(none — requires F4 completion)* |
-| **Last Verified** | — |
-| **Gates Passed** | F0 ⏳, F1 ⏳, F2 ⏳, F3 ⏳, F4 ⏳ |
-| **Freeze Record** | *(not yet created)* |
+| **State** | `FROZEN` |
+| **Baseline ID** | `spec-freeze-v1.0` |
+| **Git Commit** | `2a8de884eef1b18f60177ef276169c041490914e` |
+| **Last Verified** | 2025-01-04 |
+| **Gates Passed** | F0 ✓, F1 ✓, F2 ✓, F3 ✓, F4 ✓ |
+| **Freeze Record** | `docs/spec/FREEZE-RECORD.md` |
 
 ---
 
