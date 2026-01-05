@@ -237,16 +237,7 @@ Events are persisted to the database with monotonic sequence numbers. The `from_
 
 ## Acceptance Gates
 
-MVP is complete when all gates pass:
-
-| Gate | Criterion | Verification |
-|------|-----------|--------------|
-| **A** | Methodology exists | 36 docs (3 steps × 4 types × 3 versions) |
-| **B** | Packages with traces | Schema validation + trace link verification |
-| **C** | Gating enforced | Cannot advance without approve; message doesn't bypass |
-| **D** | Restart works | State survives process kill |
-| **E** | API + SSE works | Full interactive flow (UI optional) |
-| **F** | Audit complete | Timeline reconstructable from audit_log |
+MVP is complete when all gates pass.
 
 Approved deviations from gate scenarios (if any) are recorded in `docs/DECISIONS.md`.
 
@@ -350,8 +341,6 @@ SOLVER prioritizes **correctness over speed**:
 
 | Document | Purpose |
 |----------|---------|
-| [ONBOARDING.md](docs/ONBOARDING.md) | Senior developer onboarding guide |
-| [CO-DEV-ONBOARDING.md](docs/CO-DEV-ONBOARDING.md) | Co-developer (reviewer) onboarding guide |
 | [CLAUDE.md](CLAUDE.md) | Claude Code development guide |
 | [AGENTS.md](AGENTS.md) | Repo-level instructions for AI coding agents |
 | [SOLVER README](docs/spec/1_SOLVER-README.md) | Project orientation |
@@ -363,17 +352,6 @@ SOLVER prioritizes **correctness over speed**:
 ---
 
 ## Status
-
-**Phase:** P6 Verification complete (MVP gates satisfied)
-
-| Phase | Status | Description |
-|-------|--------|-------------|
-| P1 Foundation | ✅ Complete | Directory structure, Docker, database schema |
-| P2 Persistence | ✅ Complete | SQLAlchemy models, repositories, checkpoint adapter |
-| P3 Orchestration | ✅ Complete | LangGraph state machine, interrupt/resume |
-| P4 API | ✅ Complete | REST endpoints, SSE streaming, graph wiring |
-| P5 Content | ✅ Complete | Artifact storage, schema validation, traceability |
-| P6 Verification | ✅ Complete | Gate C ✓, Gate D ✓, Gate E ✓, Gate F ✓ |
 
 **MVP Focus:** Steps 1–3 with two-pass workflow, persistence, gates, streaming, and auditability
 

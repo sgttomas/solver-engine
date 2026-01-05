@@ -58,6 +58,58 @@
 
 ---
 
+## Phases and Packages Summary
+
+Phase 1: Foundation
+Package 1.1: Project Skeleton
+Package 1.2: Domain Models
+Package 1.3: Database Schema
+
+Phase 2: Persistence Contracts
+Package 2.1: Event Log with Concurrency-Safe Sequences
+Package 2.2: Workflow State Management
+Package 2.3: Audit Logging with Session Attribution
+Package 2.4: Staleness Trigger
+
+Phase 3: Orchestration
+Package 3.1: Graph Definition
+Package 3.2: Node Implementations (Steps 1-3)
+Package 3.3: Interrupt Gates
+Package 3.4: Checkpointing
+
+Phase 4: API Layer
+Package 4.1: Workflow CRUD and Progress Endpoints
+Package 4.2: SSE Streaming with Replay
+Package 4.3: Human Action Endpoints
+Package 4.4: Staleness Endpoints
+
+Phase 5: Runner and Leases
+Package 5.1: Lease Management
+Package 5.2: Runner Loop
+Package 5.3: LLM Integration
+
+Phase 6: Frontend
+Package 6.1: Project Setup
+Package 6.2: Connection Manager
+Package 6.3: Sequence Guard
+Package 6.4: Action Gating
+Package 6.5: Workflow UI
+Package 6.6: SSE Event Handling
+
+Phase 7: Integration
+Package 7.1: Workflow Lifecycle Integration
+Package 7.2: Staleness Integration
+Package 7.3: Recovery Scenarios
+
+Phase 8: Verification
+Package 8.1: Gate A — Methodology Exists
+Package 8.2: Gate B — Packages with Traces
+Package 8.3: Gate C — Gating Enforcement
+Package 8.4: Gate D — Restart/Resume
+Package 8.5: Gate E — SSE Flow
+Package 8.6: Gate F — Audit Trail
+
+
 ## Phase 1: Foundation
 
 **Objective:** Runnable backend skeleton with database connectivity.
