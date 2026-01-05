@@ -2,7 +2,7 @@
 
 **Structured Workflow Generator for Human-AI Collaborative Knowledge Work**
 
-**Document Status:** Governed as of 2025-01-04. See `SOLVER-Change-Management-v2.0.md` for change control rules.
+**Document Status:** Governed as of 2025-01-04. See `SOLVER-Change-Management-v2.0.1.md` for change control rules.
 
 ---
 
@@ -76,7 +76,7 @@ This project uses a four-document taxonomy that separates concerns by the questi
 | Document | Question | File |
 |----------|----------|------|
 | **Document-Type Specifications** | Governance model | `0_Document-Type-Specifications-v2.1.1.md` |
-| **Change Management** | Governance | `SOLVER-Change-Management-v2.0.md` |
+| **Change Management** | Governance | `SOLVER-Change-Management-v2.0.1.md` |
 | **Design Intent** | Why² | `SOLVER-Design-Intent-v1.1.md` |
 | **Architectural Contract** | Why | `SOLVER-Architectural-Contract-v3.4.md` |
 | **Technical Specification** | What | `4_SOLVER-Technical-Spec-V2.8.0.md` |

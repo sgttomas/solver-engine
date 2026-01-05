@@ -270,15 +270,19 @@ Reviewer: _____________ Date: _____________ Result: PASS / FAIL
 
 To enter freeze state:
 
-1. Complete all freeze gates (F0-F4) with signed evidence
-2. Create `FREEZE-RECORD.md` artifact containing:
+1. Complete freeze gates F0-F3 with signed evidence
+2. Update §3.6 to reflect `FROZEN` state with the intended baseline identifier
+3. Commit governed document changes (baseline commit)
+4. Create git tag for baseline commit (baseline identifier)
+5. Create `FREEZE-RECORD.md` artifact containing:
    - Baseline identifier (git tag or commit SHA) — **REQUIRED**
    - Document manifest (filename + version + SHA-256 for each governed document in the canonical set; FREEZE-RECORD.md excluded)
    - Timestamp
    - References to gate evidence
-3. Commit `FREEZE-RECORD.md` and create git tag
-4. Announce freeze to all implementers
-5. Update §3.6 to reflect `FROZEN` state with baseline identifier
+6. Commit `FREEZE-RECORD.md` in a follow-up commit (not part of baseline)
+7. Announce freeze to all implementers
+
+F4 is satisfied when the `FREEZE-RECORD.md` artifact is committed with the baseline tag/SHA and manifest.
 
 ### 3.4 Behavior During Freeze
 
@@ -310,7 +314,7 @@ To exit freeze state and allow semantic changes:
 | Property | Value |
 |----------|-------|
 | **State** | `FROZEN` |
-| **Baseline ID** | `spec-freeze-v2.0` |
+| **Baseline ID** | `spec-freeze-v2.0.1` |
 | **Git Commit** | Recorded in `docs/spec/FREEZE-RECORD.md` |
 | **Last Verified** | 2026-01-05 |
 | **Gates Passed** | F0 ✓, F1 ✓, F2 ✓, F3 ✓, F4 ✓ |
@@ -648,8 +652,9 @@ A: A freeze MUST have a baseline identifier (git tag or commit SHA). Without an 
 | v1.1 | 2025-01-04 | Added §0 Authority & Procedures (document authority order, policy/procedure hierarchy); Added §3 Document Freeze Procedure with gates F0-F4; Self-validating document list with SHA-256 hashes; Freeze state behavior table; Renumbered subsequent sections |
 | v1.2 | 2025-01-04 | Separated policy (§1.1 document types) from snapshot (FREEZE-RECORD.md artifact); Added §1.3 governance-of-governance rules; Added §3.2.1 objective gate evidence requirements with checklists; Made git tag/SHA anchoring a MUST for valid freeze; Expanded FAQ |
 | v1.3 | 2025-01-05 | Added the "SOLVER-README-v{X}" from docs/specs/   to the canonical set, disambiguated it from the project README.me in the root folder |
+| v2.0.1 | 2026-01-05 | Aligned freeze procedure to tag baseline before committing FREEZE-RECORD; clarified F4 timing |
 | v2.0 | 2026-01-05 | Adopted two-hierarchy authority model; added Document-Type Specifications to canonical set and F0 checklist; standardized Technical Spec filename casing |
 ---
 
-*SOLVER Change Management v2.0*
+*SOLVER Change Management v2.0.1*
 *Specification Governance Framework*

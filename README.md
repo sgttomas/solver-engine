@@ -167,7 +167,7 @@ solver-engine/
 │       ├── 3_SOLVER-Architectural-Contract-v3.4.md # Why — Invariants
 │       ├── 4_SOLVER-Technical-Spec-V2.8.0.md       # What — Schemas, endpoints
 │       ├── 5_SOLVER-Development-Directive-v1.5.md  # How — Phases, gates
-│       └── 6_SOLVER-Change-Management-v2.0.md      # Process — Change control
+│       └── 6_SOLVER-Change-Management-v2.0.1.md    # Process — Change control
 ├── apps/
 │   ├── api/                    # FastAPI backend
 │   │   ├── domain/             # Pure domain models
@@ -302,7 +302,7 @@ python tools/validate_schemas.py   # Schema validation
 | [Architectural Contract](docs/spec/3_SOLVER-Architectural-Contract-v3.4.md) | Why — Invariants, constraints |
 | [Technical Spec](docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md) | What — Schemas, endpoints |
 | [Development Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.md) | How — Phases, packages, gates |
-| [Change Management](docs/spec/6_SOLVER-Change-Management-v2.0.md) | Governance — change control |
+| [Change Management](docs/spec/6_SOLVER-Change-Management-v2.0.1.md) | Governance — change control |
 
 ---
 

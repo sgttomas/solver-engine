@@ -1,7 +1,7 @@
 # Architecture Decisions Log
 
 This log records approved deviations from specification documents per
-`docs/spec/6_SOLVER-Change-Management-v1.2.md`.
+`docs/spec/6_SOLVER-Change-Management-v2.0.1.md`.
 
 Note: filenames in this log reflect the names at the time of each decision.
 Current canonical filenames may differ; see `docs/spec/` for the latest names.
