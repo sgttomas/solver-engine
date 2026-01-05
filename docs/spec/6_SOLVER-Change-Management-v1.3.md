@@ -49,13 +49,14 @@ The governed document set consists of these document types:
 | Document Type | Role | Filename Pattern |
 |---------------|------|------------------|
 | Project Orientation | Entry point, navigation | `README.md` |
+| Project Governance Model Orientation | conceptual navigation | `SOLVER-README-v*.md` |
 | Design Intent | Why² — first principles, rationale | `SOLVER-Design-Intent-v*.md` |
 | Architectural Contract | Why — invariants, contracts | `SOLVER-Architectural-Contract-v*.md` |
 | Technical Specification | What — schemas, endpoints, code | `4_solver-technical-spec-V*.md` |
 | Development Directive | How — phases, packages, gates | `SOLVER-Development-Directive-v*.md` |
 | Change Management | Governance — this document | `SOLVER-Change-Management-v*.md` |
 
-**Policy rule:** These six document types constitute the canonical set. Adding or removing document types from this set is a Major change requiring architecture review.
+**Policy rule:** These seven document types constitute the canonical set. Adding or removing document types from this set is a Major change requiring architecture review.
 
 ### 1.2 Baseline Artifact (Snapshot Definition)
 
@@ -212,6 +213,7 @@ Each gate MUST produce one of:
 **F0 evidence (Canonical Set Locked):**
 ```
 □ README.md exists at stated path
+□ SOLVER-README-v{X}.md exists at stated path
 □ SOLVER-Design-Intent-v{X}.md exists, version X matches manifest
 □ SOLVER-Architectural-Contract-v{X}.md exists, version X matches manifest
 □ 4_solver-technical-spec-V{X}.md exists, version X matches manifest  
@@ -638,8 +640,8 @@ A: A freeze MUST have a baseline identifier (git tag or commit SHA). Without an 
 | v1.0 | 2025-01-04 | Initial change management framework; baseline all documents |
 | v1.1 | 2025-01-04 | Added §0 Authority & Procedures (document authority order, policy/procedure hierarchy); Added §3 Document Freeze Procedure with gates F0-F4; Self-validating document list with SHA-256 hashes; Freeze state behavior table; Renumbered subsequent sections |
 | v1.2 | 2025-01-04 | Separated policy (§1.1 document types) from snapshot (FREEZE-RECORD.md artifact); Added §1.3 governance-of-governance rules; Added §3.2.1 objective gate evidence requirements with checklists; Made git tag/SHA anchoring a MUST for valid freeze; Expanded FAQ |
-
+| v1.3 | 2025-01-05 | Added the "SOLVER-README-v{X}" from docs/specs/   to the canonical set, disambiguated it from the project README.me in the root folder |
 ---
 
-*SOLVER Change Management v1.2*
+*SOLVER Change Management v1.3*
 *Specification Governance Framework*

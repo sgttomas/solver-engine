@@ -6,7 +6,7 @@
 
 **Scope:** Single-instance MVP with future-safe seams for multi-instance scaling.
 
-**Entry Point:** For project orientation, start with `README.md` (or `SOLVER-Project-Orientation-v1.0.md`).
+**Entry Point:** For project orientation, start with `README.md` (or `SOLVER-README-v1.0.md`).
 
 **Document Hierarchy:**
 - **Design Intent (Why²):** `SOLVER-Design-Intent-v1.1.md` — Design rationale, first principles, rejected alternatives
@@ -192,7 +192,7 @@ Server validates expected state matches current
 | Streaming | SSE via sse-starlette |
 | Orchestration | LangGraph 1.0+ with PostgresSaver |
 | Database | PostgreSQL with pgvector |
-| LLM | Claude API |
+| LLM | Claude API , OpenAI API , Gemini API |
 | Observability | LangSmith / Langfuse |
 
 ### 5.2 Key Libraries

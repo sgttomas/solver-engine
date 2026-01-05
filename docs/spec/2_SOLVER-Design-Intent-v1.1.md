@@ -4,7 +4,7 @@
 
 **Audience:** Architects, senior developers, and AI agents who need to understand not just the rules, but when the rules might be wrong.
 
-**Entry Point:** For project orientation, start with `README.md` (or `SOLVER-Project-Orientation-v1.0.md`).
+**Entry Point:** For project orientation, start with `README.md` and then `SOLVER-README-v1.0.md`.
 
 **Relationship to Other Documents:**
 - **This document (Why²):** Design rationale, first principles, rejected alternatives

@@ -4,7 +4,7 @@
 
 **Usage:** Instantiate each document type for a specific project by following the structure and including the required sections.
 
-**Version:** 2.1
+**Version:** 2.1.1
 
 ---
 
@@ -619,7 +619,7 @@ is guidance.
 
 ---
 
-### 5.5 Project Orientation (README)
+### 5.5 Project Orientation (SOLVER-README)
 
 #### Purpose
 
@@ -816,8 +816,6 @@ Governance policy for how specification documents evolve. Defines change categor
 
 ## 6. Instantiation Guide
 
-### 6.1 Order of Creation
-
 When applying this system to a new project:
 
 1. **Start with README** — Forces you to name and locate documents
@@ -826,30 +824,6 @@ When applying this system to a new project:
 4. **Write Spec** — Forces you to get concrete about implementation
 5. **Create Directive** — Forces you to sequence the work
 6. **Establish Change Management** — Forces you to define stability
-
-### 6.2 Minimal Viable Set
-
-Not every project needs all six:
-
-| Complexity | Documents Needed |
-|------------|------------------|
-| Simple (1 person, 1 week) | README only |
-| Moderate (2-5 people, 1-3 months) | README + Spec + Directive |
-| Complex (team, multi-month, correctness matters) | All six |
-| Safety-critical / Regulated | All six + formal verification |
-
-### 6.3 Scaling Down Rules
-
-If omitting documents:
-
-| If You Skip... | You Lose... | Acceptable When... |
-|----------------|-------------|-------------------|
-| Design Intent | Rationale for decisions | Decisions are obvious or project is short-lived |
-| Contract | Explicit invariants | No correctness requirements beyond "it works" |
-| Directive | Sequenced plan | Single implementer who holds plan in head |
-| Change Management | Governance | Solo project or disposable prototype |
-
-**Never skip README.** Every project needs an entry point.
 
 ---
 
@@ -905,8 +879,8 @@ Change Management V{X}.
 | 1.0 | Initial document type specifications |
 | 2.0 | Added two-hierarchy authority model (Purpose Priority + Binding Precedence); Added normative status classification; Tightened Design Intent scope (no MUST language); Elevated cross-reference rules to standalone section; Added governance placard; Restructured templates to include normative status and cross-references |
 | 2.1 | Added Must-Consult Rule to Design Intent (non-normative ≠ ignorable); Added §2.5 Meta-Governance distinguishing process authority from content authority; Added versioned cross-reference format convention |
-
+| 2.1.1 | Removed section about scaling down the documents to a smaller set, because this is about working with agentic systems all the documents are always all required |
 ---
 
-*Project Documentation System Specification v2.1*
+*Project Documentation System Specification v2.1.1*
 *A taxonomy for complex system documentation with explicit authority model*

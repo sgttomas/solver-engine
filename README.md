@@ -76,6 +76,8 @@ SOLVER applies the step's V3 methodology to produce the deliverable artifact, th
 
 ### Ten-Step Workflow
 
+Currently only Steps 1 - 3 are implemented in the SOLVER engine, which is sufficient to define the objectives and start the BUILD PHASE.  Additional steps will be built post-MVP.
+
 ```
 ╔═══════════════════════════════════════════════════════════════════╗
 ║  DEFINITION PHASE — "What are we solving?"                        ║
@@ -84,6 +86,8 @@ SOLVER applies the step's V3 methodology to produce the deliverable artifact, th
 ║  Step 2: Requirements          → What the solution must do        ║
 ║  Step 3: Objectives            → What success looks like          ║
 ╠═══════════════════════════════════════════════════════════════════╣
+║  BUILD PHASE — "Build internally and verify"                              ║
+╠═══════════════════════════════════════════════════════════════════╣
 ║  VERIFICATION PHASE — "How will we know it works?"                ║
 ╠═══════════════════════════════════════════════════════════════════╣
 ║  Step 4: Verification Design   → Correctness checks               ║
@@ -91,7 +95,7 @@ SOLVER applies the step's V3 methodology to produce the deliverable artifact, th
 ║  Step 6: Evaluation Criteria   → Success metrics                  ║
 ║  Step 7: Assessment Protocol   → Measurement process              ║
 ╠═══════════════════════════════════════════════════════════════════╣
-║  EXECUTION PHASE — "Build and learn"                              ║
+║  EXECUTION PHASE — "Implement for end users and learn"                              ║
 ╠═══════════════════════════════════════════════════════════════════╣
 ║  Step 8: Implementation        → Build the solution               ║
 ║  Step 9: Reflection            → Assess results                   ║
@@ -198,38 +202,11 @@ All endpoints under `/api/v1`.
 
 ### REST Endpoints
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| POST | `/workflows` | Create workflow (problem + instance) |
-| GET | `/workflows/{id}` | Current state + position |
-| POST | `/workflows/{id}/resume` | Resume from checkpoint |
-| POST | `/workflows/{id}/actions/approve` | Approve gate |
-| POST | `/workflows/{id}/actions/revise` | Request revision with feedback |
-| POST | `/workflows/{id}/actions/message` | Comment without state change |
-| POST | `/workflows/{id}/actions/clarify` | Submit clarification answers |
-| GET | `/workflows/{id}/progress` | Progress snapshot (canonical refetch bundle) |
-| GET | `/workflows/{id}/staleness` | Staleness snapshot (canonical refetch bundle) |
-| POST | `/workflows/{id}/actions/acknowledge-stale` | Acknowledge stale items |
-| POST | `/workflows/{id}/actions/re-execute` | Re-execute stale step (stub) |
-
-Endpoints listed here are currently implemented. See `docs/spec/4_solver-technical-spec-V2.8.0.md` for additional planned endpoints (history, traceability).
+Endpoints listed here  `docs/spec/4_solver-technical-spec-V2.8.0.md`.
 
 ### SSE Stream
 
 `GET /workflows/{id}/stream?from_sequence=N` — Structured events during execution:
-
-```
-workflow.started        Workflow execution began
-step.started           Step execution began
-step.awaiting_clarification Needs user input
-step.awaiting_review   Ready for human approval
-artifact.delta         Streaming output chunk
-artifact.final         Final artifact ready
-step.approved          Step approved
-step.revision_requested Revision requested
-workflow.completed     Workflow finished
-error                  Error occurred
-```
 
 Events are persisted to the database with monotonic sequence numbers. The `from_sequence` parameter enables reliable reconnection by replaying only events with `sequence > N`. Late-connecting clients receive the full event history.
 
@@ -280,24 +257,16 @@ make dev-api
 
 Authority order and change-control are defined in:
 - `docs/spec/0_Document-Type-Specifications-v2.1.md`
-- `AGENTS.md`
+
 
 ### With AI Coding Agent
 
 The [Development Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.md) provides complete instructions:
 
-```
 "Read docs/spec/5_SOLVER-Development-Directive-v1.5.md in full.
 This is your authoritative operating manual."
 
-"Begin slice P1.1"
-```
-
-Work proceeds in **small slices**, each ending with:
-1. Changed files list
-2. Commands run + results
-3. Which gate(s) satisfied
-4. Next slice plan
+Work proceeds in packages comprised of deliverables.
 
 ### Manual Development
 
@@ -321,29 +290,13 @@ python tools/validate_schemas.py   # Schema validation
 
 ---
 
-## Design Tradeoffs
-
-SOLVER prioritizes **correctness over speed**:
-
-| Tradeoff | SOLVER Choice | Consequence |
-|----------|---------------|-------------|
-| Speed vs Correctness | Correctness | 10-step process is slow |
-| Flexibility vs Rigor | Rigor | Cannot skip steps |
-| Autonomy vs Control | Control | Human gates required |
-
-**Good fit:** High-stakes decisions, regulated domains, audit requirements, complex multi-step reasoning
-
-**Poor fit:** Quick questions, simple lookups, time-critical responses, low-stakes decisions
-
----
-
 ## Documentation
 
 | Document | Purpose |
 |----------|---------|
 | [CLAUDE.md](CLAUDE.md) | Claude Code development guide |
 | [AGENTS.md](AGENTS.md) | Repo-level instructions for AI coding agents |
-| [SOLVER README](docs/spec/1_SOLVER-README.md) | Project orientation |
+| [SOLVER README](docs/spec/1_SOLVER-README-v1.0.md) | Conceptual navigation |
 | [Design Intent](docs/spec/2_SOLVER-Design-Intent-v1.1.md) | Why² — Design rationale |
 | [Architectural Contract](docs/spec/3_SOLVER-Architectural-Contract-v3.4.md) | Why — Invariants, constraints |
 | [Technical Spec](docs/spec/4_solver-technical-spec-V2.8.0.md) | What — Schemas, endpoints |

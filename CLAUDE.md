@@ -71,17 +71,6 @@ apps/api/
 | DB Models | `infrastructure/db/models.py` | SQLAlchemy ORM (10 tables) |
 | LLM Adapter | `infrastructure/llm/adapter.py` | Multi-provider (Claude, OpenAI, Gemini) |
 
-### Data Flow
-
-```
-REST API → WorkflowService → LangGraph → LLM
-                ↓                ↓
-           SSE Events ←  PostgreSQL (artifacts, events, checkpoints)
-```
-
-### SSE Event Replay
-
-Events are persisted with monotonic sequence numbers. The `from_sequence` parameter on `GET /workflows/{id}/stream` enables reliable reconnection by replaying events with `sequence > N`.
 
 ## Specification Documents
 
@@ -101,13 +90,6 @@ Authoritative docs in `docs/spec/` (read in order for full context):
 
 Approved deviations from specs are recorded in `docs/DECISIONS.md`.
 
-## Acceptance Gates
-
-| Gate | Criterion | Test |
-|------|-----------|------|
-| C | Gating Enforcement | `make test-gates` |
-| D | Restart/Recovery | `make test-recovery` |
-| E | API + SSE Flow | `make e2e` |
 
 ## Key Patterns
 
