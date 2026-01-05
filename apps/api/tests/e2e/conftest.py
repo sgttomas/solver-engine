@@ -73,17 +73,27 @@ def stub_llm_nodes(monkeypatch):
         pass_type = state.current_pass
 
         if pass_type == PassType.DEFINITION:
-            # Pass 1: Return methodology doc structure
+            # Pass 1: Return full methodology structure (4 doc types × 3 versions)
+            step_value = step.value if hasattr(step, "value") else str(step)
             return {
-                "document_type": "methodology",
-                "version": "v1",
-                "step": step.value if hasattr(step, "value") else str(step),
-                "content": f"Methodology content for {step.value if hasattr(step, 'value') else step}",
-                "sections": [
-                    {"title": "Overview", "content": "Overview section content"},
-                    {"title": "Approach", "content": "Approach section content"},
-                    {"title": "Deliverables", "content": "Deliverables section content"},
-                ],
+                "v1": {
+                    "data_sheet": f"# Data Sheet V1\n\nStep: {step_value}\n\nCore data and definitions.",
+                    "todo_list": f"# To-Do List V1\n\nStep: {step_value}\n\n- [ ] Task 1\n- [ ] Task 2",
+                    "guidance": f"# Guidance V1\n\nStep: {step_value}\n\nGuidance content.",
+                    "detailed_procedure": f"# Procedure V1\n\nStep: {step_value}\n\n1. Step one\n2. Step two",
+                },
+                "v2": {
+                    "data_sheet": f"# Data Sheet V2\n\nStep: {step_value}\n\nRefined data.",
+                    "todo_list": f"# To-Do List V2\n\nStep: {step_value}\n\n- [ ] Refined task 1",
+                    "guidance": f"# Guidance V2\n\nStep: {step_value}\n\nRefined guidance.",
+                    "detailed_procedure": f"# Procedure V2\n\nStep: {step_value}\n\n1. Refined step one",
+                },
+                "v3": {
+                    "data_sheet": f"# Data Sheet V3\n\nStep: {step_value}\n\nFinal data.",
+                    "todo_list": f"# To-Do List V3\n\nStep: {step_value}\n\n- [ ] Final task 1",
+                    "guidance": f"# Guidance V3\n\nStep: {step_value}\n\nFinal guidance.",
+                    "detailed_procedure": f"# Procedure V3\n\nStep: {step_value}\n\n1. Final step one",
+                },
             }
         else:
             # Pass 2: Return step package structure

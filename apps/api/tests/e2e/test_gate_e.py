@@ -173,18 +173,20 @@ class TestGateESSEFlow:
             f"Expected step.awaiting_review last, got: {event_types}"
         )
 
-        # Assert payload fields
+        # Assert payload fields per V2.8.0 spec envelope structure
         for event_type, payload in events:
             assert payload["workflow_id"] == workflow_id, "workflow_id mismatch"
             assert "timestamp" in payload, "Missing timestamp"
             assert "event_id" in payload, "Missing event_id"
+            assert "position" in payload, "Missing position object"
 
-            # Step events should have status in data
+            # Per V2.8.0 spec: status is in position object, not payload.data
+            position = payload["position"]
             if event_type.startswith("step."):
-                # step.started may not have status yet, but others should
+                # step.started may not have definitive status yet, but others should
                 if event_type != "step.started":
-                    assert payload.get("data", {}).get("status") is not None, (
-                        f"Missing status in {event_type}"
+                    assert position.get("status") is not None, (
+                        f"Missing status in {event_type} position"
                     )
 
     def test_approve_advances_via_sse(self, client):
@@ -282,12 +284,14 @@ class TestGateESSEFlow:
         )
 
         # Verify Step 2 metadata in the last step.started
+        # Per V2.8.0 Spec: position fields are in nested "position" object
         last_step_started = step_started_events[-1][1]
-        assert last_step_started["step_number"] == 2, (
-            f"Expected step_number=2, got {last_step_started['step_number']}"
+        position = last_step_started.get("position", last_step_started)  # Fallback for flat structure
+        assert position["step_number"] == 2, (
+            f"Expected step_number=2, got {position.get('step_number')}"
         )
-        assert last_step_started["step_name"] == "requirements", (
-            f"Expected step_name='requirements', got {last_step_started['step_name']}"
+        assert position["step_name"] == "requirements", (
+            f"Expected step_name='requirements', got {position.get('step_name')}"
         )
 
         # Verify final state via GET

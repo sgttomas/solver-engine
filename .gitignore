@@ -63,7 +63,7 @@ Thumbs.db
 runs/
 
 # Ignore working and issued docs
-docs/Working/
+.tmp/
 docs/Issued/
 
 # Python

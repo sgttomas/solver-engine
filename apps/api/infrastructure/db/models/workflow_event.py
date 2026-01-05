@@ -102,17 +102,57 @@ class WorkflowEvent(Base):
     def to_sse_dict(self) -> dict:
         """Convert to SSE-compatible dict with required fields.
 
-        Per Contract §12.3: SSE payloads must include event_id, event_type, sequence.
-        Uses existing id (PK) as event_id - no separate column needed.
+        Per V2.8.0 Spec Appendix C.1: SSE envelope MUST include:
+        - sequence: Monotonic per workflow
+        - event_type: Event discriminator
+        - workflow_id: External workflow ID string
+        - timestamp: ISO 8601 server timestamp
+        - position: Current workflow position object (REQUIRED)
+        - actor_id: Optional actor attribution
+        - payload: Optional event-specific data
 
         Returns:
             Dict suitable for SSE event payload with all required fields.
         """
-        return {
-            "event_id": str(self.id),  # Use existing PK as event_id
-            "event_type": self.event_type,
+        # Use external workflow_id from payload if available, otherwise fall back to FK
+        external_workflow_id = self.payload.get("workflow_id", str(self.workflow_id))
+        # Get instance_id from payload if available (per V2.8.0)
+        instance_id = self.payload.get("instance_id", str(self.workflow_id))
+
+        result = {
+            "event_id": str(self.id),  # Event unique identifier (PK)
             "sequence": self.sequence,
+            "event_type": self.event_type,
+            "workflow_id": external_workflow_id,
+            "instance_id": instance_id,  # Internal UUID per V2.8.0
             "timestamp": self.created_at.isoformat(),
-            "workflow_id": str(self.workflow_id),
-            **self.payload,
         }
+
+        # Position object is required per V2.8.0 spec
+        if "position" in self.payload:
+            result["position"] = self.payload["position"]
+        else:
+            # Fallback for legacy events without nested position
+            result["position"] = {
+                "instance_number": self.payload.get("instance_number", 1),
+                "step_number": self.payload.get("step_number", 1),
+                "step_name": self.payload.get("step_name", "unknown"),
+                "pass_type": self.payload.get("pass_type", "definition"),
+                "status": self.payload.get("data", {}).get("status", "unknown"),
+                "phase": self.payload.get("data", {}).get("phase", "unknown"),
+            }
+
+        # Optional actor_id for user-initiated events
+        if "actor_id" in self.payload:
+            result["actor_id"] = self.payload["actor_id"]
+
+        # Include remaining payload data (data field, artifact_id, etc.)
+        # Exclude fields that are now top-level: workflow_id, instance_id, position, actor_id
+        payload_data = {
+            k: v for k, v in self.payload.items()
+            if k not in ("workflow_id", "instance_id", "position", "actor_id")
+        }
+        if payload_data:
+            result["payload"] = payload_data
+
+        return result

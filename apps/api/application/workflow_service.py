@@ -417,35 +417,48 @@ class WorkflowService:
         step_execution: Optional[StepExecution] = None,
         artifact_id: Optional[str] = None,
         data: Optional[dict] = None,
+        actor_id: Optional[str] = None,
     ) -> dict:
         """Build consistent event payload for SSE events.
 
         Per Fix 1 (Atomic Event Persistence): All events use consistent payload structure.
+        Per V2.8.0 Spec Appendix C: All events MUST include nested `position` object.
 
         Args:
             workflow: Workflow for context
             step_execution: Optional step execution for status/phase
             artifact_id: Optional artifact ID for artifact events
             data: Optional additional data to include
+            actor_id: Optional actor ID for user-initiated events
 
         Returns:
             Event payload dict (excluding event_id, sequence, timestamp - added by model)
         """
-        payload = {
-            "workflow_id": workflow.workflow_id,  # External workflow ID string
-            "instance_id": str(workflow.instance_id),
-            "pass_type": workflow.current_pass.value,
+        # Build position object per V2.8.0 spec Appendix C.1
+        status = step_execution.status.value if step_execution else "unknown"
+        phase = step_execution.phase.value if step_execution else "unknown"
+
+        position = {
+            "instance_number": workflow.instance_number if hasattr(workflow, 'instance_number') else 1,
             "step_number": workflow.current_step_number,
             "step_name": workflow.current_step.value,
+            "pass_type": workflow.current_pass.value,
+            "status": status,
+            "phase": phase,
+        }
+
+        payload = {
+            "workflow_id": workflow.workflow_id,  # External workflow ID string for SSE
+            "instance_id": str(workflow.instance_id),  # Internal UUID per V2.8.0
+            "position": position,
             "data": {},
         }
 
         if artifact_id:
             payload["artifact_id"] = artifact_id
 
-        if step_execution:
-            payload["data"]["status"] = step_execution.status.value
-            payload["data"]["phase"] = step_execution.phase.value
+        if actor_id:
+            payload["actor_id"] = actor_id
 
         if data:
             payload["data"].update(data)
@@ -459,12 +472,14 @@ class WorkflowService:
         step_execution: Optional[StepExecution] = None,
         artifact_id: Optional[str] = None,
         data: Optional[dict] = None,
+        actor_id: Optional[str] = None,
     ):
         """Persist workflow event to durable log and return it.
 
         Per Contract §9.2: Events stored in workflow_events table
         Per Contract §11.4: Events MUST be persisted BEFORE broadcast
         Per Fix 1: Returns event for route to publish after commit
+        Per V2.8.0 Spec: User-initiated events MUST include actor_id
 
         Args:
             workflow: Workflow the event belongs to
@@ -472,12 +487,13 @@ class WorkflowService:
             step_execution: Optional step execution for status/phase
             artifact_id: Optional artifact ID for artifact events
             data: Optional additional data to include
+            actor_id: Optional actor ID for user-initiated events
 
         Returns:
             Created WorkflowEvent for publishing after transaction commit
         """
         payload = self._build_event_payload(
-            workflow, step_execution, artifact_id, data
+            workflow, step_execution, artifact_id, data, actor_id
         )
         return await self._event_repo.create_event(
             workflow_id=workflow.id,
@@ -584,14 +600,13 @@ class WorkflowService:
         )
 
         # Persist event to durable log (Fix 1: persist before publish, return for route)
+        # Per V2.8.0 Spec: actor_id MUST be top-level for user-initiated events
         event = await self._persist_event(
             workflow=workflow,
             event_type="step.approved",
             step_execution=step_execution,
-            data={
-                "actor_id": actor,
-                "state_version": workflow.state_version,
-            },
+            data={"state_version": workflow.state_version},
+            actor_id=actor,
         )
         events.append(event)
 
@@ -682,15 +697,16 @@ class WorkflowService:
         )
 
         # Persist event to durable log (Fix 1: persist before publish, return for route)
+        # Per V2.8.0 Spec: event type is "step.revision_requested", actor_id top-level
         event = await self._persist_event(
             workflow=workflow,
-            event_type="step.revised",
+            event_type="step.revision_requested",
             step_execution=step_execution,
             data={
-                "actor_id": actor,
                 "state_version": workflow.state_version,
                 "feedback": feedback,
             },
+            actor_id=actor,
         )
         events.append(event)
 
@@ -839,14 +855,13 @@ class WorkflowService:
         )
 
         # Persist event to durable log (Fix 1: persist before publish, return for route)
+        # Per V2.8.0 Spec: actor_id MUST be top-level for user-initiated events
         event = await self._persist_event(
             workflow=workflow,
             event_type="step.clarified",
             step_execution=step_execution,
-            data={
-                "actor_id": actor,
-                "state_version": workflow.state_version,
-            },
+            data={"state_version": workflow.state_version},
+            actor_id=actor,
         )
         events.append(event)
 

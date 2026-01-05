@@ -37,6 +37,7 @@ class StepName(str, enum.Enum):
 class StepStatus(str, enum.Enum):
     """Coarse-grained step status (external visibility)."""
     NOT_STARTED = "not_started"
+    PENDING = "pending"  # Queued for (re-)execution per V2.8.0 spec
     IN_PROGRESS = "in_progress"
     AWAITING_CLARIFICATION = "awaiting_clarification"
     AWAITING_REVIEW = "awaiting_review"

@@ -11,7 +11,7 @@ P4.4: Wire to orchestration (graph invocation, resume).
 import asyncio
 import json
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -39,6 +39,8 @@ from domain.state import (
     StepName,
     GatePolicy,
     HumanAction,
+    StepStatus as DomainStepStatus,
+    StepPhase as DomainStepPhase,
 )
 
 
@@ -81,17 +83,29 @@ def reset_graph():
 # P4.3: SSE Constants and Helpers (inline per revised plan)
 # =============================================================================
 
-# SSE event types per Doc 3 §9.2
+# SSE event types per V2.8.0 Tech Spec §9.2
 SSE_EVENT_TYPES = {
+    # Workflow lifecycle
     "workflow.started": "Workflow execution began",
     "workflow.completed": "Workflow finished",
+    # Step lifecycle
     "step.started": "Step execution began",
     "step.awaiting_clarification": "Step needs user input",
     "step.awaiting_review": "Step output ready for approval",
     "step.approved": "Step approved by human",
     "step.revision_requested": "Step revision requested",
+    "step.reexecute_started": "Step re-execution initiated",
+    # Artifact events
     "artifact.delta": "Streaming output chunk",
     "artifact.final": "Final artifact ready",
+    "artifact.stale": "Artifact marked stale due to upstream revision",
+    "artifact.stale_cleared": "Stale artifact acknowledged by user",
+    # Message events
+    "message.created": "Message sent",
+    "message.delta": "Message streaming chunk",
+    "message.final": "Message completed",
+    # Connection events
+    "heartbeat": "Connection keep-alive",
     "error": "Error occurred",
 }
 
@@ -399,18 +413,39 @@ class StepStateResponse(BaseModel):
         from_attributes = True
 
 
+class PositionResponse(BaseModel):
+    """Current workflow position.
+
+    Per V2.8.0 Spec: Used in WorkflowResponse, StateConflictResponse, StalenessResponse.
+    All position-related fields in one object for consistency.
+    """
+
+    instance_number: int = Field(default=1, description="Workflow instance number")
+    step_number: int
+    step_name: str
+    pass_type: str
+    status: str
+    phase: str = Field(default="unknown", description="Current execution phase")
+
+
 class WorkflowResponse(BaseModel):
     """Workflow state response.
 
-    Includes step_state for Doc 3 test patterns.
+    Per V2.8.0 Spec: Includes nested `position` object for consistency with SSE events.
+    Also includes step_state for detailed step info.
     Enums serialized as strings for stable API payloads.
     Per Contract §9.1: state_version for optimistic concurrency.
+
+    Note: Flat fields (current_pass, current_step, current_step_number) retained
+    for backward compatibility. Use `position` for new integrations.
     """
 
     workflow_id: str
     thread_id: str
     instance_id: UUID
     status: str
+    position: PositionResponse = Field(..., description="Current workflow position (V2.8.0)")
+    # Flat fields for backward compatibility (mirror position object)
     current_pass: str
     current_step: str
     current_step_number: int
@@ -423,18 +458,6 @@ class WorkflowResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class PositionResponse(BaseModel):
-    """Current workflow position for StateConflictResponse.
-
-    Per Contract §10.5: returned in 409 responses.
-    """
-
-    pass_type: str
-    step_number: int
-    step_name: str
-    status: str
 
 
 class StateConflictResponse(BaseModel):
@@ -453,7 +476,8 @@ class StateConflictResponse(BaseModel):
 class StepProgressEntry(BaseModel):
     """Per-step progress entry for ProgressResponse.
 
-    Per Contract §10.3: detailed step progress including artifact info.
+    Per V2.8.0 Spec: detailed step progress including artifact info.
+    Uses `has_artifact` and `is_stale` booleans per spec naming conventions.
     """
 
     pass_type: str
@@ -461,9 +485,10 @@ class StepProgressEntry(BaseModel):
     step_name: str
     status: str
     phase: str
-    latest_artifact_id: Optional[UUID] = None
-    latest_artifact_revision: Optional[int] = None
-    artifact_stale: bool = False
+    has_artifact: bool = False
+    is_stale: bool = False
+    artifact_id: Optional[UUID] = None
+    artifact_revision: Optional[int] = None
     updated_at: Optional[datetime] = None
 
 
@@ -512,12 +537,13 @@ class StaleLinkEntry(BaseModel):
 class StalenessResponse(BaseModel):
     """Workflow staleness response.
 
-    Per Contract §10.2: Part of canonical refetch bundle.
+    Per V2.8.0 Spec Appendix C.5: Part of canonical refetch bundle.
     Indicates if workflow can complete (no blocking stale artifacts/links).
-    Includes position and blocking_reasons per spec.
+    Includes state_version, position and blocking_reasons per spec.
     """
 
     workflow_id: str
+    state_version: int  # Per V2.8.0 spec: required for optimistic concurrency
     position: PositionResponse
     can_complete: bool
     blocking_reasons: list[str]
@@ -530,11 +556,34 @@ class StalenessResponse(BaseModel):
 # =============================================================================
 
 
+def build_position_response(workflow, step_execution) -> PositionResponse:
+    """Build PositionResponse from workflow and step_execution.
+
+    Per V2.8.0 Spec line 2174: All API responses include position.
+    Used by utility endpoints (history, traceability, replay, diff).
+    """
+    status = step_execution.status.value if step_execution else "unknown"
+    phase = step_execution.phase.value if step_execution else "unknown"
+
+    return PositionResponse(
+        instance_number=workflow.instance_number if hasattr(workflow, 'instance_number') else 1,
+        step_number=workflow.current_step_number,
+        step_name=workflow.current_step.value,
+        pass_type=workflow.current_pass.value,
+        status=status,
+        phase=phase,
+    )
+
+
 def build_workflow_response(workflow, step_execution) -> WorkflowResponse:
     """Build WorkflowResponse from DB models.
 
     Serializes enums as strings for stable API payloads.
+    Per V2.8.0: Includes nested position object.
     """
+    # Build position object per V2.8.0 spec (reuse helper)
+    position = build_position_response(workflow, step_execution)
+
     step_state = None
     if step_execution is not None:
         step_state = StepStateResponse(
@@ -550,6 +599,8 @@ def build_workflow_response(workflow, step_execution) -> WorkflowResponse:
         thread_id=workflow.thread_id,
         instance_id=workflow.instance_id,
         status=workflow.status.value,
+        position=position,
+        # Flat fields for backward compatibility
         current_pass=workflow.current_pass.value,
         current_step=workflow.current_step.value,
         current_step_number=workflow.current_step_number,
@@ -709,15 +760,18 @@ async def get_workflow_progress(
     steps = []
     for step_exec in step_executions:
         # Query artifact for staleness and revision info (if exists)
-        artifact_stale = False
-        latest_artifact_revision = None
-        if step_exec.latest_artifact_id:
+        is_stale = False
+        artifact_revision = None
+        artifact_id = step_exec.latest_artifact_id
+        has_artifact = artifact_id is not None
+
+        if artifact_id:
             from infrastructure.db.repositories.artifact import ArtifactRepository
             artifact_repo = ArtifactRepository(session)
-            artifact = await artifact_repo.get(step_exec.latest_artifact_id)
+            artifact = await artifact_repo.get(artifact_id)
             if artifact:
-                artifact_stale = artifact.stale  # Note: column is 'stale', not 'is_stale'
-                latest_artifact_revision = artifact.revision
+                is_stale = artifact.stale  # Note: column is 'stale', not 'is_stale'
+                artifact_revision = artifact.revision
 
         steps.append(
             StepProgressEntry(
@@ -726,9 +780,10 @@ async def get_workflow_progress(
                 step_name=step_exec.step_name.value,
                 status=step_exec.status.value,
                 phase=step_exec.phase.value,
-                latest_artifact_id=step_exec.latest_artifact_id,
-                latest_artifact_revision=latest_artifact_revision,
-                artifact_stale=artifact_stale,
+                has_artifact=has_artifact,
+                is_stale=is_stale,
+                artifact_id=artifact_id,
+                artifact_revision=artifact_revision,
                 updated_at=step_exec.updated_at,
             )
         )
@@ -764,12 +819,14 @@ async def get_workflow_staleness(
             detail=f"Workflow not found: {workflow_id}",
         )
 
-    # Build position response
+    # Build position response per V2.8.0 spec
     position = PositionResponse(
-        pass_type=workflow.current_pass.value,
+        instance_number=workflow.instance_number if hasattr(workflow, 'instance_number') else 1,
         step_number=workflow.current_step_number,
         step_name=workflow.current_step.value,
+        pass_type=workflow.current_pass.value,
         status=step_execution.status.value if step_execution else "unknown",
+        phase=step_execution.phase.value if step_execution else "unknown",
     )
 
     # Query stale artifacts
@@ -817,6 +874,7 @@ async def get_workflow_staleness(
 
     return StalenessResponse(
         workflow_id=workflow.workflow_id,
+        state_version=workflow.state_version,  # Per V2.8.0 spec
         position=position,
         can_complete=can_complete,
         blocking_reasons=blocking_reasons,
@@ -825,91 +883,74 @@ async def get_workflow_staleness(
     )
 
 
-class AcknowledgeStaleRequest(BaseModel):
-    """Request to acknowledge stale artifacts/links.
+# =============================================================================
+# History Endpoint (Gate F Requirement)
+# =============================================================================
 
-    Per Contract §10.2: Acknowledge that staleness has been reviewed.
+
+class HistoryEntryResponse(BaseModel):
+    """Single history entry for unified timeline.
+
+    Per V2.8.0 Spec: Unified history including events, artifacts, and messages.
     """
 
-    artifact_ids: list[UUID] = Field(
-        default_factory=list, description="Artifact IDs to acknowledge as reviewed"
-    )
-    link_ids: list[UUID] = Field(
-        default_factory=list, description="Traceability link IDs to acknowledge as reviewed"
-    )
-    actor_id: Optional[str] = Field(
-        default=None, description="Actor ID (defaults to workflow.created_by)"
-    )
+    entry_id: UUID
+    created_at: datetime
+    entry_type: str = Field(..., description="Type: 'event', 'artifact', 'message'")
+    actor_id: Optional[str] = None
+    step_number: Optional[int] = None
+    step_name: Optional[str] = None
+
+    # For events (from audit_log)
+    event_type: Optional[str] = None
+    from_status: Optional[str] = None
+    to_status: Optional[str] = None
+
+    # For artifacts
+    artifact_id: Optional[UUID] = None
+    artifact_type: Optional[str] = None
+    artifact_label: Optional[str] = None
+
+    # For messages
+    message_role: Optional[str] = None
+    content_preview: Optional[str] = None
+
+    details: Optional[dict] = None
 
 
-class AcknowledgeStaleResponse(BaseModel):
-    """Response for acknowledge-stale action.
+class HistoryResponse(BaseModel):
+    """Workflow history response.
 
-    Per Contract §10.2: Confirms acknowledgement.
+    Per V2.8.0 Spec: Full audit trail for timeline reconstruction (Gate F).
+    Per V2.8.0 Spec line 2174: All API responses include position.
     """
 
     workflow_id: str
-    acknowledged_artifacts: int
-    acknowledged_links: int
+    state_version: int
+    position: PositionResponse
+    entries: list[HistoryEntryResponse]
+    total_count: int
 
 
-@router.post("/{workflow_id}/actions/acknowledge-stale", response_model=AcknowledgeStaleResponse)
-async def acknowledge_stale(
+@router.get("/{workflow_id}/history", response_model=HistoryResponse)
+async def get_workflow_history(
     workflow_id: str,
-    request: AcknowledgeStaleRequest,
+    entry_type: Optional[str] = None,  # 'event', 'artifact', 'message', or None for all
+    limit: int = 50,
+    offset: int = 0,
     session: AsyncSession = Depends(get_session),
 ):
-    """Acknowledge stale artifacts and links.
+    """Get workflow history for timeline reconstruction.
 
-    Per Contract §10.2: Allows human to acknowledge they've reviewed
-    stale artifacts/links without triggering re-execution.
-    This is a read-only acknowledgement, not a state change.
-    """
-    service = WorkflowService(session)
+    Per V2.8.0 Spec (Gate F): Returns unified history including:
+    - Audit log events (state transitions, actions)
+    - Artifact creations/revisions
+    - Messages (conversation history)
 
-    try:
-        workflow, _ = await service.get_workflow(workflow_id)
-    except WorkflowNotFoundError:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Workflow not found: {workflow_id}",
-        )
-
-    # For now, this is a no-op acknowledgement endpoint
-    # Future: Could persist acknowledgement to audit log
-    return AcknowledgeStaleResponse(
-        workflow_id=workflow.workflow_id,
-        acknowledged_artifacts=len(request.artifact_ids),
-        acknowledged_links=len(request.link_ids),
-    )
-
-
-class ReExecuteRequest(BaseModel):
-    """Request to re-execute a stale step.
-
-    Per Contract §10.2: Trigger re-execution of a stale step.
-    """
-
-    step_name: str = Field(..., description="Step name to re-execute")
-    pass_type: str = Field(..., description="Pass type (definition or execution)")
-    actor_id: Optional[str] = Field(
-        default=None, description="Actor ID (defaults to workflow.created_by)"
-    )
-
-
-@router.post("/{workflow_id}/actions/re-execute", response_model=WorkflowResponse)
-async def re_execute_step(
-    workflow_id: str,
-    request: ReExecuteRequest,
-    session: AsyncSession = Depends(get_session),
-):
-    """Re-execute a stale step.
-
-    Per Contract §10.2: Triggers re-execution of a step that has
-    become stale due to upstream revisions.
-
-    Note: This is a placeholder - full implementation requires
-    integration with the graph execution system.
+    Query params:
+        entry_type: Filter by type ('event', 'artifact', 'message')
+        limit: Max entries to return (default 50)
+        offset: Skip entries for pagination
     """
     service = WorkflowService(session)
 
@@ -921,15 +962,1028 @@ async def re_execute_step(
             detail=f"Workflow not found: {workflow_id}",
         )
 
-    # Validate the requested step exists and is stale
-    # This is a placeholder - full implementation would:
-    # 1. Navigate to the stale step
-    # 2. Trigger graph re-execution
-    # 3. Update staleness flags after successful execution
+    # Build position for response (per V2.8.0 spec line 2174)
+    position = build_position_response(workflow, step_execution)
 
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Re-execute step is not yet implemented. Use revise action to trigger re-generation.",
+    entries: list[HistoryEntryResponse] = []
+
+    # Collect audit log events
+    if entry_type is None or entry_type == "event":
+        from infrastructure.db.repositories.audit import AuditLogRepository
+        audit_repo = AuditLogRepository(session)
+        audit_logs = await audit_repo.list_for_workflow(workflow.id)
+
+        for log in audit_logs:
+            entries.append(
+                HistoryEntryResponse(
+                    entry_id=log.id,
+                    created_at=log.created_at,
+                    entry_type="event",
+                    actor_id=log.actor_id,
+                    step_number=log.step_number,
+                    step_name=log.step_name.value if log.step_name else None,
+                    event_type=log.event_type,
+                    from_status=log.from_status.value if log.from_status else None,
+                    to_status=log.to_status.value if log.to_status else None,
+                    artifact_id=log.artifact_id,
+                    details=log.details if log.details else None,
+                )
+            )
+
+    # Collect artifacts
+    if entry_type is None or entry_type == "artifact":
+        from infrastructure.db.repositories.artifact import ArtifactRepository
+        artifact_repo = ArtifactRepository(session)
+        artifacts = await artifact_repo.list_for_workflow(workflow.id)
+
+        for artifact in artifacts:
+            # Build artifact label (e.g., "problem_definition v1 methodology_doc")
+            label_parts = []
+            if artifact.step_name:
+                label_parts.append(artifact.step_name.value)
+            if artifact.document_version:
+                label_parts.append(artifact.document_version.value)
+            if artifact.artifact_type:
+                label_parts.append(artifact.artifact_type)
+            artifact_label = " ".join(label_parts) if label_parts else None
+
+            # Build details dict for methodology docs
+            details = {}
+            if artifact.artifact_type == "methodology_doc":
+                if artifact.document_type:
+                    details["document_type"] = artifact.document_type.value
+                if artifact.document_version:
+                    details["document_version"] = artifact.document_version.value
+            elif artifact.artifact_type == "step_package":
+                if artifact.package_type:
+                    details["package_type"] = artifact.package_type
+                details["revision"] = artifact.revision
+
+            entries.append(
+                HistoryEntryResponse(
+                    entry_id=artifact.id,
+                    created_at=artifact.created_at,
+                    entry_type="artifact",
+                    step_number=artifact.step_number,
+                    step_name=artifact.step_name.value if artifact.step_name else None,
+                    artifact_id=artifact.id,
+                    artifact_type=artifact.artifact_type,
+                    artifact_label=artifact_label,
+                    details=details if details else None,
+                )
+            )
+
+    # Collect messages
+    if entry_type is None or entry_type == "message":
+        from infrastructure.db.repositories.message import MessageRepository
+        message_repo = MessageRepository(session)
+        messages = await message_repo.list_for_workflow(workflow.id)
+
+        for msg in messages:
+            content_preview = msg.content[:100] + "..." if len(msg.content) > 100 else msg.content
+
+            entries.append(
+                HistoryEntryResponse(
+                    entry_id=msg.id,
+                    created_at=msg.created_at,
+                    entry_type="message",
+                    message_role=msg.role.value if msg.role else None,
+                    content_preview=content_preview,
+                )
+            )
+
+    # Sort all entries by created_at
+    entries.sort(key=lambda e: e.created_at)
+
+    # Apply pagination
+    total_count = len(entries)
+    entries = entries[offset : offset + limit]
+
+    return HistoryResponse(
+        workflow_id=workflow.workflow_id,
+        state_version=workflow.state_version,
+        position=position,
+        entries=entries,
+        total_count=total_count,
+    )
+
+
+# =============================================================================
+# Traceability Endpoint (Gate B Requirement)
+# =============================================================================
+
+
+class TraceLinkResponse(BaseModel):
+    """Single traceability link.
+
+    Per V2.8.0 Spec: Links connect elements across steps.
+    """
+
+    id: UUID
+    from_step: int
+    from_type: str
+    from_id: str
+    to_step: int
+    to_type: str
+    to_id: str
+    link_type: str = Field(..., description="Link type: 'derives', 'achieves', 'traces_to'")
+    consolidated: bool
+    validated_at: Optional[datetime] = None
+    stale: bool
+    stale_reason: Optional[str] = None
+
+
+class TraceabilityResponse(BaseModel):
+    """Workflow traceability response.
+
+    Per V2.8.0 Spec (Gate B): Trace links between artifacts.
+    Per V2.8.0 Spec line 2174: All API responses include position.
+    """
+
+    workflow_id: str
+    state_version: int
+    position: PositionResponse
+    links: list[TraceLinkResponse]
+    total_count: int
+
+
+@router.get("/{workflow_id}/traceability", response_model=TraceabilityResponse)
+async def get_workflow_traceability(
+    workflow_id: str,
+    from_step: Optional[int] = None,
+    to_step: Optional[int] = None,
+    stale_only: bool = False,
+    session: AsyncSession = Depends(get_session),
+):
+    """Get workflow traceability links.
+
+    Per V2.8.0 Spec (Gate B): Returns trace links between artifacts.
+
+    Query params:
+        from_step: Filter by source step number
+        to_step: Filter by target step number
+        stale_only: Only return stale links
+    """
+    service = WorkflowService(session)
+
+    try:
+        workflow, step_execution = await service.get_workflow(workflow_id)
+    except WorkflowNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow not found: {workflow_id}",
+        )
+
+    # Build position for response (per V2.8.0 spec line 2174)
+    position = build_position_response(workflow, step_execution)
+
+    from infrastructure.db.repositories.traceability import TraceabilityLinkRepository
+    link_repo = TraceabilityLinkRepository(session)
+
+    if stale_only:
+        all_links = await link_repo.list_stale_links(workflow.id)
+    else:
+        all_links = await link_repo.list_for_workflow(workflow.id)
+
+    # Apply filters
+    filtered_links = all_links
+    if from_step is not None:
+        filtered_links = [l for l in filtered_links if l.from_step == from_step]
+    if to_step is not None:
+        filtered_links = [l for l in filtered_links if l.to_step == to_step]
+
+    # Build response
+    links = [
+        TraceLinkResponse(
+            id=link.id,
+            from_step=link.from_step,
+            from_type=link.from_type,
+            from_id=link.from_id,
+            to_step=link.to_step,
+            to_type=link.to_type,
+            to_id=link.to_id,
+            link_type=link.link_type,
+            consolidated=link.consolidated,
+            validated_at=link.validated_at,
+            stale=link.stale,
+            stale_reason=link.stale_reason,
+        )
+        for link in filtered_links
+    ]
+
+    return TraceabilityResponse(
+        workflow_id=workflow.workflow_id,
+        state_version=workflow.state_version,
+        position=position,
+        links=links,
+        total_count=len(links),
+    )
+
+
+# =============================================================================
+# Replay Endpoint (Audit/Compliance)
+# =============================================================================
+
+
+class ReplayEventResponse(BaseModel):
+    """Single event in replay response.
+
+    Per V2.8.0 Spec: Event with position for audit replay.
+    """
+
+    sequence: int
+    timestamp: datetime
+    event_type: str
+    position: PositionResponse
+    artifact_id: Optional[UUID] = None
+    decision_id: Optional[UUID] = None
+    data: dict = Field(default_factory=dict)
+
+
+class DecisionResponse(BaseModel):
+    """Human decision (approve/revise/clarify) in replay.
+
+    Per V2.8.0 Spec: Decisions from audit log for audit trail.
+    """
+
+    decision_id: UUID
+    step_number: int
+    decision_type: str = Field(..., description="Decision type: 'approve', 'revise', 'clarify'")
+    actor_id: str
+    created_at: datetime
+    feedback: Optional[str] = None
+
+
+class ReplayResponse(BaseModel):
+    """Workflow replay response.
+
+    Per V2.8.0 Spec: Full event sequence for audit, debug, comparison.
+    Per V2.8.0 Spec line 2174: All API responses include position.
+    """
+
+    workflow_id: str
+    state_version: int
+    position: PositionResponse
+    events: list[ReplayEventResponse]
+    snapshots: dict[str, dict] = Field(default_factory=dict, description="artifact_id -> content")
+    decisions: list[DecisionResponse]
+    trace_hash: str = Field(..., description="SHA-256 for deterministic comparison")
+
+
+@router.get("/{workflow_id}/replay", response_model=ReplayResponse)
+async def get_workflow_replay(
+    workflow_id: str,
+    include_snapshots: bool = False,
+    session: AsyncSession = Depends(get_session),
+):
+    """Get full workflow replay for audit/debug.
+
+    Per V2.8.0 Spec: Returns complete event sequence with optional snapshots.
+
+    Query params:
+        include_snapshots: Include artifact content (default False for performance)
+    """
+    import hashlib
+    import json
+
+    service = WorkflowService(session)
+
+    try:
+        workflow, step_execution = await service.get_workflow(workflow_id)
+    except WorkflowNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow not found: {workflow_id}",
+        )
+
+    # Build position for response (per V2.8.0 spec line 2174)
+    current_position = build_position_response(workflow, step_execution)
+
+    # Get all events
+    from infrastructure.db.repositories.workflow_event import WorkflowEventRepository
+    event_repo = WorkflowEventRepository(session)
+    all_events = await event_repo.get_events_after(workflow.id, from_sequence=0)
+
+    # Build event responses
+    events = []
+    for event in all_events:
+        # Extract position from payload
+        payload = event.payload
+        position_data = payload.get("position", {})
+        position = PositionResponse(
+            instance_number=position_data.get("instance_number", 1),
+            step_number=position_data.get("step_number", 1),
+            step_name=position_data.get("step_name", "unknown"),
+            pass_type=position_data.get("pass_type", "definition"),
+            status=position_data.get("status", "unknown"),
+            phase=position_data.get("phase", "unknown"),
+        )
+
+        # Extract artifact_id from payload
+        artifact_id = None
+        if "artifact_id" in payload:
+            try:
+                artifact_id = UUID(payload["artifact_id"]) if isinstance(payload["artifact_id"], str) else payload["artifact_id"]
+            except (ValueError, TypeError):
+                pass
+
+        events.append(
+            ReplayEventResponse(
+                sequence=event.sequence,
+                timestamp=event.created_at,
+                event_type=event.event_type,
+                position=position,
+                artifact_id=artifact_id,
+                data=payload.get("data", {}),
+            )
+        )
+
+    # Get decisions from audit log
+    from infrastructure.db.repositories.audit import AuditLogRepository
+    audit_repo = AuditLogRepository(session)
+    audit_logs = await audit_repo.list_for_workflow(workflow.id)
+
+    decisions = []
+    # Match actual audit event types from workflow_service.py
+    # - "step_approved" (approve_step, line ~575)
+    # - "revision_requested" (revise_step, line ~690)
+    # - "clarification_submitted" (submit_clarification, line ~848)
+    decision_types = {"step_approved", "revision_requested", "clarification_submitted"}
+    for log in audit_logs:
+        if log.event_type in decision_types:
+            # Map event_type to decision_type
+            decision_type_map = {
+                "step_approved": "approve",
+                "revision_requested": "revise",
+                "clarification_submitted": "clarify",
+            }
+            decision_type = decision_type_map.get(log.event_type, log.event_type)
+
+            decisions.append(
+                DecisionResponse(
+                    decision_id=log.id,
+                    step_number=log.step_number or 1,
+                    decision_type=decision_type,
+                    actor_id=log.actor_id,
+                    created_at=log.created_at,
+                    feedback=log.details.get("feedback") if log.details else None,
+                )
+            )
+
+    # Get artifacts (needed for snapshots AND trace_hash per spec lines 4193-4197)
+    from infrastructure.db.repositories.artifact import ArtifactRepository
+    artifact_repo = ArtifactRepository(session)
+    artifacts = await artifact_repo.list_for_workflow(workflow.id)
+
+    # Build snapshots if requested
+    snapshots: dict[str, dict] = {}
+    if include_snapshots:
+        for artifact in artifacts:
+            if artifact.content:
+                snapshots[str(artifact.id)] = artifact.content
+
+    # Compute trace_hash per V2.8.0 Spec (lines 4193-4197)
+    # Includes events, artifact_ids, and decision_ids for deterministic comparison
+    hash_input = {
+        "events": [
+            {"sequence": e.sequence, "event_type": e.event_type, "timestamp": e.timestamp.isoformat()}
+            for e in events
+        ],
+        "artifact_ids": sorted([str(a.id) for a in artifacts]),
+        "decision_ids": sorted([str(d.decision_id) for d in decisions]),
+    }
+    trace_hash = hashlib.sha256(json.dumps(hash_input, sort_keys=True).encode()).hexdigest()
+
+    return ReplayResponse(
+        workflow_id=workflow.workflow_id,
+        state_version=workflow.state_version,
+        position=current_position,
+        events=events,
+        snapshots=snapshots,
+        decisions=decisions,
+        trace_hash=trace_hash,
+    )
+
+
+# =============================================================================
+# Artifact Diff Endpoint (Staleness Assessment)
+# =============================================================================
+
+
+class FieldChangeResponse(BaseModel):
+    """Single field change in artifact diff.
+
+    Per V2.8.0 Spec: Change tracking with JSON path.
+    """
+
+    path: str = Field(..., description="JSON path, e.g., 'stakeholders[0].needs[2]'")
+    old_value: Any = None
+    new_value: Any = None
+    change_type: str = Field(..., description="Change type: 'added', 'removed', 'modified', 'type_changed'")
+
+
+class ArtifactDiffResponse(BaseModel):
+    """Artifact comparison response.
+
+    Per V2.8.0 Spec (lines 2462-2468): Diff for staleness impact assessment.
+    Per V2.8.0 Spec line 2174: All API responses include position.
+    - added: dict keyed by path -> new_value
+    - removed: dict keyed by path -> old_value
+    - changed: list of FieldChangeResponse for modified values
+    """
+
+    workflow_id: str
+    state_version: int
+    position: PositionResponse
+    artifact_a_id: UUID
+    artifact_b_id: UUID
+    added: dict[str, Any]  # path -> new_value (per spec)
+    removed: dict[str, Any]  # path -> old_value (per spec)
+    changed: list[FieldChangeResponse]  # modified values (list per spec)
+    change_count: int
+    material_change: bool = Field(..., description="Would invalidate downstream artifacts?")
+
+
+def _compute_json_diff(
+    a: Any,
+    b: Any,
+    path: str = "",
+) -> tuple[dict[str, Any], dict[str, Any], list[FieldChangeResponse]]:
+    """Compute recursive JSON diff per V2.8.0 spec algorithm.
+
+    Per spec (lines 2462-2468):
+    - added: Dict[str, Any] keyed by path -> new_value
+    - removed: Dict[str, Any] keyed by path -> old_value
+    - changed: List[FieldChange] for modified values
+
+    Args:
+        a: First value (old)
+        b: Second value (new)
+        path: Current JSON path
+
+    Returns:
+        Tuple of (added dict, removed dict, changed list)
+    """
+    added: dict[str, Any] = {}
+    removed: dict[str, Any] = {}
+    changed: list[FieldChangeResponse] = []
+
+    # Different types
+    if type(a) != type(b):
+        changed.append(FieldChangeResponse(
+            path=path or "(root)",
+            old_value=a,
+            new_value=b,
+            change_type="type_changed",
+        ))
+        return added, removed, changed
+
+    # Both are dicts
+    if isinstance(a, dict) and isinstance(b, dict):
+        all_keys = set(a.keys()) | set(b.keys())
+        for key in all_keys:
+            current_path = f"{path}.{key}" if path else key
+
+            if key not in a:
+                # New field added - store path -> new_value
+                added[current_path] = b[key]
+            elif key not in b:
+                # Field removed - store path -> old_value
+                removed[current_path] = a[key]
+            else:
+                # Recurse
+                sub_added, sub_removed, sub_changed = _compute_json_diff(
+                    a[key], b[key], current_path
+                )
+                added.update(sub_added)
+                removed.update(sub_removed)
+                changed.extend(sub_changed)
+
+        return added, removed, changed
+
+    # Both are lists
+    if isinstance(a, list) and isinstance(b, list):
+        max_len = max(len(a), len(b))
+        for i in range(max_len):
+            item_path = f"{path}[{i}]"
+
+            if i >= len(a):
+                # New item added - store path -> new_value
+                added[item_path] = b[i]
+            elif i >= len(b):
+                # Item removed - store path -> old_value
+                removed[item_path] = a[i]
+            elif a[i] != b[i]:
+                # Recurse for complex types
+                if isinstance(a[i], (dict, list)) and isinstance(b[i], (dict, list)):
+                    sub_added, sub_removed, sub_changed = _compute_json_diff(
+                        a[i], b[i], item_path
+                    )
+                    added.update(sub_added)
+                    removed.update(sub_removed)
+                    changed.extend(sub_changed)
+                else:
+                    changed.append(FieldChangeResponse(
+                        path=item_path,
+                        old_value=a[i],
+                        new_value=b[i],
+                        change_type="modified",
+                    ))
+
+        return added, removed, changed
+
+    # Primitive values
+    if a != b:
+        changed.append(FieldChangeResponse(
+            path=path or "(root)",
+            old_value=a,
+            new_value=b,
+            change_type="modified",
+        ))
+
+    return added, removed, changed
+
+
+@router.get("/{workflow_id}/artifacts/{artifact_a_id}/diff/{artifact_b_id}", response_model=ArtifactDiffResponse)
+async def get_artifact_diff(
+    workflow_id: str,
+    artifact_a_id: UUID,
+    artifact_b_id: UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    """Compare two artifacts for staleness assessment.
+
+    Per V2.8.0 Spec: Returns structured diff for impact analysis.
+
+    Path params:
+        artifact_a_id: First artifact (typically older)
+        artifact_b_id: Second artifact (typically newer)
+
+    Error responses:
+        404: Artifact not found
+        400: Artifacts cannot be compared (different types)
+        422: Same artifact ID for both
+    """
+    # Validate not same artifact
+    if artifact_a_id == artifact_b_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Cannot compare artifact to itself",
+        )
+
+    service = WorkflowService(session)
+
+    try:
+        workflow, step_execution = await service.get_workflow(workflow_id)
+    except WorkflowNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow not found: {workflow_id}",
+        )
+
+    # Build position for response (per V2.8.0 spec line 2174)
+    position = build_position_response(workflow, step_execution)
+
+    from infrastructure.db.repositories.artifact import ArtifactRepository
+    artifact_repo = ArtifactRepository(session)
+
+    # Fetch both artifacts
+    artifact_a = await artifact_repo.get(artifact_a_id)
+    artifact_b = await artifact_repo.get(artifact_b_id)
+
+    if not artifact_a:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Artifact not found: {artifact_a_id}",
+        )
+    if not artifact_b:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Artifact not found: {artifact_b_id}",
+        )
+
+    # Validate both belong to same workflow
+    if artifact_a.workflow_id != workflow.id or artifact_b.workflow_id != workflow.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Both artifacts must belong to the specified workflow",
+        )
+
+    # Validate same artifact type for meaningful comparison
+    if artifact_a.artifact_type != artifact_b.artifact_type:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot compare different artifact types: {artifact_a.artifact_type} vs {artifact_b.artifact_type}",
+        )
+
+    # Get content (default to empty dict if None)
+    content_a = artifact_a.content or {}
+    content_b = artifact_b.content or {}
+
+    # Compute diff
+    added, removed, changed = _compute_json_diff(content_a, content_b)
+
+    # Determine material change (significant enough to invalidate downstream)
+    # Heuristic: >5 changes or any structural changes (added/removed)
+    change_count = len(added) + len(removed) + len(changed)
+    material_change = change_count > 5 or len(added) > 0 or len(removed) > 0
+
+    return ArtifactDiffResponse(
+        workflow_id=workflow.workflow_id,
+        state_version=workflow.state_version,
+        position=position,
+        artifact_a_id=artifact_a_id,
+        artifact_b_id=artifact_b_id,
+        added=added,
+        removed=removed,
+        changed=changed,
+        change_count=change_count,
+        material_change=material_change,
+    )
+
+
+class AcknowledgeStaleRequest(BaseModel):
+    """Request to acknowledge a stale artifact as still valid.
+
+    Per V2.8.0 Spec lines 2303-2306: Single artifact acknowledgement
+    with reviewer justification.
+    """
+
+    reviewer_id: str = Field(..., description="ID of reviewer acknowledging staleness")
+    justification: str = Field(
+        ..., description="Why artifact is still valid despite upstream changes"
+    )
+    expected_state_version: int = Field(
+        ..., description="Expected state version for OCC (409 on mismatch)"
+    )
+
+
+class AcknowledgeStaleResponse(BaseModel):
+    """Response for acknowledge-stale action.
+
+    Per V2.8.0 Spec lines 2308-2311 + §9.3 (all responses include position).
+    """
+
+    artifact_id: UUID
+    state_version: int
+    position: PositionResponse  # Required per §9.3
+
+
+@router.post(
+    "/{workflow_id}/artifacts/{artifact_id}/acknowledge-stale",
+    response_model=AcknowledgeStaleResponse,
+)
+async def acknowledge_stale(
+    workflow_id: str,
+    artifact_id: UUID,
+    request: AcknowledgeStaleRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    """Acknowledge that a stale artifact has been reviewed and is still valid.
+
+    Per V2.8.0 Spec lines 2238-2300: State-mutating endpoint that clears
+    staleness flag on a single artifact. Requires OCC and emits audit/SSE events.
+
+    Use case: Human reviews stale artifact and confirms it's still correct
+    despite upstream changes.
+
+    Error responses:
+        404: Workflow or artifact not found
+        409: State version conflict
+    """
+    from datetime import datetime
+    from infrastructure.db.models import AuditLog
+    from infrastructure.db.repositories.audit import AuditLogRepository
+    from infrastructure.db.repositories.artifact import ArtifactRepository
+    from infrastructure.db.repositories.workflow_event import WorkflowEventRepository
+
+    service = WorkflowService(session)
+
+    try:
+        workflow, step_execution = await service.get_workflow(workflow_id)
+    except WorkflowNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow not found: {workflow_id}",
+        )
+
+    # OCC check
+    if workflow.state_version != request.expected_state_version:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=StateConflictResponse(
+                message=f"State version mismatch: expected {request.expected_state_version}, current {workflow.state_version}",
+                current_position=build_position_response(workflow, step_execution),
+                current_state_version=workflow.state_version,
+            ).model_dump(),
+        )
+
+    # Get and validate artifact
+    artifact_repo = ArtifactRepository(session)
+    artifact = await artifact_repo.get(artifact_id)
+    if not artifact or artifact.workflow_id != workflow.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Artifact not found: {artifact_id}",
+        )
+
+    # Clear stale flag
+    artifact.stale = False
+    artifact.stale_reason = None
+    artifact.stale_since = None
+
+    # Increment state_version
+    workflow.state_version += 1
+    workflow.updated_at = datetime.utcnow()
+
+    # Create audit log entry
+    audit_repo = AuditLogRepository(session)
+    audit_log = AuditLog(
+        workflow_id=workflow.id,
+        event_type="staleness_acknowledged",
+        actor_id=request.reviewer_id,
+        details={
+            "artifact_id": str(artifact_id),
+            "justification": request.justification,
+        },
+    )
+    await audit_repo.append(audit_log)
+
+    # Create SSE event with spec-compliant payload
+    # Per V2.8.0 spec: user-initiated events MUST have actor_id and position
+    event_repo = WorkflowEventRepository(session)
+    sse_event = await event_repo.create_event(
+        workflow_id=workflow.id,
+        event_type="artifact.stale_cleared",
+        payload={
+            "artifact_id": str(artifact_id),
+            "cleared_by": request.reviewer_id,
+            "method": "acknowledged",
+            # Required for SSE envelope per V2.8.0 spec
+            "workflow_id": workflow.workflow_id,  # External workflow ID
+            "instance_id": str(workflow.instance_id),  # Internal UUID per V2.8.0
+            "actor_id": request.reviewer_id,
+            "position": {
+                "instance_number": workflow.instance_number if hasattr(workflow, "instance_number") else 1,
+                "step_number": workflow.current_step_number,
+                "step_name": workflow.current_step.value,
+                "pass_type": workflow.current_pass.value,
+                "status": step_execution.status.value if step_execution else "not_started",
+                "phase": step_execution.phase.value if step_execution else "received",
+            },
+        },
+    )
+
+    await session.commit()
+
+    # Publish SSE event after commit
+    await publish_persisted_events(workflow.workflow_id, [sse_event])
+
+    return AcknowledgeStaleResponse(
+        artifact_id=artifact_id,
+        state_version=workflow.state_version,
+        position=build_position_response(workflow, step_execution),
+    )
+
+
+class ReExecuteRequest(BaseModel):
+    """Request to re-execute a stale step.
+
+    Per V2.8.0 Spec: Trigger re-execution of a stale step.
+    Requires OCC fields for concurrency control.
+    """
+
+    actor_id: str = Field(..., description="Actor ID performing re-execution")
+    reason: str = Field(..., description="Reason for re-execution")
+    preserve_feedback: bool = Field(default=True, description="Preserve prior feedback")
+    expected_state_version: int = Field(
+        ..., description="Expected state version for OCC (409 on mismatch)"
+    )
+
+
+class ReExecuteResponse(BaseModel):
+    """Response for re-execute action.
+
+    Per V2.8.0 Spec: Returns new state version after mutation.
+    """
+
+    step_number: int
+    state_version: int
+
+
+@router.post("/{workflow_id}/steps/{step_number}/re-execute", response_model=ReExecuteResponse)
+async def re_execute_step(
+    workflow_id: str,
+    step_number: int,
+    request: ReExecuteRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    """Re-execute a step for staleness recovery.
+
+    Per V2.8.0 Spec: Triggers re-execution of a step that has
+    become stale due to upstream revisions.
+
+    This endpoint:
+    1. Resets the target step to NOT_STARTED status
+    2. Updates the LangGraph checkpoint state
+    3. Triggers the runner to process the step
+    4. Returns updated workflow state
+
+    Path params:
+        step_number: Step number to re-execute (1, 2, or 3)
+
+    Error responses:
+        404: Workflow or step not found
+        409: State version conflict (include current_state_version)
+        422: Cannot re-execute (step is pending or in_progress)
+    """
+    service = WorkflowService(session)
+
+    try:
+        workflow, current_step_execution = await service.get_workflow(workflow_id)
+    except WorkflowNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow not found: {workflow_id}",
+        )
+
+    # OCC check
+    if workflow.state_version != request.expected_state_version:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=StateConflictResponse(
+                message=f"State version mismatch: expected {request.expected_state_version}, current {workflow.state_version}",
+                current_position=PositionResponse(
+                    instance_number=workflow.instance_number if hasattr(workflow, 'instance_number') else 1,
+                    step_number=workflow.current_step_number,
+                    step_name=workflow.current_step.value,
+                    pass_type=workflow.current_pass.value,
+                    status=current_step_execution.status.value if current_step_execution else "unknown",
+                    phase=current_step_execution.phase.value if current_step_execution else "unknown",
+                ),
+                current_state_version=workflow.state_version,
+            ).model_dump(),
+        )
+
+    # Get the step execution for the requested step
+    from infrastructure.db.repositories.step_execution import StepExecutionRepository
+    step_repo = StepExecutionRepository(session)
+    step_executions = await step_repo.list_for_workflow(workflow.id)
+
+    target_step = None
+    for se in step_executions:
+        if se.step_number == step_number:
+            target_step = se
+            break
+
+    if not target_step:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Step {step_number} not found for workflow",
+        )
+
+    # Validate step can be re-executed (not pending, in_progress, or not_started)
+    # Per spec: Can only re-execute steps that have completed (awaiting_review, approved, etc.)
+    from infrastructure.db.models.enums import StepStatus, StepPhase
+
+    if target_step.status in (StepStatus.NOT_STARTED, StepStatus.PENDING, StepStatus.IN_PROGRESS):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Cannot re-execute step {step_number}: current status is {target_step.status.value}",
+        )
+
+    # Store previous status for audit log
+    previous_status = target_step.status
+
+    # Collect all persisted events to publish after commits
+    all_events = []
+
+    # Mark current artifact as superseded (if exists)
+    if target_step.latest_artifact_id:
+        from infrastructure.db.repositories.artifact import ArtifactRepository
+        artifact_repo = ArtifactRepository(session)
+        artifact = await artifact_repo.get(target_step.latest_artifact_id)
+        if artifact:
+            # Set stale flag on current artifact
+            artifact.stale = True
+            artifact.stale_reason = f"Re-execution requested: {request.reason}"
+            from datetime import datetime
+            artifact.stale_since = datetime.utcnow()
+
+    # Reset step_execution status and phase
+    # Per V2.8.0 spec: use PENDING for queued re-execution
+    target_step.status = StepStatus.PENDING
+    target_step.phase = StepPhase.RECEIVED
+
+    # Update workflow position to the re-executed step
+    workflow.current_step = target_step.step_name
+    workflow.current_step_number = step_number
+    workflow.current_pass = target_step.pass_type
+
+    # Increment state_version
+    workflow.state_version += 1
+    from datetime import datetime
+    workflow.updated_at = datetime.utcnow()
+
+    # Create audit log entry
+    from infrastructure.db.models import AuditLog
+    from infrastructure.db.repositories.audit import AuditLogRepository
+    audit_repo = AuditLogRepository(session)
+    audit_log = AuditLog(
+        workflow_id=workflow.id,
+        event_type="step_reexecute_requested",
+        actor_id=request.actor_id,
+        step_name=target_step.step_name,
+        step_number=step_number,
+        from_status=previous_status,
+        to_status=StepStatus.PENDING,
+        details={
+            "reason": request.reason,
+            "preserve_feedback": request.preserve_feedback,
+        },
+    )
+    await audit_repo.append(audit_log)
+
+    # Persist SSE event for reexecute_started
+    from infrastructure.db.repositories.workflow_event import WorkflowEventRepository
+    event_repo = WorkflowEventRepository(session)
+    reexecute_event = await event_repo.create_event(
+        workflow_id=workflow.id,
+        event_type="step.reexecute_started",
+        payload={
+            "workflow_id": workflow.workflow_id,
+            "instance_id": str(workflow.instance_id),
+            "position": {
+                "instance_number": workflow.instance_number if hasattr(workflow, 'instance_number') else 1,
+                "step_number": step_number,
+                "step_name": target_step.step_name.value,
+                "pass_type": target_step.pass_type.value,
+                "status": StepStatus.PENDING.value,
+                "phase": StepPhase.RECEIVED.value,
+            },
+            "actor_id": request.actor_id,
+            "data": {
+                "reason": request.reason,
+                "preserve_feedback": request.preserve_feedback,
+            },
+        },
+    )
+    all_events.append(reexecute_event)
+
+    await session.commit()
+
+    # Publish persisted events AFTER transaction commits
+    await publish_persisted_events(workflow.workflow_id, all_events)
+    all_events.clear()
+
+    # Update LangGraph checkpoint state to reset to target step and trigger execution
+    graph = get_graph()
+    config = {"configurable": {"thread_id": workflow.thread_id}}
+
+    # Build reset step state with preserved feedback if requested
+    reset_step_state = StepState(
+        step_name=target_step.step_name,
+        step_number=step_number,
+        pass_type=target_step.pass_type,
+        status=DomainStepStatus.PENDING,
+        phase=DomainStepPhase.RECEIVED,
+        human_feedback=target_step.human_feedback if request.preserve_feedback else None,
+    )
+
+    # Update graph state to reset position and trigger re-execution
+    await graph.aupdate_state(
+        config,
+        {
+            "current_step": target_step.step_name,
+            "step_state": reset_step_state,
+            "human_decision": None,  # Clear any pending decision
+        },
+        as_node="receive",  # Start from receive node to process the step
+    )
+
+    # Invoke graph to trigger re-execution
+    result = await graph.ainvoke(None, config)
+
+    # Sync DB with graph result
+    artifact_output = _extract_artifact_output(result)
+
+    async with session.begin():
+        sync_events = await service.sync_db_from_state(
+            workflow_id, result, artifact_output=artifact_output
+        )
+        all_events.extend(sync_events)
+
+    # Publish sync events AFTER transaction commits
+    await publish_persisted_events(workflow.workflow_id, all_events)
+
+    # Reload workflow for updated state_version
+    workflow, _ = await service.get_workflow(workflow_id)
+
+    # Per V2.8.0 Spec (lines 2390-2405): Return ReExecuteResponse, not full WorkflowResponse
+    # Client monitors progress via SSE
+    return ReExecuteResponse(
+        step_number=step_number,
+        state_version=workflow.state_version,
     )
 
 

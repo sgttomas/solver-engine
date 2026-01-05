@@ -389,7 +389,7 @@ Documents reference each other by version. When updating:
 
 ## Getting Started
 
-> **Note:** This documentation set defines the architecture and contracts for SOLVER. The codebase is built following the Development Directive phases. Until Phase 1 is complete, the commands below represent the *target* development environment, not a currently running system.
+> **Note:** This documentation set defines the architecture and contracts for SOLVER. The codebase is built following the Development Directive phases. The commands below represent the *target* development environment, not a currently running system.
 
 ### Prerequisites
 
@@ -398,7 +398,7 @@ Documents reference each other by version. When updating:
 - Node.js 18+
 - PostgreSQL client tools (psql, pg_dump)
 
-### First Steps (After Phase 1 Complete)
+### First Steps 
 
 ```bash
 # Clone the repository
@@ -465,4 +465,4 @@ If you're reading this before implementation begins:
 ---
 
 *SOLVER Project — Structured Workflow Generator*
-*Documentation v1.0*
+*SOLVER-README v1.0*
