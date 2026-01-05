@@ -1,4 +1,4 @@
-# SOLVER Technical Specification V2.7.3
+# SOLVER Technical Specification V2.8.0
 ## Consolidated Implementation Guide (Steps 1-3 MVP)
 
 **Purpose:** Implementation-ready specification for building SOLVER, merging contract definitions with executable code.
@@ -9,7 +9,13 @@
 
 ---
 
-## 0. Why V2.7.3 (Changes from V2.7.2)
+## 0. Why V2.8.0 (Changes from V2.7.3)
+
+V2.8.0 adds a normative methodology reference appendix:
+
+1. **Methodology reference** (Appendix D) — Two-pass model, four document types, V1→V2→V3 iteration, "considering" rules, V3 completeness requirements, instance hierarchy
+
+### V2.7.3 Changes (Preserved)
 
 V2.7.3 adds canonical reference artifacts for implementation alignment:
 
@@ -53,7 +59,7 @@ V2.6 fixes contract-boundary issues identified in final review:
 1. **Optimistic Concurrency** — `state_version` field, 409 conflict responses
 2. **Event Log for SSE Replay** — `workflow_events` table with monotonic sequences
 3. **Runner Lease Management** — `workflow_execution_locks` table with time-bounded leases
-4. **Contract Implementation Items** — Section 16 addresses MVP Architecture Contract v1.1
+4. **Contract Implementation Items** — Section 16 addresses Architectural Contract requirements
 
 **Reference Documents:**
 - `SOLVER-Design-Intent-v1.1.md` (Why² — design rationale and first principles)
@@ -2977,11 +2983,10 @@ curl -X POST http://localhost:8000/api/v1/workflows/{id}/actions/approve
 
 ## 16. Architecture Contract Implementation
 
-This section addresses implementation decisions required by the MVP Architecture Contract (v1.1). These items were intentionally left open at the contract level and are specified here.
+This section addresses implementation decisions required by the Architectural Contract. These items were intentionally left open at the contract level and are specified here.
 
 **Reference Documents:**
-- `SOLVER-Frontend-Architectural-Contract-v2.0.md` — Frontend reliability invariants
-- `SOLVER-MVP-Architecture-Contract-v1.1.md` — Backend persistence and execution contracts
+- `SOLVER-Architectural-Contract-v3.4.md` — Unified architecture and reliability contracts (Frontend §13-14, Backend §9-12, §15)
 
 ### 16.1 State Version Rules
 
@@ -4307,13 +4312,13 @@ def assess_materiality(
 
 ---
 
-*SOLVER Technical Specification V2.7.3*
+*SOLVER Technical Specification V2.8.0*
 
 *Consolidated from Instance 1 Steps 1-3 outputs with implementation code, test scenarios, orchestration primitives, and architecture contract implementation items.*
 
 *MVP Scope: Steps 1-3 with full Pass 1 methodology and Pass 2 artifact production.*
 
-*V2.7.3 adds: event-state mutation matrix, error contracts, canonical payload schemas.*
+*V2.8.0 adds: methodology reference appendix (Appendix D).*
 
 ---
 
@@ -4602,4 +4607,93 @@ These schemas are versioned with the Technical Specification. If a field is adde
 - **Required field added:** Minor version bump (clients must update)
 - **Field removed or type changed:** Major version bump (breaking)
 
-Current schema version: **V2.7.3**
+Current schema version: **V2.8.0**
+
+---
+
+## Appendix D: Methodology Reference (Normative)
+
+**Normative Status:** This appendix contains binding requirements for methodology generation and execution. Instance implementations MUST conform to these primitives.
+
+### D.1 Two-Pass Execution Model
+
+Each step MUST execute in two passes:
+
+| Pass | Name | Gate Policy | Output | Human Gate |
+|------|------|-------------|--------|------------|
+| 1 | Definition | Policy-based (`none`, `per_step`, `end_of_pass`) | Methodology documents V1 -> V2 -> V3 | Per policy |
+| 2 | Execution | Always required | Step package | MUST require approval |
+
+**Pass 1 Gate Policy:** The `pass_1_gate_policy` configuration on the workflow/instance defines the gate behavior for Pass 1. Implementations MUST honor this policy.
+
+### D.2 Four Document Types
+
+Each step MUST produce exactly four methodology documents:
+
+| Document | Key | Purpose |
+|----------|-----|---------|
+| Data Sheet | `data_sheet` | Input/output contract, schemas, validation rules |
+| To Do List | `todo_list` | Task decomposition with validation hooks |
+| Guidance Document | `guidance` | Context, principles, anti-patterns |
+| Detailed Procedure | `detailed_procedure` | Algorithmic execution instructions |
+
+**Requirement:** Schemas, validation checklists, templates, and quality criteria are subsections of the Data Sheet and MUST NOT be treated as additional documents.
+
+### D.3 V1 -> V2 -> V3 Iteration
+
+Each version MUST create documents in this order:
+1. Data Sheet
+2. To Do List
+3. Guidance Document
+4. Detailed Procedure
+
+#### D.3.1 "Considering" Rules
+
+When creating a document "considering" others, implementations MUST:
+1. Read the referenced documents
+2. Identify relevant insights
+3. Incorporate those insights into the new document
+4. Maintain consistency with referenced documents
+5. Improve the document based on gaps discovered
+
+#### D.3.2 Dependency Pattern by Version
+
+V1:
+- Data Sheet considers step purpose and previous step output contract.
+- To Do List considers Data Sheet V1.
+- Guidance Document considers problem context, Data Sheet V1, and To Do List V1.
+- Detailed Procedure considers Data Sheet V1, To Do List V1, and Guidance Document V1.
+
+V2/V3:
+- Data Sheet considers Detailed Procedure (prior version), Guidance (prior version), and To Do List (prior version).
+- To Do List considers updated Data Sheet plus prior Guidance and Detailed Procedure.
+- Guidance Document considers updated Data Sheet, updated To Do List, and prior Detailed Procedure.
+- Detailed Procedure considers updated Data Sheet, updated To Do List, and updated Guidance Document.
+
+**Problem context:** For the first step, this is the user problem input. For later steps, this is the approved Step 1 output.
+
+### D.4 V3 Completeness Requirements
+
+V3 documents are executable specifications and MUST be complete and unambiguous:
+
+- No ellipses ("...") to indicate missing content
+- No placeholders; missing content MUST be explicitly marked
+- No vague statements such as "handle appropriately"
+
+If content cannot be specified, it MUST be declared as one of:
+- `ASSUMPTION: ...`
+- `OPEN QUESTION: ...`
+- `DEFERRED TO INSTANCE N: ...`
+
+### D.5 Instance Hierarchy and Seeding
+
+| Instance | Level | Purpose |
+|----------|-------|---------|
+| 0 | Universal | Abstract methodology primitives (this appendix) |
+| 1 | Implementation | SOLVER software implementation |
+| N (N >= 2) | Domain | Domain-specific specialization |
+
+Seeding rules:
+- Instance 0 Pass 1 is seeded by the step purpose and previous step output contract.
+- Instance 1 Pass 1 is seeded by Instance 0 V3 documents and the current problem context.
+- Instance N Pass 1 is seeded by Instance 1 outputs and domain context.

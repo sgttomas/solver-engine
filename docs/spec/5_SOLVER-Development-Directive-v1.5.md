@@ -9,7 +9,7 @@
 **Document Hierarchy:**
 - **Design Intent (Why²):** `SOLVER-Design-Intent-v1.1.md` — Design rationale, first principles
 - **Architectural Contract (Why):** `SOLVER-Architectural-Contract-v3.4.md` — What must be true
-- **Technical Specification (What):** `solver-technical-spec_V2.7.3.md` — Schemas, endpoints, code
+- **Technical Specification (What):** `4_solver-technical-spec-V2.8.0.md` — Schemas, endpoints, code
 - **This document (How):** Development Directive — Build phases, packages, execution order
 
 ---
@@ -119,7 +119,7 @@ alembic upgrade head
 
 ## Phase 2: Persistence Contracts
 
-**Objective:** Implement durable contracts from MVP Architecture Contract.
+**Objective:** Implement durable persistence contracts from Architectural Contract §9.
 
 **Exit Gates:** β1, β2a, β5, β6a
 
@@ -607,7 +607,7 @@ async def test_lease_exclusivity_under_contention():
 
 ## Phase 6: Frontend
 
-**Objective:** React frontend with reliability invariants from Frontend Contract.
+**Objective:** React frontend with reliability invariants from Architectural Contract §13-14.
 
 **Exit Gates:** γ2, γ3
 
@@ -665,7 +665,7 @@ expect(guard.lastContiguous).toBe(5);  // Drained
 - Disabled state with user-visible reasons
 - Background refetch detection via `isFetching` on ALL canonical queries
 
-**NOTE:** Per R14 and Frontend Contract v2.4 §4.2.1, `canAct` must be false when ANY
+**NOTE:** Per R14 and Architectural Contract v3.4 §13.4, `canAct` must be false when ANY
 of the canonical queries (workflow, progress, staleness) are fetching. This prevents
 actions during canonical refetch after reconnect.
 
@@ -713,7 +713,7 @@ expect(canAct).toBe(false) when isAnyCanonicalFetching;
 - TanStack Query invalidation on relevant events
 - Staleness refetch on `artifact.stale` / `artifact.stale_cleared`
 - Message thread updates
-- Canonical refetch bundle integration per Frontend Contract v2.4 §4.2.1
+- Canonical refetch bundle integration per Architectural Contract v3.4 §10.4
 
 **Canonical Refetch Integration:**
 After reconnect/gap recovery, the canonical refetch bundle must be fetched:

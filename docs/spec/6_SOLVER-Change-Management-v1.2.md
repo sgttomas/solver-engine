@@ -51,7 +51,7 @@ The governed document set consists of these document types:
 | Project Orientation | Entry point, navigation | `README.md` |
 | Design Intent | Why² — first principles, rationale | `SOLVER-Design-Intent-v*.md` |
 | Architectural Contract | Why — invariants, contracts | `SOLVER-Architectural-Contract-v*.md` |
-| Technical Specification | What — schemas, endpoints, code | `solver-technical-spec_V*.md` |
+| Technical Specification | What — schemas, endpoints, code | `4_solver-technical-spec-V*.md` |
 | Development Directive | How — phases, packages, gates | `SOLVER-Development-Directive-v*.md` |
 | Change Management | Governance — this document | `SOLVER-Change-Management-v*.md` |
 
@@ -214,7 +214,7 @@ Each gate MUST produce one of:
 □ README.md exists at stated path
 □ SOLVER-Design-Intent-v{X}.md exists, version X matches manifest
 □ SOLVER-Architectural-Contract-v{X}.md exists, version X matches manifest
-□ solver-technical-spec_V{X}.md exists, version X matches manifest  
+□ 4_solver-technical-spec-V{X}.md exists, version X matches manifest  
 □ SOLVER-Development-Directive-v{X}.md exists, version X matches manifest
 □ SOLVER-Change-Management-v{X}.md exists, version X matches manifest
 Reviewer: _____________ Date: _____________ Result: PASS / FAIL

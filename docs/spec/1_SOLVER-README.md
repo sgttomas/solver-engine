@@ -2,7 +2,7 @@
 
 **Structured Workflow Generator for Human-AI Collaborative Knowledge Work**
 
-**Document Status:** Governed as of 2025-01-04. See `SOLVER-Change-Management-v1.1.md` for change control rules.
+**Document Status:** Governed as of 2025-01-04. See `SOLVER-Change-Management-v1.2.md` for change control rules.
 
 ---
 
@@ -75,10 +75,10 @@ This project uses a four-document taxonomy that separates concerns by the questi
 
 | Document | Question | File |
 |----------|----------|------|
-| **Change Management** | Governance | `SOLVER-Change-Management-v1.1.md` |
+| **Change Management** | Governance | `SOLVER-Change-Management-v1.2.md` |
 | **Design Intent** | Why² | `SOLVER-Design-Intent-v1.1.md` |
 | **Architectural Contract** | Why | `SOLVER-Architectural-Contract-v3.4.md` |
-| **Technical Specification** | What | `solver-technical-spec_V2.7.3.md` |
+| **Technical Specification** | What | `4_solver-technical-spec-V2.8.0.md` |
 | **Development Directive** | How | `SOLVER-Development-Directive-v1.5.md` |
 
 ### When to Consult Each Document
@@ -362,7 +362,7 @@ Documents reference each other by version. When updating:
 |----------|---------|--------------|
 | Design Intent | v1.1 | 2025-01-04 |
 | Architectural Contract | v3.4 | 2025-01-04 |
-| Technical Specification | v2.7.3 | 2025-01-04 |
+| Technical Specification | v2.8.0 | 2025-01-04 |
 | Development Directive | v1.5 | 2025-01-04 |
 
 ### Key Concepts

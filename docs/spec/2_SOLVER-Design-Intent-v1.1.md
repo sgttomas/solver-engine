@@ -407,6 +407,16 @@ Server: "Current state_version is 7. Rejected. Here's current state."
 
 **The principle:** API handlers accept actions and persist them. Runners read pending work and execute it. They communicate through the database.
 
+### 4.10 Methodology Foundation (Instance 0)
+
+SOLVER implements the Instance 0 methodology — the abstract structured reasoning process that drives the two-pass workflow. The normative definition is in **Technical Specification V2.8.0 §Appendix D**.
+
+Key implications:
+- Methodology is defined before execution (Pass 1 precedes Pass 2).
+- V1 -> V2 -> V3 iteration exists to refine and correct the methodology.
+- Pass 2 gates are mandatory because early errors propagate.
+- Four document types separate contract, tasks, guidance, and procedure.
+
 ---
 
 ## 5. The Scaling Anchor
