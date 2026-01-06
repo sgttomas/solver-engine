@@ -107,11 +107,19 @@ export interface UseConnectionManagerReturn {
 }
 
 /**
+ * Idle timeout in ms (60s per Tech Spec §16.4.1).
+ * If no events (including heartbeats) received within this window,
+ * assume connection is dead and trigger resync.
+ */
+const IDLE_TIMEOUT_MS = 60_000;
+
+/**
  * Internal state tracked via ref (not in Zustand to avoid unnecessary re-renders).
  */
 interface ConnectionInternals {
   eventSource: EventSource | null;
   retryTimeout: ReturnType<typeof setTimeout> | null;
+  idleTimeout: ReturnType<typeof setTimeout> | null; // P6.6: Idle detection per §16.4.1
   retryScheduled: boolean; // R19: Guards against multiple concurrent timers (NOT sequential retries)
   isMounted: boolean;
 }
@@ -165,6 +173,7 @@ export function useConnectionManager(
   const internalsRef = useRef<ConnectionInternals>({
     eventSource: null,
     retryTimeout: null,
+    idleTimeout: null,
     retryScheduled: false,
     isMounted: true,
   });
@@ -185,7 +194,7 @@ export function useConnectionManager(
   // ==========================================================================
 
   /**
-   * Close the current EventSource and clear retry timeout.
+   * Close the current EventSource and clear all timeouts.
    */
   const closeEventSource = useCallback(() => {
     const internals = internalsRef.current;
@@ -198,6 +207,12 @@ export function useConnectionManager(
     if (internals.retryTimeout) {
       clearTimeout(internals.retryTimeout);
       internals.retryTimeout = null;
+    }
+
+    // P6.6: Clear idle timeout
+    if (internals.idleTimeout) {
+      clearTimeout(internals.idleTimeout);
+      internals.idleTimeout = null;
     }
   }, []);
 
@@ -285,7 +300,24 @@ export function useConnectionManager(
           return;
         }
 
+        // P6.6: Reset idle timer on EVERY message (including heartbeats)
+        // This proves the connection is alive. Per Tech Spec §16.4.1.
+        if (internals.idleTimeout) {
+          clearTimeout(internals.idleTimeout);
+        }
+        internals.idleTimeout = setTimeout(() => {
+          if (!internals.isMounted) return;
+          // Idle timeout reached - connection presumed dead
+          // Close EventSource and schedule reconnect with bounded retries
+          if (internals.eventSource) {
+            internals.eventSource.close();
+            internals.eventSource = null;
+          }
+          scheduleReconnect();
+        }, IDLE_TIMEOUT_MS);
+
         // R9: Parse ONLY to check workflow_id
+        // NOTE: Heartbeats are now JSON per P6.6 backend change
         try {
           const parsed = JSON.parse(event.data);
           if (parsed.workflow_id && parsed.workflow_id !== workflowId) {
@@ -293,12 +325,11 @@ export function useConnectionManager(
             return;
           }
         } catch {
-          // Non-JSON (heartbeats or malformed) - drop silently
-          // NOTE: Heartbeat/idle-timeout handling deferred to 6.6
+          // Malformed JSON - drop silently
           return;
         }
 
-        // Forward RAW data - no typing in 6.2
+        // Forward RAW data - typing/dispatching handled by caller (P6.6)
         optionsRef.current.onEvent?.(event.data);
       };
 

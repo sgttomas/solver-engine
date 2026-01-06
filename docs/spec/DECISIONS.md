@@ -166,3 +166,94 @@ workflow_events table, and SSE from_sequence replay are being implemented.
 
 **Status:** Approved for Package 6.5; revisit in Package 6.6/7.x as needed.
 **Approved by:** Architect (Ryan Tufts)
+
+## 2026-01-06 - P6.6-SCOPE-001: Backend Heartbeat Change (DEVIATION)
+
+**Type:** DEVIATION from Development Directive v1.5.1, Package 6.6
+
+**Directive text:** "Out of scope: Backend endpoint/schema changes"
+
+**Deviation:** Backend must emit `event: heartbeat` as JS-visible data events (not SSE comments) per Tech Spec §16.4.1.
+
+**Rationale:** Without this change, frontend cannot comply with Tech Spec §16.4.1 (idle timer reset on heartbeat). Native SSE comments (`: keep-alive`) are not visible to JavaScript's `EventSource.onmessage` handler. A specification deviation (claiming heartbeat detection without actual heartbeat events) would be more severe than a directive scope deviation.
+
+**Changes Made:**
+- `apps/api/application/event_stream.py`: HEARTBEAT_EVENT sentinel renamed from `__heartbeat__` to `heartbeat`
+- `apps/api/routes/workflows.py`: Replace `format_sse_comment("keep-alive")` with `format_sse_event("heartbeat", {...})`
+
+**Critical Heartbeat Invariants:**
+- Unsequenced: NO `sequence` field in payload (per §16.4.1)
+- Not persisted: NOT written to `workflow_events` table (no DB logging)
+- No position: Exempt from Appendix C.1 envelope (per §16.4.1/§16.9 interpretation)
+- JS-visible: Uses `format_sse_event`, NOT `format_sse_comment`
+
+**Approval:** Architect (Ryan Tufts)
+**Date:** 2026-01-06
+
+## 2026-01-06 - P6.6-DEFER-001: Messages List Query Deferred (DEFERRAL)
+
+**Type:** DEFERRAL
+
+**Deliverable:** "Message updates wired to SSE events" per Directive v1.5.1 Package 6.6
+
+**Implemented:**
+- `messageKeys` factory created in `apps/web/hooks/api/use-message.ts` for invalidation
+- `message.created`/`message.final` events wired in dispatcher to invalidate messages queries
+- `reply_to_message_id` correlation enforced per §16.9
+
+**Deferred:**
+- `useMessages` query hook (no GET endpoint exists per Tech Spec V2.8.2)
+- Messages list UI component
+
+**Rationale:** Tech Spec V2.8.2 does not define a messages list GET endpoint. Creating a stub hook would risk spec drift. Query key factory and invalidation wiring are ready for when the endpoint exists.
+
+**Resolution:** Phase 7 or later when messages list API is defined.
+**Approved by:** Architect (Ryan Tufts)
+**Date:** 2026-01-06
+
+## 2026-01-06 - P6.2-RECONNECT-001: Reconnect-on-disconnect Verified (RESOLUTION)
+
+**Type:** RESOLUTION of prior deferral (P6.2 Verification: Reconnect-on-disconnect Evidence Deferred, 2026-01-06)
+
+**Original deferral:** Package 6.2 verification criterion "Reconnects on disconnect" could not be reliably verified without a page reload. EventSource did not consistently emit an error on idle stream disconnects.
+
+**Resolution:** Package 6.6 implements idle timeout detection per Tech Spec §16.4.1:
+- `useConnectionManager.ts` now resets idle timer on every message (including heartbeats)
+- Idle timeout (60s no messages) triggers resync via `scheduleReconnect()`
+- Bounded retries (maxRetries=5) lead to `failed` status if recovery fails
+- Backend heartbeats are now JS-visible data events (not SSE comments)
+
+**Evidence:**
+- `useConnectionManager.ts:303-317`: Idle timer reset on handleMessage
+- `useConnectionManager.ts:308-316`: Idle timeout triggers reconnect
+- `apps/api/routes/workflows.py:2577-2587`: Heartbeat as data event
+
+**Status:** RESOLVED
+**Verified by:** Senior Developer
+**Date:** 2026-01-06
+
+## 2026-01-06 - P6.6-INTERP-001: Appendix C.1 Envelope for Sequenced Events Only (CLARIFICATION)
+
+**Type:** CLARIFICATION NOTE (not a spec change or deviation)
+
+**Spec tension:** Appendix C.1 states "all SSE events include sequence/position". Tech Spec §16.4.1 states "heartbeats carry no sequence".
+
+**Interpretation:** C.1 envelope requirements apply to sequenced events only. Heartbeats are explicitly unsequenced per §16.4.1 and Contract §16.9, exempt from C.1 envelope requirements.
+
+**Heartbeat payload:**
+```json
+{
+  "event_type": "heartbeat",
+  "workflow_id": "...",
+  "timestamp": "..."
+}
+```
+
+**Implementation:**
+- `apps/web/lib/sse-events.ts`: Discriminated union with `SequencedSSEEvent` (requires sequence) and `HeartbeatEvent` (no sequence)
+- Type guards `isSequencedEvent()` and `isHeartbeat()` for safe discrimination
+
+**Status:** Clarification accepted; no spec change required.
+**Noted by:** Senior Developer
+**Accepted by:** Architect (Ryan Tufts)
+**Date:** 2026-01-06

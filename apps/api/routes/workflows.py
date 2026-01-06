@@ -2574,9 +2574,17 @@ async def stream_workflow(
             # Drop any events with sequence <= max_seq to avoid duplicates.
             # Use 5s timeout for heartbeats (keeps tests fast, production responsive)
             async for event in broker.subscribe_live(workflow_id, timeout=5.0):
-                # Handle heartbeat events as SSE comments (not data events)
-                if event is HEARTBEAT_EVENT or event.event_type == "__heartbeat__":
-                    yield format_sse_comment("keep-alive")
+                # P6.6: Heartbeats as JS-visible data events per Tech Spec §16.4.1
+                # CRITICAL INVARIANTS:
+                # - Unsequenced: NO sequence field (per §16.4.1)
+                # - Not persisted: NOT written to workflow_events table
+                # - No position: Exempt from Appendix C.1 envelope
+                if event is HEARTBEAT_EVENT or event.event_type == "heartbeat":
+                    yield format_sse_event("heartbeat", {
+                        "event_type": "heartbeat",
+                        "workflow_id": str(workflow_id),
+                        "timestamp": datetime.utcnow().isoformat(),
+                    })
                 else:
                     # Drop events already replayed from DB
                     event_seq = event.payload.get("sequence", 0)

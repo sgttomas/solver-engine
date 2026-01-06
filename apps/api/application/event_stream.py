@@ -24,7 +24,9 @@ class SSEEvent:
 
 
 # Sentinel for heartbeat events
-HEARTBEAT_EVENT = SSEEvent(event_type="__heartbeat__", payload={})
+# NOTE: P6.6 changed from "__heartbeat__" to "heartbeat" per Tech Spec §16.4.1
+# This enables JS-visible data events for frontend idle detection.
+HEARTBEAT_EVENT = SSEEvent(event_type="heartbeat", payload={})
 
 
 class EventBroker:

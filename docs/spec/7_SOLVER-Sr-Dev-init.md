@@ -1,36 +1,45 @@
-# SOLVER Engine — Senior Developer Init (Phase 6 / Package 6.6)
+# SOLVER Engine — Senior Developer Init (Phase 6 Closure)
 
 ## Role
 
-Senior developer for Package 6.6 (SSE Event Handling). Implement only after plan approval.
-Stay within the governance chain in docs/spec/.
+Senior developer for Phase 6 closure. Fix emergent issues blocking E2E verification before
+proceeding to Phase 7. Stay within the governance chain in docs/spec/.
 
 ## Mission
 
-Deliver SSE event handling, reconnection, and event-driven query updates while complying with
-Architectural Contract and Technical Spec requirements.
+Resolve the workflow ID mismatch issue that blocks full E2E UI testing. Package 6.6 (SSE Event
+Handling) is complete and verified; this is a pre-existing bug from P6.5 or earlier.
 
-## Objectives (Package 6.6)
+## Current Issue: Workflow ID Mismatch
 
-- Wire SSE event dispatcher through `useSequenceGuard`
-- Implement event-driven TanStack Query invalidation for relevant events
-- Trigger staleness refetch on `artifact.stale` / `artifact.stale_cleared`
-- Update message thread state on message events
-- Canonical refetch bundle integration per Contract v3.4 §10.4 (workflow + progress + staleness)
-- Enforce "connected" only after canonical refetch completes with consistent `state_version`
+**Symptom:** Workflow detail page shows loading/error state instead of workflow data.
+
+**Root Cause:**
+- Frontend URL uses database `id` column (auto-increment integer)
+- Backend API expects `workflow_id` column (UUID)
+- The mismatch causes 404 or incorrect lookups
+
+**Impact:** Blocks full E2E UI verification for P6.6 γ2 gate and beyond.
+
+## Objectives
+
+1. Investigate the ID routing mismatch between frontend and backend
+2. Determine correct fix (frontend URL change vs backend lookup change)
+3. Implement fix with minimal disruption
+4. Verify E2E workflow detail page loads correctly
+5. Document any deviations if spec interpretation is needed
 
 ## Scope Boundaries
 
 **In scope:**
-- SSE event handling in frontend (sequence guard + connection manager)
-- Event-driven query invalidation/refetch (per events and reconnects)
-- Canonical refetch after reconnect/gap recovery
-- Integration with existing hooks (`useWorkflowConnection`, `useSequenceGuard`, `useCanAct`, `useCanMessage`)
+- Workflow ID routing fix (frontend and/or backend)
+- Any emergent issues discovered during investigation
+- E2E verification of workflow detail page
 
 **Out of scope:**
-- Backend endpoint/schema changes (log deviations via Change Management if needed)
-- New UI features beyond event-driven updates
-- Phase 7 integration packages
+- New features beyond bug fixes
+- Phase 7 packages
+- Spec changes (log deviations if needed)
 
 ## Orientation
 
@@ -44,85 +53,76 @@ Read in order:
 1. README.md
 2. AGENTS.md
 3. CLAUDE.md
-4. docs/spec/0_Document-Type-Specifications-v2.1.1.md
-5. docs/spec/1_SOLVER-README-v1.0.md
-6. docs/spec/2_SOLVER-Design-Intent-v1.1.md (focus §1.2 cost asymmetry)
-7. docs/spec/3_SOLVER-Architectural-Contract-v3.4.md (focus §10.4, §12.4, §16.9)
-8. docs/spec/4_SOLVER-Technical-Spec-V2.8.2.md (focus §16 endpoints + SSE event types)
-9. docs/spec/5_SOLVER-Development-Directive-v1.5.1.md (Package 6.6)
-10. docs/spec/6_SOLVER-Change-Management-v2.0.1.md (governance for spec/deviation changes)
-11. docs/spec/DECISIONS.md
-12. docs/spec/FREEZE-RECORD.md (only when auditing governed docs)
+4. docs/spec/3_SOLVER-Architectural-Contract-v3.4.md (§9 API design)
+5. docs/spec/4_SOLVER-Technical-Spec-V2.8.2.md (§9 endpoints, response schemas)
+6. docs/spec/DECISIONS.md (recent P6.6 entries for context)
 
 ## Current State
 
-**Phase 6: Frontend — Package 6.6: SSE Event Handling**
+**Phase 6: Frontend — CLOSING**
 
-Completed:
-- 6.1: Next.js App Router, TanStack Query, Zustand, Tailwind
-- 6.2: `useConnectionManager`, `calculateBackoff`
-- 6.3: `useSequenceGuard`, `useWorkflowConnection`
-- 6.4: `useCanAct`, `useCanMessage`
-- 6.5: Workflow UI (launcher, detail, review, artifact display, message panel)
-- V2.8.2 schema alignment (message response, progress schema, staleness schema, can_complete logic)
+Completed packages:
+- 6.1: Next.js App Router, TanStack Query, Zustand, Tailwind ✓
+- 6.2: `useConnectionManager`, `calculateBackoff` ✓
+- 6.3: `useSequenceGuard`, `useWorkflowConnection` ✓
+- 6.4: `useCanAct`, `useCanMessage` ✓
+- 6.5: Workflow UI (launcher, detail, review, artifact display, message panel) ✓
+- 6.6: SSE Event Handling (γ2 verified) ✓
 
-P6.5 deliverables ready for P6.6 integration:
-- `useWorkflowQueries` canonical bundle with R7/C2 state_version verification
-- `onDispatch` callback in `useWorkflowConnection` (not yet wired)
-- Artifact endpoint implemented (`GET /workflows/{id}/artifacts/{aid}`)
+P6.6 deliverables verified:
+- Heartbeat as JS-visible data event (no sequence) ✓
+- Event dispatcher wired with §9.2.1 invalidation matrix ✓
+- Idle timeout detection (60s) ✓
+- Canonical refetch + state_version consistency ✓
 
-Deviations logged:
-- R11 EventSource handler timing (best-effort compliance)
-- Reconnect-on-disconnect verification deferred to 6.6 (resolve now)
+Blocking issue:
+- Workflow ID mismatch prevents E2E UI testing
 
-Next package:
-- Phase 7 / Package 7.1: Workflow Lifecycle Integration
+Next phase:
+- Phase 7 / Package 7.1: Workflow Lifecycle Integration (after P6 closure)
 
-## Governance Context
+## Key Paths to Investigate
 
-- docs/spec/6_SOLVER-Change-Management-v2.0.1.md — required process for spec changes
-- docs/spec/DECISIONS.md — deviations and approvals
-- docs/spec/FREEZE-RECORD.md — audit-only reference
-
-## Key Paths
-
-| Path | Purpose |
-|------|---------|
-| apps/web/hooks/useConnectionManager.ts | Connection lifecycle + status |
-| apps/web/hooks/useSequenceGuard.ts | Sequencing + gap handling |
-| apps/web/hooks/useWorkflowConnection.ts | SSE integration wrapper (wire onDispatch here) |
-| apps/web/hooks/use-workflow-queries.ts | Canonical query bundle (workflow + progress + staleness) |
-| apps/web/hooks/useCanAct.ts | Action gating (R3-R6) |
-| apps/web/hooks/api/ | Individual query/mutation hooks |
-| apps/web/lib/api.ts | REST client + error handling |
-| apps/web/lib/types.ts | TypeScript types for API responses |
-| apps/web/components/workflow-detail.tsx | Main UI component (integrates queries + SSE) |
-| docs/spec/DECISIONS.md | Log deviations here |
-| docs/spec/6_SOLVER-Change-Management-v2.0.1.md | Governance for spec changes |
+| Path | Focus |
+|------|-------|
+| apps/web/app/workflows/[id]/page.tsx | URL param extraction |
+| apps/web/components/workflow-detail.tsx | workflowId prop usage |
+| apps/web/hooks/use-workflow-queries.ts | API calls with workflowId |
+| apps/web/lib/api.ts | Endpoint URL construction |
+| apps/api/routes/workflows.py | Backend route handlers |
+| apps/api/infrastructure/db/models/workflow.py | DB model (id vs workflow_id) |
 
 ## Anti-Patterns to Avoid
 
 | Pattern | Why |
 |---------|-----|
-| Bypassing `useSequenceGuard` | Violates Contract v3.4 §16.9 sequencing rules |
-| Using `maxSeen` as correctness cursor | Contract requires `lastContiguousSequence` |
-| Marking `connected` before canonical refetch | Violates Contract v3.4 §10.4 / R7 |
-| Invalidating unrelated queries | Event-driven invalidation must be scoped to events |
-| Spec or API shape changes without governance | Use Change Management + DECISIONS |
+| Using database `id` in URLs | Contract expects `workflow_id` (UUID) in API |
+| Changing API contracts without governance | Use Change Management + DECISIONS |
+| Breaking existing E2E tests | Verify `make e2e` still passes |
 
 ## Verification
 
 ```bash
+# Frontend
 cd apps/web && npm run lint
 cd apps/web && npm run build
+
+# Backend
+make lint
+make test
+
+# E2E
+make e2e
 ```
 
-Manual verification (Package 6.6):
-1. Live UI updates when SSE events arrive (progress, artifacts, messages)
-2. Gap triggers reconnect with `from_sequence = lastContiguousSequence`
-3. Canonical refetch bundle completes before `connected`
-4. state_version consistency verified before actions re-enable
+Manual verification:
+1. Create workflow via launcher
+2. Navigate to workflow detail page
+3. Verify page loads with correct data
+4. Verify SSE connection establishes
+5. Verify actions work (if at review gate)
 
 ## Start
 
-After orientation, propose a plan for Package 6.6 and wait for approval before implementation.
+After orientation, investigate the workflow ID mismatch and propose a fix. Wait for approval
+before implementation.

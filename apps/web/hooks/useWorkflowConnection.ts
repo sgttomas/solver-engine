@@ -20,19 +20,10 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useConnectionManager } from './useConnectionManager';
 import { useSequenceGuard } from './useSequenceGuard';
 import type { ConnectionStatus } from '@/stores/connection';
+import type { SSEEvent } from '@/lib/sse-events';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-/**
- * Minimal SSE event shape for sequence guard processing.
- * Only `sequence` is used by Package 6.3; all other fields are opaque.
- * Package 6.6 will define specific event types.
- */
-export type SSEEvent = {
-  sequence?: number;
-} & Record<string, unknown>;
+// Re-export SSEEvent for consumers
+export type { SSEEvent } from '@/lib/sse-events';
 
 /**
  * Options for useWorkflowConnection hook.
@@ -185,8 +176,9 @@ export function useWorkflowConnection(
       }
 
       // Process through sequence guard
+      // Use 'in' check since HeartbeatEvent doesn't have sequence property
       const result = guard.process({
-        sequence: event.sequence,
+        sequence: 'sequence' in event ? event.sequence : undefined,
         payload: event,
       });
 

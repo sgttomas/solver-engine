@@ -2,17 +2,20 @@
  * SOLVER Web - Workflow Detail Component
  *
  * Main layout component for workflow detail view.
- * Package 6.5 deliverable per Development Directive v1.5.1.
+ * Package 6.5 + 6.6 deliverable per Development Directive v1.5.1.
  *
  * Contract Requirements:
  * - R7/C2: onRefetchRequired performs explicit refetch and verifies state_version consistency
  * - R14: canAct requires all canonical queries idle
  * - §14.3: Disabled buttons show reasons
  * - §16.10/C5: Failed state shows "Retry connection" button
+ * - §9.2.1: Event dispatcher maps SSE events to query invalidations (P6.6)
+ * - §16.4.1: Idle timeout detection via heartbeat events (P6.6)
  *
  * Integration:
  * - Uses useWorkflowQueries for canonical query bundle
- * - Uses useWorkflowConnection for SSE (event handling wired in 6.6)
+ * - Uses useWorkflowConnection for SSE with event dispatch
+ * - Uses useEventDispatcher for event-driven query invalidation (P6.6)
  * - Uses useCanAct/useCanMessage for action gating
  */
 
@@ -22,6 +25,7 @@ import { useCallback } from 'react';
 import Link from 'next/link';
 import { useWorkflowQueries } from '@/hooks/use-workflow-queries';
 import { useWorkflowConnection } from '@/hooks/useWorkflowConnection';
+import { useEventDispatcher } from '@/hooks/useEventDispatcher';
 import { useCanAct } from '@/hooks/useCanAct';
 import { useCanMessage } from '@/hooks/useCanMessage';
 import { ConnectionStatus } from './connection-status';
@@ -99,11 +103,21 @@ export function WorkflowDetail({ workflowId }: WorkflowDetailProps) {
     }
   }, [queries.workflow, queries.progress, queries.staleness]);
 
-  // SSE connection (event handling wired in 6.6)
+  // P6.6: Event dispatcher for SSE event-driven query invalidation
+  const { handleEvents } = useEventDispatcher({
+    workflowId,
+    onDomainError: (error) => {
+      // Per §16.9: Domain errors do NOT affect connection status
+      // Log for debugging; future UI enhancement may display these
+      console.warn('[WorkflowDetail] Domain error event:', error.payload);
+    },
+  });
+
+  // SSE connection with event dispatch wired (P6.6)
   const connection = useWorkflowConnection({
     workflowId,
     onRefetchRequired: handleRefetchRequired,
-    // onDispatch wired in 6.6 for SSE event handling
+    onDispatch: handleEvents,
   });
 
   // Action gating

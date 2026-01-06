@@ -7,6 +7,9 @@
  * Contract Requirements:
  * - Does NOT require expected_state_version (Tech Spec §16.7)
  * - Per V2.8.2: Returns minimal MessageResponse (not WorkflowResponse)
+ *
+ * P6.6 Note: messageKeys factory added for event-driven invalidation.
+ * Messages list query deferred per P6.6-DEFER-001 (no GET endpoint in V2.8.2).
  */
 
 'use client';
@@ -14,6 +17,18 @@
 import { useMutation } from '@tanstack/react-query';
 import { sendMessage } from '@/lib/api';
 import type { MessageRequest, MessageResponse } from '@/lib/types';
+
+/**
+ * Query key factory for messages queries (P6.6)
+ *
+ * NOTE: Messages list query implementation deferred per P6.6-DEFER-001.
+ * Tech Spec V2.8.2 does not define a messages list GET endpoint.
+ * Keys are ready for invalidation when the endpoint exists.
+ */
+export const messageKeys = {
+  all: ['messages'] as const,
+  list: (workflowId: string) => [...messageKeys.all, workflowId] as const,
+};
 
 /**
  * Hook to send a message
