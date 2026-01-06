@@ -1,44 +1,45 @@
-# SOLVER Engine — Senior Developer Init (Phase 6 Closure)
+# SOLVER Engine — Senior Developer Init (Phase 7)
 
 ## Role
 
-Senior developer for Phase 6 closure. Fix emergent issues blocking E2E verification before
-proceeding to Phase 7. Stay within the governance chain in docs/spec/.
+Senior developer for Phase 7 implementation. Build end-to-end integration flows per the
+Development Directive. Stay within the governance chain in docs/spec/.
 
 ## Mission
 
-Resolve the workflow ID mismatch issue that blocks full E2E UI testing. Package 6.6 (SSE Event
-Handling) is complete and verified; this is a pre-existing bug from P6.5 or earlier.
+Implement Package 7.1: Workflow Lifecycle Integration. Deliver a complete workflow flow from
+creation through completion, exercising all gates and transitions.
 
-## Current Issue: Workflow ID Mismatch
+## Current Package: 7.1 Workflow Lifecycle Integration
 
-**Symptom:** Workflow detail page shows loading/error state instead of workflow data.
+**Objective:** Full end-to-end workflow execution.
 
-**Root Cause:**
-- Frontend URL uses database `id` column (auto-increment integer)
-- Backend API expects `workflow_id` column (UUID)
-- The mismatch causes 404 or incorrect lookups
+**Deliverables:**
+- Full flow: create → execute → gate → approve → advance → complete
+- Pass 1 → Pass 2 transition
+- Multi-step progression (Steps 1-3)
 
-**Impact:** Blocks full E2E UI verification for P6.6 γ2 gate and beyond.
+**Exit Gate:** γ1 (Workflow Lifecycle)
 
 ## Objectives
 
-1. Investigate the ID routing mismatch between frontend and backend
-2. Determine correct fix (frontend URL change vs backend lookup change)
-3. Implement fix with minimal disruption
-4. Verify E2E workflow detail page loads correctly
-5. Document any deviations if spec interpretation is needed
+1. Verify backend workflow execution completes without LLM (mock adapter or stub)
+2. Integrate frontend with live backend for full interactive flow
+3. Test Pass 1 methodology generation through all steps
+4. Test Pass 2 deliverable generation with human review gates
+5. Verify workflow reaches `completed` status after all approvals
 
 ## Scope Boundaries
 
 **In scope:**
-- Workflow ID routing fix (frontend and/or backend)
-- Any emergent issues discovered during investigation
-- E2E verification of workflow detail page
+- Workflow lifecycle integration (create → complete)
+- Frontend-backend integration testing
+- LLM mock/stub for deterministic testing
+- Gate transitions (approve/revise/message)
 
 **Out of scope:**
-- New features beyond bug fixes
-- Phase 7 packages
+- Staleness flows (Package 7.2)
+- Recovery scenarios (Package 7.3)
 - Spec changes (log deviations if needed)
 
 ## Orientation
@@ -53,15 +54,15 @@ Read in order:
 1. README.md
 2. AGENTS.md
 3. CLAUDE.md
-4. docs/spec/3_SOLVER-Architectural-Contract-v3.4.md (§9 API design)
-5. docs/spec/4_SOLVER-Technical-Spec-V2.8.2.md (§9 endpoints, response schemas)
-6. docs/spec/DECISIONS.md (recent P6.6 entries for context)
+4. docs/spec/5_SOLVER-Development-Directive-v1.5.1.md (Phase 7 section)
+5. docs/spec/4_SOLVER-Technical-Spec-V2.8.3.md (§8 state machines, §9 endpoints)
+6. docs/spec/DECISIONS.md (recent entries for context)
 
 ## Current State
 
-**Phase 6: Frontend — CLOSING**
+**Phase 6: Frontend — CLOSED**
 
-Completed packages:
+All packages complete:
 - 6.1: Next.js App Router, TanStack Query, Zustand, Tailwind ✓
 - 6.2: `useConnectionManager`, `calculateBackoff` ✓
 - 6.3: `useSequenceGuard`, `useWorkflowConnection` ✓
@@ -69,60 +70,79 @@ Completed packages:
 - 6.5: Workflow UI (launcher, detail, review, artifact display, message panel) ✓
 - 6.6: SSE Event Handling (γ2 verified) ✓
 
-P6.6 deliverables verified:
-- Heartbeat as JS-visible data event (no sequence) ✓
-- Event dispatcher wired with §9.2.1 invalidation matrix ✓
-- Idle timeout detection (60s) ✓
-- Canonical refetch + state_version consistency ✓
+P6 Closure Notes:
+- Workflow ID mismatch investigation: NO ISSUE FOUND (see DECISIONS.md P6.6-CLOSURE-001)
+- Frontend/backend correctly aligned on `workflow_id` throughout
+- E2E tests passing (3/3)
 
-Blocking issue:
-- Workflow ID mismatch prevents E2E UI testing
+**Phase 7: Integration — ACTIVE**
 
-Next phase:
-- Phase 7 / Package 7.1: Workflow Lifecycle Integration (after P6 closure)
+Current package: 7.1 Workflow Lifecycle Integration
+- Exit Gate: γ1 (Workflow Lifecycle)
 
-## Key Paths to Investigate
+Upcoming packages:
+- 7.2: Staleness Integration (γ4)
+- 7.3: Recovery Scenarios
+
+## Key Paths
 
 | Path | Focus |
 |------|-------|
-| apps/web/app/workflows/[id]/page.tsx | URL param extraction |
-| apps/web/components/workflow-detail.tsx | workflowId prop usage |
-| apps/web/hooks/use-workflow-queries.ts | API calls with workflowId |
-| apps/web/lib/api.ts | Endpoint URL construction |
-| apps/api/routes/workflows.py | Backend route handlers |
-| apps/api/infrastructure/db/models/workflow.py | DB model (id vs workflow_id) |
+| apps/api/orchestration/graph.py | LangGraph state machine |
+| apps/api/orchestration/nodes.py | Step execution logic |
+| apps/api/application/workflow_service.py | Workflow lifecycle methods |
+| apps/api/routes/workflows.py | Action endpoints (approve/revise) |
+| apps/web/components/workflow-detail.tsx | Frontend workflow UI |
+| apps/web/hooks/use-workflow-queries.ts | API integration |
+
+## Testing Strategy
+
+**Unit/Integration (Backend):**
+```bash
+make test                    # All backend tests
+make test-integration        # Integration tests only
+make e2e                     # E2E API + SSE flow
+```
+
+**Frontend:**
+```bash
+cd apps/web && npm run lint
+cd apps/web && npm run build
+```
+
+**Manual Verification (γ1 Criteria):**
+```
+1. Create workflow with problem statement
+2. Watch Pass 1 Step 1 execute (methodology generation)
+3. Approve at gate
+4. Repeat for Steps 2, 3
+5. Transition to Pass 2
+6. Approve each step with artifact review
+7. Workflow reaches completed status
+```
+
+## LLM Integration Notes
+
+For deterministic testing, consider:
+- Mock LLM adapter returning canned responses
+- Environment variable to switch providers
+- Ensure LLM API key is configured in `apps/api/.env`
+
+Current LLM config: `DEFAULT_LLM_PROVIDER` (openai/anthropic/google)
 
 ## Anti-Patterns to Avoid
 
 | Pattern | Why |
 |---------|-----|
-| Using database `id` in URLs | Contract expects `workflow_id` (UUID) in API |
-| Changing API contracts without governance | Use Change Management + DECISIONS |
-| Breaking existing E2E tests | Verify `make e2e` still passes |
-
-## Verification
-
-```bash
-# Frontend
-cd apps/web && npm run lint
-cd apps/web && npm run build
-
-# Backend
-make lint
-make test
-
-# E2E
-make e2e
-```
-
-Manual verification:
-1. Create workflow via launcher
-2. Navigate to workflow detail page
-3. Verify page loads with correct data
-4. Verify SSE connection establishes
-5. Verify actions work (if at review gate)
+| Skipping gate transitions | Contract requires human approval at gates |
+| Hardcoding step logic | Use state machine from graph.py |
+| Ignoring state_version | Optimistic concurrency is required |
+| Breaking existing tests | Verify `make e2e` still passes |
 
 ## Start
 
-After orientation, investigate the workflow ID mismatch and propose a fix. Wait for approval
-before implementation.
+After orientation:
+1. Verify dev environment is running (`make dev-api`, `make dev-web`)
+2. Review current E2E test coverage
+3. Identify gaps in lifecycle flow
+4. Propose implementation approach for γ1 verification

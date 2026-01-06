@@ -257,3 +257,36 @@ workflow_events table, and SSE from_sequence replay are being implemented.
 **Noted by:** Senior Developer
 **Accepted by:** Architect (Ryan Tufts)
 **Date:** 2026-01-06
+
+## 2026-01-06 - P6.6-CLOSURE-001: Workflow ID Mismatch Investigation (NO ISSUE FOUND)
+
+**Type:** INVESTIGATION RESULT
+
+**Reported Issue:** Workflow detail page shows loading/error state. Claimed root cause: frontend URL uses database `id` (auto-increment integer); backend expects `workflow_id` (UUID).
+
+**Investigation Findings:**
+
+| Claim | Actual |
+|-------|--------|
+| Database `id` is auto-increment integer | `id` is UUID PRIMARY KEY |
+| Frontend uses database `id` | Frontend correctly uses `workflow_id` from API response |
+| Mismatch between frontend/backend | Both consistently use `workflow_id` |
+
+**Code Flow Verified:**
+1. `POST /workflows` → returns `WorkflowResponse { workflow_id: string, ... }`
+2. Frontend stores `result.workflow_id` (`workflow-launcher.tsx:65`)
+3. Navigation: `/workflow/${workflow_id}` (`workflow-launcher.tsx:74`)
+4. Page extracts `params.id`, passes to `WorkflowDetail` (`page.tsx:26`)
+5. API call: `GET /workflows/${workflowId}` (`api.ts:131`)
+6. Backend: queries `WHERE workflow_id = ?` (`workflow.py:275`)
+
+**Verification:**
+- `make e2e` passes (3/3 tests)
+- `GET /api/v1/workflows/{workflow_id}` returns correct workflow
+- `GET /api/v1/workflows/{internal_id}` correctly returns 404
+
+**Conclusion:** The reported issue does not exist in the current codebase. The frontend and backend are correctly aligned on using `workflow_id` throughout. The 500 error observed during manual testing was caused by LLM API authentication failure (`OpenAI API error: 401`), not a routing mismatch.
+
+**Status:** NO ISSUE FOUND - Investigation closed
+**Verified by:** Senior Developer
+**Date:** 2026-01-06

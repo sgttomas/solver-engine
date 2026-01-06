@@ -1,4 +1,4 @@
-# SOLVER Technical Specification V2.8.2
+# SOLVER Technical Specification V2.8.3
 ## Consolidated Implementation Guide (Steps 1-3 MVP)
 
 **Purpose:** Implementation-ready specification for building SOLVER, merging contract definitions with executable code.
@@ -9,7 +9,18 @@
 
 ---
 
-## 0. Why V2.8.2 (Changes from V2.8.1)
+## 0. Why V2.8.3 (Changes from V2.8.2)
+
+V2.8.3 is a spec-implementation alignment release resolving C.2 schema discrepancies:
+
+1. **C.2 workflow_id field** — Changed from `id` to `workflow_id` for consistency with C.3 Progress Response
+2. **C.2 original_problem field** — Changed from `problem` to `original_problem` to match implementation (clarifies unmodified input)
+3. **C.2 backward-compatibility fields** — Documented `current_pass`, `current_step`, `current_step_number` fields that mirror `position` for legacy clients
+4. **C.2 step_state field** — Documented optional `step_state` object for detailed step information
+5. **C.2 reserved fields removed** — Removed `pass_1_gate_policy`, `created_by`, `last_actor_id`, `completed_at` (not implemented in MVP)
+6. **C.3 endpoint path** — Changed `{id}` to `{workflow_id}` for consistency
+
+### V2.8.2 Changes (Preserved)
 
 V2.8.2 is a schema remediation release addressing review findings:
 
@@ -4420,15 +4431,18 @@ All SSE events use this envelope structure:
 
 ### C.2 Workflow State Response
 
-Response from `GET /workflows/{id}`:
+Response from `GET /workflows/{workflow_id}`:
+
+**V2.8.3 alignment:** Field names aligned with implementation. Uses `workflow_id` (consistent with C.3), `original_problem` (clarifies unmodified input). Backward-compatibility fields mirror `position` for legacy clients.
 
 ```json
 {
-  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "workflow_id": "550e8400-e29b-41d4-a716-446655440000",
   "thread_id": "thread-abc",
   "instance_id": "inst-1",
-  "problem": "Design a recommendation system for e-commerce",
-  
+  "original_problem": "Design a recommendation system for e-commerce",
+  "domain": null,
+
   "position": {
     "instance_number": 1,
     "step_number": 2,
@@ -4437,17 +4451,23 @@ Response from `GET /workflows/{id}`:
     "status": "awaiting_review",
     "phase": "complete"
   },
-  
+
+  "current_pass": "definition",
+  "current_step": "requirements",
+  "current_step_number": 2,
+
+  "step_state": {
+    "step_name": "requirements",
+    "pass_type": "definition",
+    "status": "awaiting_review",
+    "phase": "complete"
+  },
+
   "state_version": 7,
   "status": "active",
-  
-  "pass_1_gate_policy": "per_step",
-  
-  "created_by": "user-123",
-  "last_actor_id": "user-456",
+
   "created_at": "2025-01-04T10:00:00.000Z",
-  "updated_at": "2025-01-04T12:34:56.789Z",
-  "completed_at": null
+  "updated_at": "2025-01-04T12:34:56.789Z"
 }
 ```
 
@@ -4455,14 +4475,36 @@ Response from `GET /workflows/{id}`:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | UUID string | Workflow identifier |
-| `position` | Position object | Current position |
+| `workflow_id` | string | Workflow identifier (consistent with C.3) |
+| `thread_id` | string | LangGraph thread identifier |
+| `instance_id` | UUID string | Workflow instance identifier |
+| `original_problem` | string | Original problem statement (unmodified) |
+| `position` | Position object | Current position (canonical) |
 | `state_version` | integer | For optimistic concurrency |
 | `status` | enum | `active`, `completed`, `abandoned` |
+| `created_at` | ISO 8601 | Creation timestamp |
+| `updated_at` | ISO 8601 | Last update timestamp |
+
+**Optional fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `domain` | string | Optional domain classification |
+| `step_state` | StepState object | Detailed current step info |
+
+**Backward-compatibility fields (mirror `position`):**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `current_pass` | string | Same as `position.pass_type` |
+| `current_step` | string | Same as `position.step_name` |
+| `current_step_number` | integer | Same as `position.step_number` |
+
+**Note:** New integrations should use the `position` object. Flat fields are retained for backward compatibility.
 
 ### C.3 Progress Response
 
-Response from `GET /workflows/{id}/progress` (V2.8.2 unified schema):
+Response from `GET /workflows/{workflow_id}/progress` (V2.8.2 unified schema):
 
 **V2.8.2 clarification:** `current_step` is the step name (string), `current_step_number` is the 1-indexed position (integer).
 

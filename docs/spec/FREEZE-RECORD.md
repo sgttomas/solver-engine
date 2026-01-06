@@ -2,8 +2,8 @@
 
 **Freeze Status:** FROZEN
 **Freeze Date:** 2026-01-06
-**Baseline Identifier:** `spec-freeze-v2.8.2`
-**Previous Baseline:** `spec-freeze-v2.8.1` (2026-01-06)
+**Baseline Identifier:** `spec-freeze-v2.8.3`
+**Previous Baseline:** `spec-freeze-v2.8.2` (2026-01-06)
 
 ---
 
@@ -11,13 +11,13 @@
 
 | Document | Version | SHA-256 |
 |----------|---------|---------|
-| `README.md` | unversioned | `fcff45055f7bd9a2742d044d0b048ec69ce583acae94758d844ee0bf8de89da7` |
+| `README.md` | unversioned | `790f182ba9a95eb0761633773a6781361cf0f6a0038f76bdfeffb3f92d43d8a7` |
 | `0_Document-Type-Specifications-v2.1.1.md` | v2.1.1 | `261208f34c5119d52213c0d39877ff61fc68e6bba21510c3c88a57f1f1cb86d5` |
 | `1_SOLVER-README-v1.0.md` | v1.0 | `b83569cb1dd5a495067e56a3e457f9e89ec25ea43f669505eced4013b8b39dae` |
 | `2_SOLVER-Design-Intent-v1.1.md` | v1.1 | `2eacabe1ec3c335d017c0804e7d5d0ff98b6c72dd580feb5364f83b8961cc53b` |
 | `3_SOLVER-Architectural-Contract-v3.4.md` | v3.4 | `f58c1bf057e4361d516ea93de689cf774005bb530d9fdb9344304a6ab1e1254e` |
-| `4_SOLVER-Technical-Spec-V2.8.2.md` | V2.8.2 | `d6f4af8b622a6fde41434ba416e513ff63384053008b0681b2a64ef3ee84158d` |
-| `5_SOLVER-Development-Directive-v1.5.md` | v1.5 | `8e76d33d02252675dab81837c916ab5307f458aaff30ef916c190f531f1e2909` |
+| `4_SOLVER-Technical-Spec-V2.8.3.md` | V2.8.3 | `26a4b3ad7f7a0c422861d961af635e75baeacd277811a7159dbf8da8b20a1153` |
+| `5_SOLVER-Development-Directive-v1.5.1.md` | v1.5.1 | `8e76d33d02252675dab81837c916ab5307f458aaff30ef916c190f531f1e2909` |
 | `6_SOLVER-Change-Management-v2.0.1.md` | v2.0.1 | `1b6b563654d1bdde915e7e5fbb3bccee79abf32145b92a717ba1bd117b45a853` |
 
 ---
@@ -31,13 +31,14 @@
 - [x] SOLVER-README-v1.0.md exists, version matches manifest
 - [x] SOLVER-Design-Intent-v1.1.md exists, version matches manifest
 - [x] SOLVER-Architectural-Contract-v3.4.md exists, version matches manifest
-- [x] 4_SOLVER-Technical-Spec-V2.8.2.md exists, version matches manifest
-- [x] SOLVER-Development-Directive-v1.5.md exists, version matches manifest
+- [x] 4_SOLVER-Technical-Spec-V2.8.3.md exists, version matches manifest
+- [x] SOLVER-Development-Directive-v1.5.1.md exists, version matches manifest
 - [x] SOLVER-Change-Management-v2.0.1.md exists, version matches manifest
 
 **Result:** PASS
 **Reviewer:** Claude Opus 4.5 (AI Assistant)
 **Date:** 2026-01-06
+**Notes:** V2.8.3 spec created, cross-references updated in README.md, CLAUDE.md, AGENTS.md.
 
 ### F1: Internal Consistency ✓
 
@@ -49,7 +50,7 @@
 **Result:** PASS
 **Reviewer:** Claude Opus 4.5 (AI Assistant)
 **Date:** 2026-01-06
-**Notes:** V2.8.2 internal references verified. §9.3 message exception added. §9.4 aligned with C.5. C.3 progress schema unified. C.5 can_complete semantics documented.
+**Notes:** V2.8.3: C.2 now uses `workflow_id` (consistent with C.3); C.2/C.3 internal inconsistency resolved. All cross-references updated to V2.8.3.
 
 ### F2: Terminology Stable ✓
 
@@ -73,12 +74,12 @@
 **Result:** PASS
 **Reviewer:** Claude Opus 4.5 (AI Assistant)
 **Date:** 2026-01-06
-**Notes:** V2.8.2 schema changes: message endpoint returns actual persisted ID; §9.3 exception documented; §9.4 aligned with C.5; C.3 uses string current_step + numeric current_step_number; C.5 can_complete includes trace links. Contract tests pass (10/10).
+**Notes:** V2.8.3: C.2 schema now matches implementation exactly (workflow_id, original_problem, backward-compat fields documented). C.2/C.3 field naming is now consistent.
 
 ### F4: Baseline Recorded ✓
 
-- [x] FREEZE-RECORD.md updated with V2.8.2 baseline
-- [x] SHA-256 hash computed for V2.8.2 spec
+- [x] FREEZE-RECORD.md updated with V2.8.3 baseline
+- [x] SHA-256 hash computed for V2.8.3 spec
 - [x] Timestamp recorded
 - [x] All F0-F3 evidence re-verified
 
@@ -89,6 +90,28 @@
 ---
 
 ## Change Record
+
+### V2.8.3 (2026-01-06)
+
+**Change Request:** C.2 Schema Alignment with Implementation
+
+**Scope:**
+- C.2: Changed `id` → `workflow_id` for consistency with C.3
+- C.2: Changed `problem` → `original_problem` to match implementation
+- C.2: Documented backward-compatibility fields (`current_pass`, `current_step`, `current_step_number`)
+- C.2: Documented optional `step_state` field
+- C.2: Removed reserved/unimplemented fields (`pass_1_gate_policy`, `created_by`, `last_actor_id`, `completed_at`)
+- C.3: Changed `{id}` → `{workflow_id}` in endpoint path for consistency
+
+**Approval:** Architect (Ryan Tufts)
+
+**Implementation:**
+- Tech Spec V2.8.2 → V2.8.3
+- Cross-references updated: README.md, CLAUDE.md, AGENTS.md
+
+**Verification:** All freeze gates (F0-F4) pass.
+
+---
 
 ### V2.8.2 (2026-01-06)
 
