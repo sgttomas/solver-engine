@@ -176,7 +176,7 @@ solver-engine/
 │       ├── 1_SOLVER-README-v1.0.md                   # Project orientation
 │       ├── 2_SOLVER-Design-Intent-v1.1.md          # Why² — Design rationale
 │       ├── 3_SOLVER-Architectural-Contract-v3.4.md # Why — Invariants
-│       ├── 4_SOLVER-Technical-Spec-V2.8.0.md       # What — Schemas, endpoints
+│       ├── 4_SOLVER-Technical-Spec-V2.8.2.md       # What — Schemas, endpoints
 │       ├── 5_SOLVER-Development-Directive-v1.5.1.md  # How — Phases, gates
 │       └── 6_SOLVER-Change-Management-v2.0.1.md    # Process — Change control
 ├── apps/
@@ -214,7 +214,7 @@ All endpoints under `/api/v1`.
 
 ### REST Endpoints
 
-Endpoints listed here `docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md`.
+Endpoints listed here `docs/spec/4_SOLVER-Technical-Spec-V2.8.2.md`.
 
 ### SSE Stream
 
@@ -317,7 +317,7 @@ python tools/validate_schemas.py   # Schema validation
 | [SOLVER README](docs/spec/1_SOLVER-README-v1.0.md) | Conceptual navigation |
 | [Design Intent](docs/spec/2_SOLVER-Design-Intent-v1.1.md) | Why² — Design rationale |
 | [Architectural Contract](docs/spec/3_SOLVER-Architectural-Contract-v3.4.md) | Why — Invariants, constraints |
-| [Technical Spec](docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md) | What — Schemas, endpoints |
+| [Technical Spec](docs/spec/4_SOLVER-Technical-Spec-V2.8.2.md) | What — Schemas, endpoints |
 | [Development Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.1.md) | How — Phases, packages, gates |
 | [Change Management](docs/spec/6_SOLVER-Change-Management-v2.0.1.md) | Governance — change control |
 | [Sr Dev Init](docs/spec/7_SOLVER-Sr-Dev-init.md) | Senior developer initialization |

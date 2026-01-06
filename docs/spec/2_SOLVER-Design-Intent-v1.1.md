@@ -409,7 +409,7 @@ Server: "Current state_version is 7. Rejected. Here's current state."
 
 ### 4.10 Methodology Foundation (Instance 0)
 
-SOLVER implements the Instance 0 methodology — the abstract structured reasoning process that drives the two-pass workflow. The normative definition is in **Technical Specification V2.8.0 §Appendix D**.
+SOLVER implements the Instance 0 methodology — the abstract structured reasoning process that drives the two-pass workflow. The normative definition is in **Technical Specification V2.8.2 §Appendix D**.
 
 Key implications:
 - Methodology is defined before execution (Pass 1 precedes Pass 2).

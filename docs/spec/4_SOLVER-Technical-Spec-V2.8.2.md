@@ -1,4 +1,4 @@
-# SOLVER Technical Specification V2.8.0
+# SOLVER Technical Specification V2.8.2
 ## Consolidated Implementation Guide (Steps 1-3 MVP)
 
 **Purpose:** Implementation-ready specification for building SOLVER, merging contract definitions with executable code.
@@ -9,7 +9,24 @@
 
 ---
 
-## 0. Why V2.8.0 (Changes from V2.7.3)
+## 0. Why V2.8.2 (Changes from V2.8.1)
+
+V2.8.2 is a schema remediation release addressing review findings:
+
+1. **§9.3 message exception** — Added exception clause: message endpoint returns minimal `{message_id, status}` without position wrapper
+2. **§9.4 staleness schema alignment** — Updated inline dataclasses to match Appendix C.5 schema (renamed `stale_links` → `stale_trace_links`, added `has_stale_artifacts`, `blocking_reasons`, per-artifact `blocking`)
+3. **C.3 progress schema clarification** — Changed `current_step` to string (step name) with separate `current_step_number` (integer) to match implementation
+4. **C.5 can_complete semantics** — Documented that stale trace links also block completion (not just blocking artifacts)
+
+### V2.8.1 Changes (Preserved)
+
+V2.8.1 resolves internal schema inconsistencies and aligns Appendix C with implementation:
+
+1. **Progress schema unification** (§9.1, Appendix C.3) — Unified §9.1 and C.3 to single canonical schema with `artifact_id`, `artifact_revision`, `is_stale`, `has_artifact`, `started_at`, `completed_at`, `updated_at`
+2. **Staleness schema completion** (Appendix C.5) — Added `has_stale_artifacts`, `position`, `blocking_reasons`; per-artifact `artifact_type` and `blocking` fields; renamed `stale_links` → `stale_trace_links`
+3. **Message response clarification** (§16.7) — Confirmed minimal `{message_id, status}` response shape
+
+### V2.8.0 Changes (Preserved)
 
 V2.8.0 adds a normative methodology reference appendix:
 
@@ -1947,9 +1964,12 @@ async def get_progress(workflow_id: str) -> ProgressResponse:
                 step_name=s.step_name,
                 status=s.status,
                 phase=s.phase,
-                latest_artifact_id=s.latest_artifact_id,
-                latest_artifact_revision=await get_artifact_revision(s.latest_artifact_id) if s.latest_artifact_id else None,
-                artifact_stale=await is_artifact_stale(s.latest_artifact_id) if s.latest_artifact_id else False,
+                has_artifact=s.latest_artifact_id is not None,
+                artifact_id=s.latest_artifact_id,
+                artifact_revision=await get_artifact_revision(s.latest_artifact_id) if s.latest_artifact_id else None,
+                is_stale=await is_artifact_stale(s.latest_artifact_id) if s.latest_artifact_id else False,
+                started_at=s.started_at,
+                completed_at=s.completed_at,
                 updated_at=s.updated_at
             )
             for s in steps
@@ -1958,15 +1978,18 @@ async def get_progress(workflow_id: str) -> ProgressResponse:
 
 @dataclass
 class StepProgress:
-    """Per-step progress information."""
+    """Per-step progress information (V2.8.1 unified schema)."""
     pass_type: PassType              # 'definition' or 'execution'
     step_number: int                 # 1-10
     step_name: str                   # Canonical step name
     status: StepStatus               # 'not_started' | 'pending' | 'in_progress' | 'awaiting_review' | ...
     phase: StepPhase                 # Fine-grained internal phase
-    latest_artifact_id: Optional[str]  # UUID of current artifact (if any)
-    latest_artifact_revision: Optional[int]  # Revision number of current artifact
-    artifact_stale: bool             # Is the current artifact stale?
+    has_artifact: bool               # True if artifact exists for this step
+    artifact_id: Optional[str]       # UUID of current artifact (if any)
+    artifact_revision: Optional[int] # Revision number of current artifact
+    is_stale: bool                   # Is the current artifact stale?
+    started_at: Optional[datetime]   # When step execution started
+    completed_at: Optional[datetime] # When step reached terminal status
     updated_at: datetime             # Last status change timestamp
 
 @dataclass
@@ -2171,7 +2194,9 @@ When reconstructing the timeline for audit (Gate F), each event type has a defin
 
 ### 9.3 API Response Wrapper (V2.3)
 
-All API responses include position for consistent state tracking:
+All API responses include position for consistent state tracking.
+
+**Exception (V2.8.2):** The message endpoint (`/actions/message`) returns a minimal `{message_id, status}` response per §16.7 without the position wrapper, since messages are non-state-mutating.
 
 ```python
 @dataclass
@@ -2203,37 +2228,47 @@ async def approve_step(workflow_id: str, request: ApproveRequest) -> APIResponse
 async def get_staleness_report(workflow_id: str) -> StalenessReport:
     """
     Get staleness status for all artifacts in workflow.
-    
+
     Returns:
-        - List of stale artifacts with reasons
+        - List of stale artifacts with reasons and blocking status
         - List of stale traceability links
-        - Whether workflow can complete (blocked if stale artifacts exist)
+        - Whether workflow can complete (blocked if stale artifacts with blocking=True OR stale trace links exist)
     """
     pass
 
 @dataclass
 class StalenessReport:
+    """V2.8.2: Aligned with Appendix C.5 schema."""
     workflow_id: str
+    state_version: int
     position: Position
+    has_stale_artifacts: bool
     can_complete: bool
     blocking_reasons: List[str]
     stale_artifacts: List[StaleArtifact]
-    stale_links: List[StaleLink]
-    
+    stale_trace_links: List[StaleLink]  # V2.8.2: renamed from stale_links
+
 @dataclass
 class StaleArtifact:
+    """V2.8.2: Added pass_type and blocking per C.5."""
     artifact_id: str
     step_number: int
+    step_name: str
+    pass_type: str
     artifact_type: str
     stale_reason: str
     stale_since: datetime
+    blocking: bool  # V2.8.2: determines can_complete
 
 @dataclass
 class StaleLink:
+    """V2.8.2: Added link_type per C.5."""
     link_id: str
-    from_id: str
-    to_id: str
-    stale_reason: str
+    from_step: str
+    to_step: str
+    link_type: str  # V2.8.2: e.g., "derives_from"
+    reason: str
+    stale_since: datetime
 
 @router.post("/{workflow_id}/artifacts/{artifact_id}/acknowledge-stale")
 async def acknowledge_stale(
@@ -4312,13 +4347,13 @@ def assess_materiality(
 
 ---
 
-*SOLVER Technical Specification V2.8.0*
+*SOLVER Technical Specification V2.8.1*
 
 *Consolidated from Instance 1 Steps 1-3 outputs with implementation code, test scenarios, orchestration primitives, and architecture contract implementation items.*
 
 *MVP Scope: Steps 1-3 with full Pass 1 methodology and Pass 2 artifact production.*
 
-*V2.8.0 adds: methodology reference appendix (Appendix D).*
+*V2.8.1 adds: unified progress schema, complete staleness schema, message response clarification.*
 
 ---
 
@@ -4427,12 +4462,17 @@ Response from `GET /workflows/{id}`:
 
 ### C.3 Progress Response
 
-Response from `GET /workflows/{id}/progress`:
+Response from `GET /workflows/{id}/progress` (V2.8.2 unified schema):
+
+**V2.8.2 clarification:** `current_step` is the step name (string), `current_step_number` is the 1-indexed position (integer).
 
 ```json
 {
   "workflow_id": "550e8400-e29b-41d4-a716-446655440000",
   "state_version": 7,
+  "current_pass": "definition",
+  "current_step": "requirements",
+  "current_step_number": 2,
   "steps": [
     {
       "step_number": 1,
@@ -4441,9 +4481,12 @@ Response from `GET /workflows/{id}/progress`:
       "status": "approved",
       "phase": "complete",
       "has_artifact": true,
+      "artifact_id": "660e8400-e29b-41d4-a716-446655440001",
+      "artifact_revision": 1,
       "is_stale": false,
       "started_at": "2025-01-04T10:00:00.000Z",
-      "completed_at": "2025-01-04T10:30:00.000Z"
+      "completed_at": "2025-01-04T10:30:00.000Z",
+      "updated_at": "2025-01-04T10:30:00.000Z"
     },
     {
       "step_number": 2,
@@ -4452,9 +4495,12 @@ Response from `GET /workflows/{id}/progress`:
       "status": "awaiting_review",
       "phase": "complete",
       "has_artifact": true,
+      "artifact_id": "660e8400-e29b-41d4-a716-446655440002",
+      "artifact_revision": 1,
       "is_stale": false,
       "started_at": "2025-01-04T10:30:00.000Z",
-      "completed_at": null
+      "completed_at": null,
+      "updated_at": "2025-01-04T11:00:00.000Z"
     },
     {
       "step_number": 3,
@@ -4463,9 +4509,12 @@ Response from `GET /workflows/{id}/progress`:
       "status": "not_started",
       "phase": "received",
       "has_artifact": false,
+      "artifact_id": null,
+      "artifact_revision": null,
       "is_stale": false,
       "started_at": null,
-      "completed_at": null
+      "completed_at": null,
+      "updated_at": null
     }
   ]
 }
@@ -4528,19 +4577,31 @@ Response from `GET /workflows/{id}/artifacts/{aid}`:
 
 ### C.5 Staleness Report
 
-Response from `GET /workflows/{id}/staleness`:
+Response from `GET /workflows/{id}/staleness` (V2.8.1 complete schema):
 
 ```json
 {
   "workflow_id": "550e8400-e29b-41d4-a716-446655440000",
   "state_version": 7,
+  "position": {
+    "instance_number": 1,
+    "step_number": 2,
+    "step_name": "requirements",
+    "pass_type": "definition",
+    "status": "awaiting_review",
+    "phase": "complete"
+  },
   "has_stale_artifacts": true,
   "can_complete": false,
+  "blocking_reasons": [
+    "1 stale artifact(s) require re-execution"
+  ],
   "stale_artifacts": [
     {
       "artifact_id": "770e8400-e29b-41d4-a716-446655440002",
       "step_number": 3,
       "step_name": "objectives",
+      "pass_type": "definition",
       "artifact_type": "objectives",
       "stale_reason": "upstream_step_2_revised",
       "stale_since": "2025-01-04T12:30:00.000Z",
@@ -4549,15 +4610,24 @@ Response from `GET /workflows/{id}/staleness`:
   ],
   "stale_trace_links": [
     {
-      "from_step": 2,
-      "to_step": 3,
-      "stale_reason": "source_step_2_revised"
+      "link_id": "880e8400-e29b-41d4-a716-446655440003",
+      "from_step": "2",
+      "to_step": "3",
+      "link_type": "derives_from",
+      "reason": "source_step_2_revised",
+      "stale_since": "2025-01-04T12:30:00.000Z"
     }
   ]
 }
 ```
 
-**Gating field:** `can_complete` is false if any stale artifact is `blocking: true`. This field drives `canAct` on the frontend.
+**Gating field (V2.8.2):** `can_complete` is false if:
+- Any stale artifact has `blocking: true`, OR
+- Any stale trace links exist
+
+This field drives `canAct` on the frontend.
+
+**V2.8.1 additions:** `position`, `blocking_reasons`, per-artifact `pass_type`, expanded `stale_trace_links` fields.
 
 ### C.6 Action Request Schemas
 
@@ -4607,7 +4677,7 @@ These schemas are versioned with the Technical Specification. If a field is adde
 - **Required field added:** Minor version bump (clients must update)
 - **Field removed or type changed:** Major version bump (breaking)
 
-Current schema version: **V2.8.0**
+Current schema version: **V2.8.1**
 
 ---
 

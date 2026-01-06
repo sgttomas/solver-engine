@@ -146,7 +146,7 @@ These rules ensure the document set remains internally consistent:
 Format: {Document Name} V{X.Y} §{Section}
 Examples:
   - Architectural Contract V3.4 §9.2
-  - Technical Specification V2.8.0 §7.3
+  - Technical Specification V2.8.2 §7.3
   - Design Intent V1.1 §4.1 (Key Decisions)
 ```
 

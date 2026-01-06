@@ -9,7 +9,7 @@
 **Document Hierarchy:**
 - **Design Intent (Why²):** `SOLVER-Design-Intent-v1.1.md` — Design rationale, first principles
 - **Architectural Contract (Why):** `SOLVER-Architectural-Contract-v3.4.md` — What must be true
-- **Technical Specification (What):** `4_SOLVER-Technical-Spec-V2.8.0.md` — Schemas, endpoints, code
+- **Technical Specification (What):** `4_SOLVER-Technical-Spec-V2.8.2.md` — Schemas, endpoints, code
 - **This document (How):** Development Directive — Build phases, packages, execution order
 
 ---
@@ -714,7 +714,7 @@ expect(guard.lastContiguous).toBe(5);  // Drained
 
 **Deliverables:**
 - `useCanAct` hook implementing R3-R6, R14-R15
-- `useCanMessage` hook per Architectural Contract V3.4 §14.3 and Technical Specification V2.8.0 §16.7
+- `useCanMessage` hook per Architectural Contract V3.4 §14.3 and Technical Specification V2.8.2 §16.7
 - Disabled state with user-visible reasons
 - Background refetch detection via `isFetching` on ALL canonical queries
 

@@ -128,11 +128,23 @@ class Artifact(Base):
         nullable=True,
     )
 
-    # Timestamp
+    # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
         server_default=text("NOW()"),
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("NOW()"),
+    )
+
+    # Traceability (per Tech Spec V2.8.0 Appendix C.4)
+    trace_id: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
     )
 
     # Lineage tracking (Contract §7 - insert-per-revision model)

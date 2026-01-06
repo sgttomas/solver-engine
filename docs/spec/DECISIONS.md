@@ -90,3 +90,79 @@ workflow_events table, and SSE from_sequence replay are being implemented.
 **Mitigation:** Re-verify after Package 6.6 adds SSE heartbeats/idle-timeout handling; capture the automatic reconnect transition without reload.
 **Status:** Verification deferred; implementation unchanged.
 **Approved by:** Architect (Ryan Tufts)
+
+## 2026-01-06 - P6.5 Artifact Content Endpoint Gap (RESOLVED)
+**Original Deviation:** Backend `GET /workflows/{id}/artifacts/{aid}` endpoint documented in Tech Spec Appendix C.4 but not implemented. Artifact display component shows placeholder when no content provided.
+**Document:** docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md Appendix C.4
+**Resolution:** Endpoint implemented per Appendix C.4 spec. Migration 005 adds `updated_at` (with DB trigger) and `trace_id` columns. Response shape matches C.4 exactly with `artifact_type` = `step_name` and methodology markdown wrapped in `content_jsonb`.
+**Status:** Endpoint implemented; deviation resolved.
+**Approved by:** Architect (Ryan Tufts)
+
+## 2026-01-06 - Tech Spec V2.8.1: API Schema Alignment
+**Change Type:** Spec Amendment + Implementation Alignment
+**Document:** docs/spec/4_SOLVER-Technical-Spec-V2.8.1.md
+**Note:** The Technical Spec file was later renamed to `docs/spec/4_SOLVER-Technical-Spec-V2.8.2.md` (2026-01-06) to reflect subsequent amendments; this entry preserves the original V2.8.1 reference for historical accuracy.
+
+**Background:** Co-Developer-1 identified three spec divergences during Package 6.5 implementation review:
+1. Message endpoint returned `WorkflowResponse` but spec §16.7 defines `{message_id, status}`
+2. Progress response had internal inconsistency between §9.1 and Appendix C.3
+3. Staleness response missing fields from Appendix C.5
+
+**Governance Decision:**
+
+| Endpoint | Action | Rationale |
+|----------|--------|-----------|
+| Message | Align impl to spec | Minimal `{message_id, status}` is correct per §16.7 (non-state-mutating action) |
+| Progress | Amend spec | §9.1 and C.3 had inconsistent field names; unified to single canonical schema |
+| Staleness | Align impl to spec | Add missing fields per C.5: `has_stale_artifacts`, `position`, `blocking_reasons`; rename `stale_links` → `stale_trace_links` |
+
+**Changes Made:**
+- Tech Spec bumped V2.8.0 → V2.8.1
+- Backend: MessageResponse, StepProgressEntry (+ timestamps), StaleArtifactEntry (+ artifact_type, blocking), StalenessResponse (+ has_stale_artifacts, stale_trace_links)
+- Frontend: types.ts, api.ts, use-message.ts updated to match
+- Contract tests: 10 tests added (test_api_contracts.py) to verify model shapes
+
+**Verification:** All contract tests pass (10/10), frontend build passes, backend lint passes.
+**Approved by:** Architect (Ryan Tufts)
+
+## 2026-01-06 - Tech Spec V2.8.2: Schema Remediation Pass 2
+**Change Type:** Spec Amendment + Bug Fix
+**Document:** docs/spec/4_SOLVER-Technical-Spec-V2.8.2.md
+
+**Background:** Code review identified issues with V2.8.1 alignment:
+1. Message endpoint returned random UUID instead of actual persisted message ID
+2. §9.3 claimed all responses include position, contradicting §16.7 minimal message response
+3. §9.4 still used old field names (stale_links) and lacked V2.8.1 schema fields
+4. C.3 showed numeric current_step but code uses string + current_step_number
+5. C.5 can_complete semantics didn't document trace link blocking
+
+**Issues Resolved:**
+
+| # | Issue | Resolution |
+|---|-------|------------|
+| 1 | Message ID bug | Backend returns actual `message.id` from persisted Message record |
+| 2 | §9.3 contradiction | Added exception clause for message endpoint minimal response |
+| 3 | §9.4 outdated | Aligned with C.5: `stale_trace_links`, `has_stale_artifacts`, `blocking` |
+| 4 | C.3 schema | `current_step` is string, `current_step_number` is integer |
+| 5 | C.5 semantics | Documented trace links as blocking (not just artifacts with `blocking=true`) |
+
+**Changes Made:**
+- Tech Spec renamed V2.8.1 → V2.8.2
+- Backend: `workflow_service.send_message()` returns message; `routes/workflows.py` uses `message.id`
+- Cross-references updated in CLAUDE.md, AGENTS.md, README.md, and spec docs
+
+**Verification:** Backend syntax verified, contract tests pass, frontend build passes.
+**Approved by:** Architect (Ryan Tufts)
+
+## 2026-01-06 - P6.5 Workflow List + Streaming Display Adjustment
+**Change Type:** Implementation Deviation (Directive)
+**Document:** docs/spec/5_SOLVER-Development-Directive-v1.5.1.md §Package 6.5 Deliverables ("Workflow list page", "Streaming artifact display")
+
+**Background:** Package 6.5 implementation proceeded without a backend list endpoint and with SSE streaming reserved for Package 6.6. The UI shipped a workflow launcher (create + navigate by ID) instead of a list view, and the artifact display renders provided content but does not stream live updates.
+
+**Decision:** Accept launcher-only UI and non-streaming artifact display for Package 6.5; defer list endpoint and live artifact streaming to later packages.
+
+**Mitigation:** Provide create + navigate-by-ID flow; artifact display remains ready to render streamed content once SSE wiring lands in Package 6.6.
+
+**Status:** Approved for Package 6.5; revisit in Package 6.6/7.x as needed.
+**Approved by:** Architect (Ryan Tufts)

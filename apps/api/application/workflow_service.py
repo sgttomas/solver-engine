@@ -130,6 +130,29 @@ class StateVersionMismatchError(Exception):
         )
 
 
+class ArtifactNotFoundError(Exception):
+    """Raised when artifact is not found.
+
+    Per Tech Spec V2.8.0 Appendix C.4: Results in 404.
+    """
+
+    def __init__(self, artifact_id: UUID):
+        self.artifact_id = artifact_id
+        super().__init__(f"Artifact not found: {artifact_id}")
+
+
+class ArtifactNotBelongError(Exception):
+    """Raised when artifact doesn't belong to specified workflow.
+
+    Per Tech Spec V2.8.0 Appendix C.4: Results in 400.
+    """
+
+    def __init__(self, artifact_id: UUID, workflow_id: str):
+        self.artifact_id = artifact_id
+        self.workflow_id = workflow_id
+        super().__init__(f"Artifact {artifact_id} does not belong to workflow {workflow_id}")
+
+
 class WorkflowService:
     """Service for workflow lifecycle operations.
 
@@ -282,6 +305,38 @@ class WorkflowService:
         """
         # For P4.1, resume is identical to get (DB-only)
         return await self.get_workflow(workflow_id)
+
+    async def get_artifact(
+        self,
+        workflow_id: str,
+        artifact_id: UUID,
+    ) -> tuple[Artifact, Workflow]:
+        """Get artifact by ID, validating it belongs to workflow.
+
+        Per Tech Spec V2.8.0 Appendix C.4.
+
+        Args:
+            workflow_id: Workflow ID (external string ID)
+            artifact_id: Artifact UUID
+
+        Returns:
+            Tuple of (Artifact, Workflow)
+
+        Raises:
+            WorkflowNotFoundError: If workflow doesn't exist
+            ArtifactNotFoundError: If artifact doesn't exist
+            ArtifactNotBelongError: If artifact doesn't belong to workflow
+        """
+        workflow, _ = await self.get_workflow(workflow_id)
+
+        artifact = await self._artifact_repo.get_by_id(artifact_id)
+        if artifact is None:
+            raise ArtifactNotFoundError(artifact_id)
+
+        if artifact.workflow_id != workflow.id:
+            raise ArtifactNotBelongError(artifact_id, workflow_id)
+
+        return artifact, workflow
 
     # =========================================================================
     # P4.2: Action Endpoints (DB-only)
@@ -718,11 +773,14 @@ class WorkflowService:
         workflow_id: str,
         content: str,
         actor_id: Optional[str] = None,
-    ) -> tuple[Workflow, StepExecution]:
+    ) -> tuple[Workflow, StepExecution, Message]:
         """Send message without changing workflow state.
 
         Gate C: Status remains AWAITING_REVIEW.
         Message is persisted for conversation history.
+
+        Per Tech Spec V2.8.2 §16.7: Message action is non-state-mutating,
+        returns minimal {message_id, status} response at API layer.
 
         Args:
             workflow_id: Unique workflow identifier
@@ -730,7 +788,8 @@ class WorkflowService:
             actor_id: Actor performing action (defaults to workflow.created_by)
 
         Returns:
-            Tuple of (Workflow, StepExecution)
+            Tuple of (Workflow, StepExecution, Message) - Message contains persisted ID
+            for API response per §16.7.
 
         Raises:
             WorkflowNotFoundError: If workflow doesn't exist
@@ -770,7 +829,7 @@ class WorkflowService:
         )
 
         await self._session.flush()
-        return workflow, step_execution
+        return workflow, step_execution, message
 
     async def submit_clarification(
         self,

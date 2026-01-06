@@ -79,7 +79,7 @@ This project uses a four-document taxonomy that separates concerns by the questi
 | **Change Management** | Governance | `SOLVER-Change-Management-v2.0.1.md` |
 | **Design Intent** | Why² | `SOLVER-Design-Intent-v1.1.md` |
 | **Architectural Contract** | Why | `SOLVER-Architectural-Contract-v3.4.md` |
-| **Technical Specification** | What | `4_SOLVER-Technical-Spec-V2.8.0.md` |
+| **Technical Specification** | What | `4_SOLVER-Technical-Spec-V2.8.2.md` |
 | **Development Directive** | How | `SOLVER-Development-Directive-v1.5.1.md` |
 
 ### When to Consult Each Document

@@ -93,7 +93,7 @@ Authoritative docs in `docs/spec/` (read in order for full context):
 | 1 | [SOLVER-README](docs/spec/1_SOLVER-README-v1.0.md) | Project orientation |
 | 2 | [Design-Intent](docs/spec/2_SOLVER-Design-Intent-v1.1.md) | Why² — design rationale |
 | 3 | [Architectural-Contract](docs/spec/3_SOLVER-Architectural-Contract-v3.4.md) | Why — invariants, constraints |
-| 4 | [Technical-Spec](docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md) | What — schemas, endpoints |
+| 4 | [Technical-Spec](docs/spec/4_SOLVER-Technical-Spec-V2.8.2.md) | What — schemas, endpoints |
 | 5 | [Development-Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.1.md) | How — phases, gates |
 | 6 | [Change-Management](docs/spec/6_SOLVER-Change-Management-v2.0.1.md) | Process — change control |
 | 7 | [Sr-Dev-init](docs/spec/7_SOLVER-Sr-Dev-init.md) | Senior developer initialization |
