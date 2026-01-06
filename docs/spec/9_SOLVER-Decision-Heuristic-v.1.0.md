@@ -1,17 +1,14 @@
-Decisions Heuristic
-
-EXPERIMENTAL!!!!
-
-NOT FOR USE!!!!!!!
-
-This document is an experiment in defining a canonical decision heuristic within the SOLVER paradigm.  This document is not to be read or used or revised unless explicitly directed to by the Architect.
-
-
 # SOLVER Decision Heuristic Framework
 
-**Version:** 1.0  
-**Status:** Draft for review  
+**Version:** 1.0
+**Status:** EXPERIMENTAL — Not Authoritative
 **Purpose:** Operational framework for agent decision-making with human oversight
+
+> ⚠️ **EXPERIMENTAL DOCUMENT**
+>
+> This document is **not authoritative** and exists for **iterative improvement only**.
+> It is an experiment in defining a canonical decision heuristic within the SOLVER paradigm.
+> Do not read, use, or revise unless explicitly directed by the Architect.
 
 ---
 

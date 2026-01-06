@@ -54,5 +54,8 @@ Common workflow (from README/CLAUDE):
 - `docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md`
 - `docs/spec/5_SOLVER-Development-Directive-v1.5.1.md`
 - `docs/spec/6_SOLVER-Change-Management-v2.0.1.md`
+- `docs/spec/7_SOLVER-Sr-Dev-init.md`
+- `docs/spec/8_SOLVER-Co-Dev-init.md`
+- `docs/spec/9_SOLVER-Decision-Heuristic-v.1.0.md` *(experimental, not authoritative)*
 - `docs/spec/DECISIONS.md`
 - `docs/spec/FREEZE-RECORD.md`

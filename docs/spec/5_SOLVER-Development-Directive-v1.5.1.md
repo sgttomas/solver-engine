@@ -714,7 +714,7 @@ expect(guard.lastContiguous).toBe(5);  // Drained
 
 **Deliverables:**
 - `useCanAct` hook implementing R3-R6, R14-R15
-- `useCanMessage` hook per §3.3.2
+- `useCanMessage` hook per Architectural Contract V3.4 §14.3 and Technical Specification V2.8.0 §16.7
 - Disabled state with user-visible reasons
 - Background refetch detection via `isFetching` on ALL canonical queries
 

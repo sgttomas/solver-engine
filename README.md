@@ -322,7 +322,7 @@ python tools/validate_schemas.py   # Schema validation
 | [Change Management](docs/spec/6_SOLVER-Change-Management-v2.0.1.md) | Governance — change control |
 | [Sr Dev Init](docs/spec/7_SOLVER-Sr-Dev-init.md) | Senior developer initialization |
 | [Co-Dev Init](docs/spec/8_SOLVER-Co-Dev-init.md) | Co-developer initialization |
-| [Decision Heuristic](docs/spec/9_SOLVER-Decision-Heuristic-v.1.0.md) | Decision criteria |
+| [Decision Heuristic](docs/spec/9_SOLVER-Decision-Heuristic-v.1.0.md) | Decision criteria *(experimental, not authoritative)* |
 | [Decisions Log](docs/spec/DECISIONS.md) | Approved deviations and notes |
 | [Freeze Record](docs/spec/FREEZE-RECORD.md) | Release freeze history |
 

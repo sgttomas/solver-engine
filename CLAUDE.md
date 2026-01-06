@@ -55,7 +55,7 @@ apps/api/
 apps/web/
 ├── app/              # Next.js App Router pages
 ├── components/       # React components
-├── hooks/            # React hooks (connection manager)
+├── hooks/            # React hooks (SSE connection, action gating)
 ├── lib/              # Utilities (api, backoff, SSE)
 └── stores/           # Zustand state stores
 ```
@@ -98,7 +98,7 @@ Authoritative docs in `docs/spec/` (read in order for full context):
 | 6 | [Change-Management](docs/spec/6_SOLVER-Change-Management-v2.0.1.md) | Process — change control |
 | 7 | [Sr-Dev-init](docs/spec/7_SOLVER-Sr-Dev-init.md) | Senior developer initialization |
 | 8 | [Co-Dev-init](docs/spec/8_SOLVER-Co-Dev-init.md) | Co-developer initialization |
-| 9 | [Decision-Heuristic](docs/spec/9_SOLVER-Decision-Heuristic-v.1.0.md) | Decision criteria |
+| 9 | [Decision-Heuristic](docs/spec/9_SOLVER-Decision-Heuristic-v.1.0.md) | Decision criteria *(experimental, not authoritative)* |
 | - | [DECISIONS](docs/spec/DECISIONS.md) | Approved deviations and notes |
 | - | [FREEZE-RECORD](docs/spec/FREEZE-RECORD.md) | Release freeze history |
 
