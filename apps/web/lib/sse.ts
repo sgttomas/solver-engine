@@ -1,10 +1,16 @@
 /**
- * SOLVER Web - SSE Client
+ * SOLVER Web - SSE Constants
  *
- * Server-Sent Events client for streaming per Doc 2 Section 9.3.
+ * Server-Sent Events constants for streaming per Architectural Contract v3.4.
+ * Package 6.2: Connection Manager
+ *
+ * NOTE: EventSource creation and URL building are INTERNAL to useConnectionManager hook.
+ * This enforces §12.4 Reconnection Cursor Invariant at module boundary -
+ * external code cannot pass arbitrary fromSequence values.
  */
 
-// stub - future phase will implement
-export function createSSEConnection(workflowId: string) {
-  // TODO: Implement SSE connection
-}
+/**
+ * SSE stream endpoint path template.
+ * Full URL: ${API_BASE_URL}${SSE_STREAM_PATH}/${workflowId}/stream
+ */
+export const SSE_STREAM_PATH = '/api/v1/workflows';

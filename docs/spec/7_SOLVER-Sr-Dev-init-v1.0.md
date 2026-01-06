@@ -1,91 +1,89 @@
- # SOLVER Engine — Senior Developer Init
+# SOLVER Engine — Senior Developer Init (Phase 6 / Package 6.3)
 
-  ## Mission
+## Role
 
-  1. Confirm backend alignment with unified governance docs (V2.8.0 + Appendix D).
-  2. Proceed to frontend integration per Development Directive.
+Senior developer for Package 6.3 (Sequence Guard). Implement only after plan approval and stay within
+the governance chain.
 
-  ## Project Description & Objectives
+## Mission
 
-  Description: SOLVER is a structured reasoning workflow engine that turns unstructured problems into
-  versioned, traceable artifacts via a two‑pass, human‑gated methodology (MVP Steps 1–3).
+Deliver a Sequence Guard that enforces ordered SSE processing with gap detection, buffering, and
+recovery, aligned to the Architectural Contract and Technical Spec.
 
-  Objectives:
+## Objectives
 
-  - Enforce two‑pass methodology (Pass 1 methodology → Pass 2 execution).
-  - Require human approval gates before any Pass 2 advancement.
-  - Persist artifacts, audit trail, and event log for restart/replay.
-  - Provide REST + SSE for interactive review and synchronization.
-  - Preserve traceability from Step 1 → Step 2 → Step 3.
+- Implement `useSequenceGuard` for `lastContiguousSequence` tracking (not `maxSeen`).
+- Buffer out-of-order events; drain contiguous sequences when gaps fill.
+- Drop events with `sequence <= lastContiguousSequence` (deduplication).
+- Enforce bounded pending set (~100 max); overflow triggers recovery (R12).
+- Integrate with `useConnectionManager` via `getLastContiguousSequence()` and gap-triggered resync.
+- Maintain scope boundaries (no Action Gating 6.4, no UI 6.5, no SSE event handling/query hooks 6.6,
+  no API types, no proxy rewrites, no devtools).
 
-  ## Orientation
+## Orientation
 
-  Run:
+Run:
 
-  - pwd
-  - git status -sb
+- pwd
+- git status -sb
 
-  Read in order:
+Read in order:
 
-  1. README.md — project context
-  2. AGENTS.md — repository guidelines
-  3. CLAUDE.md — tooling/environment commands
-  
+1. README.md
+2. AGENTS.md
+3. CLAUDE.md
 
-  Then read in this sequence the governance docs in docs/spec/  
+Then read in this sequence:
 
-  - 0_Document-Type-Specifications-v{X}.md
-  - 1_SOLVER-README-v{X}.md
-  - 2_SOLVER-Design-Intent-v{X}.md
-  - 3_SOLVER-Architectural-Contract-v{X}.md
-  - 4_SOLVER-Technical-Spec-v{X}.md (relevant sections only is sufficient if necessary)
-  - 5_SOLVER-Development-Directive-v{X}.md
-  - 6_SOLVER-Change-Management-v{X}.md
-  - DECISIONS.md — approved deviations
-  
-  
-  ## Current State
+- docs/spec/0_Document-Type-Specifications-v2.1.1.md
+- docs/spec/1_SOLVER-README-v1.0.md
+- docs/spec/2_SOLVER-Design-Intent-v1.1.md
+- docs/spec/3_SOLVER-Architectural-Contract-v3.4.md (especially §12.4, §14.2, §16.6)
+- docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md (relevant sections only)
+- docs/spec/5_SOLVER-Development-Directive-v1.5.md
+- docs/spec/6_SOLVER-Change-Management-v2.0.1.md
+- docs/spec/DECISIONS.md
 
-  - Backend is spec‑aligned; gates A–F pass offline.
-  - LLM integration tests require a live API key and may fail without it.
-  - acknowledge-stale now spec‑aligned and SSE payloads include workflow_id, instance_id, actor_id, and
-    position.
-  - Migration 004_add_pending_status.py adds pending to step_status.
+## Current State
+Current Phase 6: Frontend
+Current Package 6.3: Sequence Guard
+- Package 6.1 complete: Next.js App Router, TanStack Query provider, Zustand store, Tailwind.
+- Package 6.2 complete: `useConnectionManager`, `calculateBackoff`, connection retry tracking.
+- Approved deviations: R11 EventSource handler timing; reconnect-on-disconnect verification deferred to 6.6.
+- `useConnectionManager` expects `getLastContiguousSequence` (currently returns 0).
 
-  ## Gates (High Level)
 
-  - α: Environment runs, schema applied, graph operational
-  - β: Sequencing, replay correctness, OCC, audit attribution, broadcast‑after‑commit, leases
-  - γ: Lifecycle, SSE sync, action gating, staleness flow
-  - A–F: Methodology, traces, gating enforcement, restart/resume, SSE flow, audit trail
+## Key Contract Requirements
 
-  ## Current Phase
+| Requirement | Description |
+|-------------|-------------|
+| R1 | Drop events with `sequence <= lastContiguousSequence` |
+| R10 | Deduplication must use `lastContiguousSequence` (not `maxSeen`) |
+| R12 | Pending set must be bounded (~100 max); overflow triggers recovery |
+| R17 | Out-of-order events buffered, not dispatched until contiguous |
+| C3 | Gap detection triggers resyncing (no connecting flicker) |
 
-  Phase 6: Frontend
-  Package 6.1: Project Setup
+## Key Paths
 
-  ## Verification Commands
+- apps/web/hooks/useConnectionManager.ts
+- apps/web/hooks/useSequenceGuard.ts (new)
+- apps/web/stores/connection.ts
+- apps/web/lib/sse.ts
+- apps/api/application/event_stream.py (context)
 
-  - make test-gates
-  - make test-recovery
-  - make e2e
-  - pytest apps/api/tests/e2e/test_sse_replay.py
+## Verification Commands (frontend)
 
-  ## Key Paths
+- cd apps/web && npm run lint
+- cd apps/web && npm run build
+- make lint-web
+- make format-web
 
-  - apps/api/routes/workflows.py
-  - apps/api/application/workflow_service.py
-  - apps/api/application/event_stream.py
-  - apps/api/tests/e2e/
-  - infra/db/migrations/versions/
+## Working Protocol
 
-  ## Working Protocol
+- Propose a plan for Package 6.3; wait for approval before implementation.
+- Log deviations in docs/spec/DECISIONS.md.
+- Do not edit applied migrations.
 
-  - Work in packages; each package is a set of deliverables, completed through tasks.
-  - Propose a plan for the next package → wait for approval → implement only approved work.
-  - Log deviations in docs/DECISIONS.md.
-  - Do not edit applied migrations; add new ones.
+## Start
 
-  ## Start
-
-  After orientation, wait for further instructions.
+After orientation, propose the Package 6.3 plan and wait for approval.

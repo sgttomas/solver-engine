@@ -147,7 +147,7 @@ The system is designed for **stateless LLM interaction**; reasoning is made audi
 
 ```mermaid
 graph TD
-    User((User)) <--> FE[Frontend Layer<br/>Next.js 14 + Vercel AI SDK]
+    User((User)) <--> FE[Frontend Layer<br/>Next.js 14 + TanStack Query + Zustand]
     FE <--> API[API Layer<br/>FastAPI + SSE Streaming]
     API <--> ORCH[Orchestration Layer<br/>LangGraph State Machine]
     ORCH <--> LLM[LLM Layer<br/>Claude API, OpenAI API, or Gemini API]
@@ -157,7 +157,7 @@ graph TD
 
 | Layer | Technology | Role |
 |-------|------------|------|
-| Frontend | Next.js 14+, Vercel AI SDK, assistant-ui | User interface, SSE client |
+| Frontend | Next.js 14+, TanStack Query, Zustand, Tailwind | User interface, SSE client |
 | API | FastAPI, Python 3.11+ | REST endpoints, SSE streaming |
 | Orchestration | LangGraph 1.0+ | State machine, interrupts, checkpointing |
 | Persistence | PostgreSQL + pgvector | Artifacts, audit logs, embeddings |
@@ -189,8 +189,9 @@ solver-engine/
 │   └── web/                    # Next.js frontend
 ├── packages/
 │   ├── contracts/              # Shared schemas
-│   └── instance_packs/
-│       └── instance_0/         # Seed methodology pack
+│   ├── instance_packs/
+│   │   └── instance_0/         # Seed methodology pack
+│   └── shared/                 # Shared types/utilities
 ├── infra/
 │   ├── docker/
 │   │   └── docker-compose.yml
@@ -217,7 +218,7 @@ Endpoints listed here `docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md`.
 
 ### SSE Stream
 
-`GET /workflows/{id}/stream?from_sequence=N` — Structured events during execution:
+`GET /api/v1/workflows/{id}/stream?from_sequence=N` — Structured events during execution:
 
 Events are persisted to the database with monotonic sequence numbers. The `from_sequence` parameter enables reliable reconnection by replaying only events with `sequence > N`. Late-connecting clients receive the full event history.
 
@@ -319,6 +320,11 @@ python tools/validate_schemas.py   # Schema validation
 | [Technical Spec](docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md) | What — Schemas, endpoints |
 | [Development Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.md) | How — Phases, packages, gates |
 | [Change Management](docs/spec/6_SOLVER-Change-Management-v2.0.1.md) | Governance — change control |
+| [Sr Dev Init](docs/spec/7_SOLVER-Sr-Dev-init-v1.0.md) | Senior developer initialization |
+| [Co-Dev Init](docs/spec/8_SOVLER-Co-Dev-init-v1.0.md) | Co-developer initialization |
+| [Decision Heuristic](docs/spec/9_SOLVER-Decision-Heuristic-v.1.md) | Decision criteria |
+| [Decisions Log](docs/spec/DECISIONS.md) | Approved deviations and notes |
+| [Freeze Record](docs/spec/FREEZE-RECORD.md) | Release freeze history |
 
 ---
 

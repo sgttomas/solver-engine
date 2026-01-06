@@ -74,3 +74,19 @@ workflow_events table, and SSE from_sequence replay are being implemented.
 **Document:** docs/spec/3_solver-technical-spec.md §9.2 SSE Event Types; Appendix A (Gate E)
 **Reason:** MVP implements deterministic SSE sequence at API boundaries; true streaming during LLM generation is deferred.
 **Approved by:** Architect
+
+## 2026-01-05 - P6.2 R11 EventSource Handler Timing
+**Deviation:** R11 requires handlers registered BEFORE connect; EventSource connects immediately on construction.
+**Document:** docs/spec/3_SOLVER-Architectural-Contract-v3.4.md §14.1 (R11)
+**Reason:** Native browser EventSource API initiates connection synchronously during `new EventSource(url)` constructor call. There is no pre-connect hook to register handlers beforehand. The implementation attaches handlers synchronously in the same JavaScript tick after construction, which is functionally equivalent since no events can fire until the current synchronous execution completes.
+**Mitigation:** Handlers defined as functions before construction, attached immediately after in same tick. Guards check `internals.eventSource !== eventSource` to reject stale callbacks.
+**Status:** Best-effort compliance accepted.
+**Approved by:** Architect (Ryan Tufts)
+
+## 2026-01-06 - P6.2 Verification: Reconnect-on-disconnect Evidence Deferred
+**Deviation:** Package 6.2 verification criterion "Reconnects on disconnect" could not be reliably verified without a page reload.
+**Document:** docs/spec/5_SOLVER-Development-Directive-v1.5.md §Package 6.2 Verification
+**Reason:** EventSource did not consistently emit an error on idle stream disconnects; the client remained "connected" when the API was stopped or the network was set Offline, and the required automatic `connected → reconnecting → connected` transition could not be captured without a reload (which invalidates the test).
+**Mitigation:** Re-verify after Package 6.6 adds SSE heartbeats/idle-timeout handling; capture the automatic reconnect transition without reload.
+**Status:** Verification deferred; implementation unchanged.
+**Approved by:** Architect (Ryan Tufts)

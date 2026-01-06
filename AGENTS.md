@@ -4,9 +4,9 @@
 SOLVER is a Python/FastAPI backend with a Next.js frontend. Key paths:
 - `apps/api/`: backend source (domain, application, infrastructure, orchestration, routes).
 - `apps/web/`: Next.js frontend (TanStack Query, Zustand, Tailwind).
-- `packages/`: shared contracts and instance packs.
+- `packages/`: shared contracts, instance packs, and shared types/utilities.
 - `infra/`: Docker and DB migrations (`infra/db/migrations/`).
-- `docs/spec/`: authoritative specs; `docs/spec/DECISIONS.md` logs approved deviations.
+- `docs/spec/`: authoritative specs; `docs/spec/DECISIONS.md` logs approved deviations; `docs/spec/FREEZE-RECORD.md` tracks freezes.
 - `tests/` and `apps/api/tests/`: unit/integration/e2e tests.
 
 ## Build, Test, and Development Commands
@@ -15,9 +15,9 @@ Common workflow (from README/CLAUDE):
 - `make migrate` — apply DB migrations.
 - `make dev-api` — run API at `http://localhost:8000`.
 - `make dev-web` — run Next.js at `http://localhost:3000`.
-- `make test` / `make test-unit` / `make test-integration` — pytest suites.
+- `make test` / `make test-unit` / `make test-integration` — API pytest suites.
 - `make test-gates`, `make test-recovery`, `make e2e` — gate verification.
-- `make lint` / `make format` — ruff linting/formatting (API).
+- `make lint` / `make format` — ruff + mypy linting, ruff formatting (API).
 - `make lint-web` / `make format-web` — ESLint/Prettier (frontend).
 - `python tools/validate_schemas.py` — schema validation.
 

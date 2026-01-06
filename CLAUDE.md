@@ -22,7 +22,7 @@ make dev-api                    # Start API server (localhost:8000)
 make dev-web                    # Start Next.js dev server (localhost:3000)
 
 # Testing
-make test                       # Run all tests
+make test                       # Run API tests
 make test-unit                  # Unit tests only
 make test-integration           # Integration tests only
 make test-gates                 # Gate C (gating enforcement)
@@ -55,7 +55,8 @@ apps/api/
 apps/web/
 ├── app/              # Next.js App Router pages
 ├── components/       # React components
-├── lib/              # Utilities (api.ts, utils.ts)
+├── hooks/            # React hooks (connection manager)
+├── lib/              # Utilities (api, backoff, SSE)
 └── stores/           # Zustand state stores
 ```
 
@@ -78,8 +79,8 @@ apps/web/
 | ArtifactService | `application/artifact_service.py` | Creates/manages artifact revisions |
 | Graph | `orchestration/graph.py` | LangGraph state machine with interrupt gates |
 | Nodes | `orchestration/nodes.py` | Step execution logic |
-| DB Models | `infrastructure/db/models.py` | SQLAlchemy ORM (10 tables) |
-| LLM Adapter | `infrastructure/llm/adapter.py` | Multi-provider (Claude, OpenAI, Gemini) |
+| DB Models | `infrastructure/db/models/` | SQLAlchemy ORM (10 tables) |
+| LLM Adapter | `infrastructure/llm.py` | Multi-provider (Claude, OpenAI, Gemini) |
 
 
 ## Specification Documents
@@ -95,6 +96,11 @@ Authoritative docs in `docs/spec/` (read in order for full context):
 | 4 | Technical-Spec | What — schemas, endpoints |
 | 5 | Development-Directive | How — phases, gates |
 | 6 | Change-Management | Process — change control |
+| 7 | Sr-Dev-init | Senior developer initialization |
+| 8 | Co-Dev-init | Co-developer initialization |
+| 9 | Decision-Heuristic | Decision criteria |
+| - | DECISIONS | Approved deviations and notes |
+| - | FREEZE-RECORD | Release freeze history |
 
 **Authority order:** Specs (docs/spec/) → DECISIONS.md → README.md
 
@@ -110,8 +116,9 @@ Approved deviations from specs are recorded in `docs/spec/DECISIONS.md`.
 
 ## Environment
 
-Required in `apps/api/.env`:
+Required in `apps/api/.env` (at least one provider key):
 ```
+DEFAULT_LLM_PROVIDER=openai   # optional; defaults to openai
 ANTHROPIC_API_KEY=...   # OR OPENAI_API_KEY or GOOGLE_API_KEY
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
