@@ -80,7 +80,7 @@ This project uses a four-document taxonomy that separates concerns by the questi
 | **Design Intent** | Why² | `SOLVER-Design-Intent-v1.1.md` |
 | **Architectural Contract** | Why | `SOLVER-Architectural-Contract-v3.4.md` |
 | **Technical Specification** | What | `4_SOLVER-Technical-Spec-V2.8.0.md` |
-| **Development Directive** | How | `SOLVER-Development-Directive-v1.5.md` |
+| **Development Directive** | How | `SOLVER-Development-Directive-v1.5.1.md` |
 
 ### When to Consult Each Document
 
@@ -364,7 +364,7 @@ Documents reference each other by version. When updating:
 | Design Intent | v1.1 | 2025-01-04 |
 | Architectural Contract | v3.4 | 2025-01-04 |
 | Technical Specification | v2.8.0 | 2025-01-04 |
-| Development Directive | v1.5 | 2025-01-04 |
+| Development Directive | v1.5.1 | 2026-01-06 |
 
 ### Key Concepts
 

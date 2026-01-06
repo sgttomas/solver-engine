@@ -177,7 +177,7 @@ solver-engine/
 │       ├── 2_SOLVER-Design-Intent-v1.1.md          # Why² — Design rationale
 │       ├── 3_SOLVER-Architectural-Contract-v3.4.md # Why — Invariants
 │       ├── 4_SOLVER-Technical-Spec-V2.8.0.md       # What — Schemas, endpoints
-│       ├── 5_SOLVER-Development-Directive-v1.5.md  # How — Phases, gates
+│       ├── 5_SOLVER-Development-Directive-v1.5.1.md  # How — Phases, gates
 │       └── 6_SOLVER-Change-Management-v2.0.1.md    # Process — Change control
 ├── apps/
 │   ├── api/                    # FastAPI backend
@@ -274,9 +274,9 @@ Authority order and change control are defined in:
 
 ### With AI Coding Agent
 
-The [Development Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.md) provides complete instructions:
+The [Development Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.1.md) provides complete instructions:
 
-"Read docs/spec/5_SOLVER-Development-Directive-v1.5.md in full.
+"Read docs/spec/5_SOLVER-Development-Directive-v1.5.1.md in full.
 This is your authoritative operating manual."
 
 Work proceeds in packages comprised of deliverables.
@@ -318,11 +318,11 @@ python tools/validate_schemas.py   # Schema validation
 | [Design Intent](docs/spec/2_SOLVER-Design-Intent-v1.1.md) | Why² — Design rationale |
 | [Architectural Contract](docs/spec/3_SOLVER-Architectural-Contract-v3.4.md) | Why — Invariants, constraints |
 | [Technical Spec](docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md) | What — Schemas, endpoints |
-| [Development Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.md) | How — Phases, packages, gates |
+| [Development Directive](docs/spec/5_SOLVER-Development-Directive-v1.5.1.md) | How — Phases, packages, gates |
 | [Change Management](docs/spec/6_SOLVER-Change-Management-v2.0.1.md) | Governance — change control |
-| [Sr Dev Init](docs/spec/7_SOLVER-Sr-Dev-init-v1.0.md) | Senior developer initialization |
-| [Co-Dev Init](docs/spec/8_SOVLER-Co-Dev-init-v1.0.md) | Co-developer initialization |
-| [Decision Heuristic](docs/spec/9_SOLVER-Decision-Heuristic-v.1.md) | Decision criteria |
+| [Sr Dev Init](docs/spec/7_SOLVER-Sr-Dev-init.md) | Senior developer initialization |
+| [Co-Dev Init](docs/spec/8_SOLVER-Co-Dev-init.md) | Co-developer initialization |
+| [Decision Heuristic](docs/spec/9_SOLVER-Decision-Heuristic-v.1.0.md) | Decision criteria |
 | [Decisions Log](docs/spec/DECISIONS.md) | Approved deviations and notes |
 | [Freeze Record](docs/spec/FREEZE-RECORD.md) | Release freeze history |
 

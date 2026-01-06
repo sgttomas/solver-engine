@@ -45,3 +45,14 @@ Common workflow (from README/CLAUDE):
 ## Architecture & Spec References
 - Follow the authority chain in `docs/spec/` for invariants and API schemas.
 - Changes that diverge from spec must be recorded in `docs/spec/DECISIONS.md`.
+
+## Spec Quick Links
+- `docs/spec/0_Document-Type-Specifications-v2.1.1.md`
+- `docs/spec/1_SOLVER-README-v1.0.md`
+- `docs/spec/2_SOLVER-Design-Intent-v1.1.md`
+- `docs/spec/3_SOLVER-Architectural-Contract-v3.4.md`
+- `docs/spec/4_SOLVER-Technical-Spec-V2.8.0.md`
+- `docs/spec/5_SOLVER-Development-Directive-v1.5.1.md`
+- `docs/spec/6_SOLVER-Change-Management-v2.0.1.md`
+- `docs/spec/DECISIONS.md`
+- `docs/spec/FREEZE-RECORD.md`

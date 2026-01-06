@@ -1,4 +1,4 @@
-# SOLVER Development Directive v1.5
+# SOLVER Development Directive v1.5.1
 
 **Purpose:** Phased implementation plan for building SOLVER MVP (Steps 1-3), derived from architectural contracts and technical specification.
 
@@ -692,6 +692,7 @@ async def test_lease_exclusivity_under_contention():
 
 **Deliverables:**
 - `useSequenceGuard` hook
+- `useWorkflowConnection` provider hook (wires sequence guard + connection manager for 6.5/6.6)
 - `lastContiguousSequence` tracking (not `maxSeen`)
 - Gap detection and buffering
 - Overflow handling (R12 bounded pending)
@@ -1379,8 +1380,9 @@ WHERE workflow_id = 'wf-001' AND stale = true AND superseded_by IS NULL;
 | V1.3 | Fixed Phase 2 exit gates (β2→β2a); added β2a gate for replay query correctness; enhanced β5 with explicit actor attribution for replay; added `reconstruct_timeline_with_actors()` test; updated document references to v1.1/v3.3 |
 | V1.4 | Split β6 into β6a (Broadcast After Commit); β6a assigned to Phase 2, lease exclusivity folded into β4; removed Package 5.1.1; restructured Package 5.2 |
 | V1.5 | Added Golden Path Transcript appendix — deterministic trace through Steps 1-3 Pass 1 with expected events, state versions, and artifacts |
+| V1.5.1 | Clarified Package 6.3 deliverables to include `useWorkflowConnection` provider hook |
 
 ---
 
-*SOLVER Development Directive v1.5*
+*SOLVER Development Directive v1.5.1*
 *Phased implementation plan with lettered gates and deliverable packages*
