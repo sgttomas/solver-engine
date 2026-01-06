@@ -11,7 +11,7 @@ P4.4: Wire to orchestration (graph invocation, resume).
 import asyncio
 import json
 from datetime import datetime
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -19,32 +19,36 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from application.event_stream import HEARTBEAT_EVENT, SSEEvent, get_event_broker
 from application.workflow_service import (
-    WorkflowService,
-    WorkflowNotFoundError,
+    ArtifactNotBelongError,
+    ArtifactNotFoundError,
     InstanceNotFoundError,
     InvalidStateError,
+    StalenessBlocksApprovalError,
     StateVersionMismatchError,
-    ArtifactNotFoundError,
-    ArtifactNotBelongError,
+    WorkflowNotFoundError,
+    WorkflowService,
 )
-from application.event_stream import get_event_broker, SSEEvent, HEARTBEAT_EVENT
-from infrastructure.postgres import get_session, async_session_factory
-from infrastructure.db.repositories.workflow_event import WorkflowEventRepository
-from infrastructure.db.repositories.step_execution import StepExecutionRepository
-from infrastructure.db.checkpoint_saver import SolverCheckpointSaver
-from orchestration.graph import create_graph
 from domain.state import (
-    WorkflowState,
-    StepState,
-    PassType,
-    StepName,
     GatePolicy,
     HumanAction,
-    StepStatus as DomainStepStatus,
+    PassType,
+    StepName,
+    StepState,
+    WorkflowState,
+)
+from domain.state import (
     StepPhase as DomainStepPhase,
 )
-
+from domain.state import (
+    StepStatus as DomainStepStatus,
+)
+from infrastructure.db.checkpoint_saver import SolverCheckpointSaver
+from infrastructure.db.repositories.step_execution import StepExecutionRepository
+from infrastructure.db.repositories.workflow_event import WorkflowEventRepository
+from infrastructure.postgres import async_session_factory, get_session
+from orchestration.graph import create_graph
 
 router = APIRouter(prefix="/workflows", tags=["workflows"])
 
@@ -166,7 +170,7 @@ def chunk_string(s: str, num_chunks: int) -> list:
     return chunks
 
 
-def _extract_artifact_output(result) -> Optional[str]:
+def _extract_artifact_output(result) -> str | None:
     """Extract artifact output from graph execution result.
 
     Handles both WorkflowState object and dict representations.
@@ -313,7 +317,7 @@ class CreateWorkflowRequest(BaseModel):
     instance_number: int = Field(
         default=0, description="Instance number (default 0 = Universal Methodology)"
     )
-    domain: Optional[str] = Field(
+    domain: str | None = Field(
         default=None, description="Optional domain classification"
     )
 
@@ -341,7 +345,7 @@ class ApproveRequest(BaseModel):
     for optimistic concurrency control.
     """
 
-    actor_id: Optional[str] = Field(
+    actor_id: str | None = Field(
         default=None, description="Actor ID (defaults to workflow.created_by)"
     )
     expected_state_version: int = Field(
@@ -360,7 +364,7 @@ class ReviseRequest(BaseModel):
     """
 
     feedback: str = Field(..., description="Revision feedback/instructions")
-    actor_id: Optional[str] = Field(
+    actor_id: str | None = Field(
         default=None, description="Actor ID (defaults to workflow.created_by)"
     )
     expected_state_version: int = Field(
@@ -375,7 +379,7 @@ class MessageRequest(BaseModel):
     """Request to send a message without changing state."""
 
     content: str = Field(..., description="Message content")
-    actor_id: Optional[str] = Field(
+    actor_id: str | None = Field(
         default=None, description="Actor ID (defaults to workflow.created_by)"
     )
 
@@ -388,7 +392,7 @@ class ClarifyRequest(BaseModel):
     """
 
     answers: dict = Field(..., description="Clarification responses keyed by question ID")
-    actor_id: Optional[str] = Field(
+    actor_id: str | None = Field(
         default=None, description="Actor ID (defaults to workflow.created_by)"
     )
     expected_state_version: int = Field(
@@ -466,12 +470,12 @@ class WorkflowResponse(BaseModel):
     current_step: str
     current_step_number: int
     original_problem: str
-    domain: Optional[str]
-    step_state: Optional[StepStateResponse]
+    domain: str | None
+    step_state: StepStateResponse | None
     state_version: int = Field(..., description="Optimistic concurrency version (§9.1)")
     created_at: datetime
     updated_at: datetime
-    completed_at: Optional[datetime] = Field(
+    completed_at: datetime | None = Field(
         default=None, description="Workflow completion timestamp (Round 4)"
     )
 
@@ -492,6 +496,21 @@ class StateConflictResponse(BaseModel):
     current_state_version: int
 
 
+class StalenessBlocksApprovalResponse(BaseModel):
+    """422 response when staleness blocks approval.
+
+    Per Design Intent §1.1/§3.1: Blocking approvals on stale state is mandatory.
+    Returned when ANY approval is attempted while stale artifacts/links exist.
+    Client should resolve staleness via acknowledge or re-execute, then retry.
+    """
+
+    error_code: Literal["STALENESS_BLOCKS_APPROVAL"] = "STALENESS_BLOCKS_APPROVAL"
+    message: str
+    blocking_reasons: list[str]
+    current_position: PositionResponse
+    current_state_version: int
+
+
 class StepProgressEntry(BaseModel):
     """Per-step progress entry for ProgressResponse.
 
@@ -504,12 +523,12 @@ class StepProgressEntry(BaseModel):
     status: str
     phase: str
     has_artifact: bool = False
-    artifact_id: Optional[UUID] = None
-    artifact_revision: Optional[int] = None
+    artifact_id: UUID | None = None
+    artifact_revision: int | None = None
     is_stale: bool = False
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class ProgressResponse(BaseModel):
@@ -538,8 +557,8 @@ class StaleArtifactEntry(BaseModel):
     step_name: str
     pass_type: str
     artifact_type: str  # Same as step_name (e.g., "requirements")
-    stale_reason: Optional[str] = None
-    stale_since: Optional[datetime] = None
+    stale_reason: str | None = None
+    stale_since: datetime | None = None
     blocking: bool = True  # Per C.5: drives can_complete gating
 
 
@@ -553,8 +572,8 @@ class StaleLinkEntry(BaseModel):
     from_step: str
     to_step: str
     link_type: str
-    reason: Optional[str] = None
-    stale_since: Optional[datetime] = None
+    reason: str | None = None
+    stale_since: datetime | None = None
 
 
 class StalenessResponse(BaseModel):
@@ -589,13 +608,13 @@ class ArtifactResponse(BaseModel):
     step_number: int
     artifact_type: str  # = step_name value per user decision
     revision: int
-    supersedes: Optional[UUID] = None
-    superseded_by: Optional[UUID] = None
-    content_jsonb: Optional[dict] = None  # Methodology: {"markdown": "...", ...}
+    supersedes: UUID | None = None
+    superseded_by: UUID | None = None
+    content_jsonb: dict | None = None  # Methodology: {"markdown": "...", ...}
     stale: bool
-    stale_reason: Optional[str] = None
-    stale_since: Optional[datetime] = None
-    trace_id: Optional[str] = None
+    stale_reason: str | None = None
+    stale_since: datetime | None = None
+    trace_id: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -1038,25 +1057,25 @@ class HistoryEntryResponse(BaseModel):
     entry_id: UUID
     created_at: datetime
     entry_type: str = Field(..., description="Type: 'event', 'artifact', 'message'")
-    actor_id: Optional[str] = None
-    step_number: Optional[int] = None
-    step_name: Optional[str] = None
+    actor_id: str | None = None
+    step_number: int | None = None
+    step_name: str | None = None
 
     # For events (from audit_log)
-    event_type: Optional[str] = None
-    from_status: Optional[str] = None
-    to_status: Optional[str] = None
+    event_type: str | None = None
+    from_status: str | None = None
+    to_status: str | None = None
 
     # For artifacts
-    artifact_id: Optional[UUID] = None
-    artifact_type: Optional[str] = None
-    artifact_label: Optional[str] = None
+    artifact_id: UUID | None = None
+    artifact_type: str | None = None
+    artifact_label: str | None = None
 
     # For messages
-    message_role: Optional[str] = None
-    content_preview: Optional[str] = None
+    message_role: str | None = None
+    content_preview: str | None = None
 
-    details: Optional[dict] = None
+    details: dict | None = None
 
 
 class HistoryResponse(BaseModel):
@@ -1076,7 +1095,7 @@ class HistoryResponse(BaseModel):
 @router.get("/{workflow_id}/history", response_model=HistoryResponse)
 async def get_workflow_history(
     workflow_id: str,
-    entry_type: Optional[str] = None,  # 'event', 'artifact', 'message', or None for all
+    entry_type: str | None = None,  # 'event', 'artifact', 'message', or None for all
     limit: int = 50,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
@@ -1229,9 +1248,9 @@ class TraceLinkResponse(BaseModel):
     to_id: str
     link_type: str = Field(..., description="Link type: 'derives', 'achieves', 'traces_to'")
     consolidated: bool
-    validated_at: Optional[datetime] = None
+    validated_at: datetime | None = None
     stale: bool
-    stale_reason: Optional[str] = None
+    stale_reason: str | None = None
 
 
 class TraceabilityResponse(BaseModel):
@@ -1251,8 +1270,8 @@ class TraceabilityResponse(BaseModel):
 @router.get("/{workflow_id}/traceability", response_model=TraceabilityResponse)
 async def get_workflow_traceability(
     workflow_id: str,
-    from_step: Optional[int] = None,
-    to_step: Optional[int] = None,
+    from_step: int | None = None,
+    to_step: int | None = None,
     stale_only: bool = False,
     session: AsyncSession = Depends(get_session),
 ):
@@ -1336,8 +1355,8 @@ class ReplayEventResponse(BaseModel):
     timestamp: datetime
     event_type: str
     position: PositionResponse
-    artifact_id: Optional[UUID] = None
-    decision_id: Optional[UUID] = None
+    artifact_id: UUID | None = None
+    decision_id: UUID | None = None
     data: dict = Field(default_factory=dict)
 
 
@@ -1352,7 +1371,7 @@ class DecisionResponse(BaseModel):
     decision_type: str = Field(..., description="Decision type: 'approve', 'revise', 'clarify'")
     actor_id: str
     created_at: datetime
-    feedback: Optional[str] = None
+    feedback: str | None = None
 
 
 class ReplayResponse(BaseModel):
@@ -1788,14 +1807,19 @@ async def acknowledge_stale(
     Use case: Human reviews stale artifact and confirms it's still correct
     despite upstream changes.
 
+    Note: This endpoint clears artifact staleness only. Trace link staleness
+    is resolved by re-execute, which regenerates links via replace semantics
+    (traceability_service.extract_and_persist_links deletes old links).
+
     Error responses:
         404: Workflow or artifact not found
         409: State version conflict
     """
     from datetime import datetime
+
     from infrastructure.db.models import AuditLog
-    from infrastructure.db.repositories.audit import AuditLogRepository
     from infrastructure.db.repositories.artifact import ArtifactRepository
+    from infrastructure.db.repositories.audit import AuditLogRepository
     from infrastructure.db.repositories.workflow_event import WorkflowEventRepository
 
     service = WorkflowService(session)
@@ -1906,10 +1930,12 @@ class ReExecuteResponse(BaseModel):
     """Response for re-execute action.
 
     Per V2.8.2 Spec: Returns new state version after mutation.
+    Per Contract §10.2: Includes position for canonical refetch consistency.
     """
 
     step_number: int
     state_version: int
+    position: PositionResponse
 
 
 @router.post("/{workflow_id}/steps/{step_number}/re-execute", response_model=ReExecuteResponse)
@@ -1985,7 +2011,7 @@ async def re_execute_step(
 
     # Validate step can be re-executed (not pending, in_progress, or not_started)
     # Per spec: Can only re-execute steps that have completed (awaiting_review, approved, etc.)
-    from infrastructure.db.models.enums import StepStatus, StepPhase
+    from infrastructure.db.models.enums import StepPhase, StepStatus
 
     if target_step.status in (StepStatus.NOT_STARTED, StepStatus.PENDING, StepStatus.IN_PROGRESS):
         raise HTTPException(
@@ -2000,9 +2026,9 @@ async def re_execute_step(
     all_events = []
 
     # Mark current artifact as superseded (if exists)
+    from infrastructure.db.repositories.artifact import ArtifactRepository
+    artifact_repo = ArtifactRepository(session)
     if target_step.latest_artifact_id:
-        from infrastructure.db.repositories.artifact import ArtifactRepository
-        artifact_repo = ArtifactRepository(session)
         artifact = await artifact_repo.get_by_id(target_step.latest_artifact_id)
         if artifact:
             # Set stale flag on current artifact
@@ -2011,10 +2037,25 @@ async def re_execute_step(
             from datetime import datetime
             artifact.stale_since = datetime.utcnow()
 
+    # NOTE: Downstream staleness propagation is handled by DB trigger propagate_staleness()
+    # Trigger fires AFTER new artifact is inserted with supersedes IS NOT NULL
+    # See: infra/db/migrations/versions/003_remediation.py:115-151
+    #
+    # IMPORTANT: The trigger fires when the step is APPROVED and a new artifact is created,
+    # NOT when re-execute is requested. This is intentional - staleness is tied to the
+    # existence of a new revision, not the mere request for one.
+
     # Reset step_execution status and phase
     # Per V2.8.2 spec: use PENDING for queued re-execution
     target_step.status = StepStatus.PENDING
     target_step.phase = StepPhase.RECEIVED
+
+    # Reset workflow status if completed (Design Intent §3.1)
+    # Completed workflow stays "completed" while position moves back is inconsistent
+    from infrastructure.db.models.enums import WorkflowStatus
+    if workflow.status == WorkflowStatus.COMPLETED:
+        workflow.status = WorkflowStatus.ACTIVE
+        workflow.completed_at = None
 
     # Update workflow position to the re-executed step
     workflow.current_step = target_step.step_name
@@ -2117,14 +2158,23 @@ async def re_execute_step(
     # Publish sync events AFTER transaction commits
     await publish_persisted_events(workflow.workflow_id, all_events)
 
-    # Reload workflow for updated state_version
-    workflow, _ = await service.get_workflow(workflow_id)
+    # Reload workflow for updated state_version and step execution
+    workflow, current_step_exec = await service.get_workflow(workflow_id)
 
     # Per V2.8.2 Spec (lines 2390-2405): Return ReExecuteResponse, not full WorkflowResponse
     # Client monitors progress via SSE
+    # Per Contract §10.2: Include position for canonical refetch consistency
     return ReExecuteResponse(
         step_number=step_number,
         state_version=workflow.state_version,
+        position=PositionResponse(
+            instance_number=workflow.instance_number if hasattr(workflow, 'instance_number') else 1,
+            step_number=workflow.current_step_number,
+            step_name=workflow.current_step.value,
+            pass_type=workflow.current_pass.value,
+            status=current_step_exec.status.value if current_step_exec else "unknown",
+            phase=current_step_exec.phase.value if current_step_exec else "unknown",
+        ),
     )
 
 
@@ -2271,6 +2321,24 @@ async def approve_step(
                     status=e.current_status,
                 ),
                 current_state_version=e.current_version,
+            ).model_dump(),
+        )
+    except StalenessBlocksApprovalError as e:
+        # 422: Staleness blocks approval (Design Intent §1.1/§3.1)
+        # Client should resolve staleness via acknowledge or re-execute, then retry
+        workflow, step_execution = await service.get_workflow(workflow_id)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=StalenessBlocksApprovalResponse(
+                message="Cannot approve: stale artifacts/links block approval",
+                blocking_reasons=e.blocking_reasons,
+                current_position=PositionResponse(
+                    pass_type=workflow.current_pass.value,
+                    step_number=workflow.current_step_number,
+                    step_name=workflow.current_step.value,
+                    status=step_execution.status.value if step_execution else "unknown",
+                ),
+                current_state_version=workflow.state_version,
             ).model_dump(),
         )
     except InvalidStateError as e:

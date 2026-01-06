@@ -65,12 +65,21 @@ def stub_llm_nodes(monkeypatch):
     """Pass-aware stub: methodology for Pass 1, packages for Pass 2.
 
     Monkeypatches generate_step_output and validate_output for deterministic testing.
+    Uses a call counter to produce slightly different output on each invocation,
+    ensuring new artifact revisions are created on re-execute (triggering DB trigger).
     """
+    # Track invocations per step to produce different content on re-execute
+    invocation_counter: dict[str, int] = {}
 
     async def fake_generate_step_output(state: WorkflowState) -> dict:
-        """Return deterministic output based on step and pass type."""
+        """Return output based on step and pass type with invocation counter."""
         step = state.current_step
         pass_type = state.current_pass
+
+        # Track invocations per (step, pass) to produce variant output on re-execute
+        step_key = f"{step.value if hasattr(step, 'value') else str(step)}_{pass_type.value}"
+        invocation_counter[step_key] = invocation_counter.get(step_key, 0) + 1
+        revision = invocation_counter[step_key]
 
         if pass_type == PassType.DEFINITION:
             # Pass 1: Return full methodology structure (4 doc types × 3 versions)
@@ -97,13 +106,14 @@ def stub_llm_nodes(monkeypatch):
             }
         else:
             # Pass 2: Return step package structure
+            # Include revision in content to ensure new revisions are created on re-execute
             step_value = step.value if hasattr(step, "value") else str(step)
 
             if step_value == "problem_definition":
                 return {
-                    "title": "Test Problem",
+                    "title": f"Test Problem (revision {revision})",
                     "canonical_problem_definition": {
-                        "statement": "Test problem statement for Gate E verification"
+                        "statement": f"Test problem statement for Gate E verification (revision {revision})"
                     },
                     "stakeholders": [
                         {
@@ -147,7 +157,7 @@ def stub_llm_nodes(monkeypatch):
             elif step_value == "requirements":
                 return {
                     "overview": {
-                        "summary": "Test requirements for Gate E",
+                        "summary": f"Test requirements for Gate E (revision {revision})",
                         "boundaries": ["Gate E scope"],
                         "total_requirements": 1,
                         "priority_distribution": {"must": 1, "should": 0, "could": 0},
@@ -178,7 +188,7 @@ def stub_llm_nodes(monkeypatch):
                 # Step 3 (objectives) or beyond
                 return {
                     "overview": {
-                        "intent": "Test objectives for Gate E",
+                        "intent": f"Test objectives for Gate E (revision {revision})",
                         "measurement_principles": ["Deterministic"],
                         "boundaries": ["Gate E"],
                         "total_objectives": 1,

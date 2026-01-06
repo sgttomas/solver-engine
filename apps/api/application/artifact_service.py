@@ -5,7 +5,6 @@ Use cases for artifact management with idempotent storage and schema validation.
 """
 
 import copy
-import json
 import logging
 from datetime import datetime
 from typing import Any
@@ -14,16 +13,15 @@ from uuid import UUID, uuid4
 import jsonschema
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from domain.state import StepName, STEP_NUMBERS
+from application.schemas import get_schema_for_step
+from domain.state import STEP_NUMBERS, StepName
 from infrastructure.db.models import (
     Artifact,
-    PassType,
     DocumentType,
     DocumentVersion,
+    PassType,
 )
 from infrastructure.db.repositories import ArtifactRepository
-from application.schemas import get_schema_for_step
-
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +184,14 @@ class ArtifactService:
             existing_content_only = self._strip_metadata(existing_content)
             if existing_content_only == package_content:
                 logger.debug(f"Package content unchanged: {step_name.value}")
+                # If returning existing artifact that was marked stale (from re-execute),
+                # clear the stale flag since we just re-approved with same content.
+                # The output is semantically the same, so no staleness propagation needed.
+                if existing.stale:
+                    logger.info(f"Clearing stale flag on unchanged artifact: {step_name.value}")
+                    existing.stale = False
+                    existing.stale_reason = None
+                    existing.stale_since = None
                 return existing
             revision = existing.revision + 1
         else:
@@ -222,7 +228,19 @@ class ArtifactService:
         }
         package_type = package_type_map.get(step_name, f"{step_name.value}_package")
 
-        # Create artifact
+        # Handle revision chain with circular dependency resolution:
+        # 1. The partial unique index idx_latest_step_package requires existing.superseded_by IS NOT NULL
+        # 2. The FK constraint on superseded_by requires the target artifact to exist
+        #
+        # Solution: Use self-reference temporarily to escape the unique index,
+        # then insert new artifact, then fix the link.
+        if existing:
+            # Step 1: Set self-reference to escape unique index (FK allows self-ref)
+            existing.superseded_by = existing.id
+            await self._session.flush()
+
+        # Create artifact with revision chain links
+        # Per Contract §9.3: insert-per-revision model with supersedes links
         artifact = Artifact(
             id=artifact_id,
             workflow_id=workflow_id,
@@ -236,9 +254,21 @@ class ArtifactService:
             schema_version="1.0.0",
             validation_status=validation_status,
             created_at=created_at,
+            # Link to previous revision (triggers staleness propagation)
+            supersedes=existing.id if existing else None,
         )
         self._session.add(artifact)
+
+        # Step 2: Insert the new artifact
         await self._session.flush()
+
+        # Step 3: Fix superseded_by to point to the actual new artifact
+        if existing:
+            existing.superseded_by = artifact_id
+            await self._session.flush()
+            logger.info(
+                f"Linking revision chain: {existing.id} -> {artifact_id}"
+            )
 
         logger.info(
             f"Created step package: {step_name.value} revision {revision}"

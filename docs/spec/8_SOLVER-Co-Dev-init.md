@@ -1,4 +1,4 @@
-# SOLVER Engine — Co-Developer Init (Phase 7 — Package 7.2)
+# SOLVER Engine — Co-Developer Init (Phase 7 — Package 7.3)
 
 ## Role
 
@@ -8,8 +8,8 @@ prompted, audit governed docs via FREEZE-RECORD.md.
 
 ## Mission
 
-Support Phase 7 implementation by reviewing plans and code for spec compliance. Package 7.1
-complete (γ1 verified); now reviewing Package 7.2 (Staleness Integration).
+Support Phase 7 implementation by reviewing plans and code for spec compliance. Packages 7.1
+and 7.2 are complete; now reviewing Package 7.3 (Recovery Scenarios).
 
 ## Recent Governance Updates
 
@@ -39,18 +39,18 @@ Completed packages:
   - E2E test: `test_gate_gamma1.py`
   - Manual verification: `docs/testing/manual-gamma1-verification.md`
 
-Current package: 7.2 Staleness Integration
+Current package: 7.3 Recovery Scenarios
 
 Deliverables (per Development Directive):
-- Revise at Step 1 → downstream steps marked stale
-- `/staleness` endpoint returns stale artifacts and stale trace links
-- Acknowledge stale workflow
-- Re-execute step workflow
+- Workflow recovery/resume after restart (no state loss)
+- Checkpoint saver integrity (positions, artifacts, links)
+- SSE/history replay continuity after recovery
+- Regression of γ1/γ4 behaviors under recovery flows
 
-Exit Gate: γ4 (Staleness Flow)
+Exit Gate: Recovery Gate (test-recovery) + regression of γ1/γ4
 
 Upcoming packages:
-- 7.3: Recovery Scenarios
+- Post-Phase-7 follow-ups as directed
 
 **Spec Status:** UNFROZEN (working draft V2.8.4; to re-freeze at end of Phase 7)
 
@@ -66,9 +66,9 @@ Read in order:
 1. README.md
 2. AGENTS.md
 3. CLAUDE.md
-4. docs/spec/3_SOLVER-Architectural-Contract-v3.4.md (§11.3-11.4 staleness)
-5. docs/spec/4_SOLVER-Technical-Spec-V2.8.4.md (§9.4, Appendix C.5)
-6. docs/spec/5_SOLVER-Development-Directive-v1.5.1.md (focus Phase 7, Package 7.2)
+4. docs/spec/3_SOLVER-Architectural-Contract-v3.4.md (§11 recovery invariants)
+5. docs/spec/4_SOLVER-Technical-Spec-V2.8.4.md (recovery/checkpoint sections)
+6. docs/spec/5_SOLVER-Development-Directive-v1.5.1.md (focus Phase 7, Package 7.3)
 7. docs/spec/6_SOLVER-Change-Management-v2.0.1.md
 8. docs/spec/DECISIONS.md
 
@@ -76,25 +76,23 @@ Read in order:
 
 | Checkpoint | Source |
 |------------|--------|
-| Staleness propagation on revise | Contract §11.3 |
-| `is_stale` flag in /progress | Tech Spec §9.1, C.3 |
-| Staleness endpoint schema | Tech Spec §9.4, Appendix C.5 |
-| Trace link staleness | Contract §11.3, Tech Spec §9.4 |
-| `can_complete` blocking logic | Tech Spec C.5 |
-| Acknowledge/re-execute actions | Tech Spec §9.1 |
-| No breaking changes to γ1 flow | Package 7.1 regression |
-| SSE replay deferral acknowledged | P7.1-DEF-001 (deferred to Gate E) |
+| Recovery/resume preserves position/state_version | Contract §11, Tech Spec §4/§9 |
+| Checkpoint saver writes/reads durable state | Tech Spec (checkpoint sections) |
+| SSE/history replay continuity after restart | Contract §11, Tech Spec §9 |
+| OCC enforcement post-restart | Contract §11 |
+| No regression of staleness gating (γ4) | Tech Spec §9.4/C.5 |
+| No regression of γ1 lifecycle | Package 7.1 regression |
+| SSE replay deferral acknowledged | P7.1-DEF-001 (still deferred to Gate E) |
 
 ## What You Flag
 
 | Pattern | Response |
 |---------|----------|
-| Staleness not propagated on revise | Flag — Contract §11.3 requires downstream marking |
-| Missing `is_stale` in progress | Flag — verify against C.3 schema |
-| Staleness endpoint schema mismatch | Flag — verify against C.5 |
-| Trace links not marked stale | Flag — Contract §11.3 |
-| `can_complete` logic incorrect | Flag — verify blocking conditions per C.5 |
-| Scope creep beyond 7.2 | Flag — defer to 7.3 or later |
+| Recovery loses checkpoints/position | Flag — recovery must be lossless |
+| SSE/history replay gaps/dupes after restart | Flag — violates replay guarantees |
+| OCC bypassed after restart | Flag — enforce state_version |
+| Regression in staleness gating (γ4) | Flag — previously closed |
+| Scope creep beyond 7.3 | Flag — defer to later package |
 | Regression in γ1 tests | Flag — 7.1 is closed |
 
 ## Governance Context
@@ -121,25 +119,22 @@ Read in order:
 - [ ] Block (specify why)
 ```
 
-## γ4 Verification Criteria
+## Recovery Verification Criteria
 
-Per Development Directive, γ4 (Staleness Flow) requires:
+Per Development Directive, Package 7.3 requires:
 
 ```
-1. Upstream revision → downstream stale
-   - Revise Step 1 → Step 2, 3 marked is_stale=true
+1. Restart and resume
+   - Stop/restart process; workflow resumes without losing position/state_version
 
-2. Staleness visibility
-   - /progress shows is_stale for affected steps
-   - /staleness returns stale_artifacts and stale_trace_links
+2. Replay integrity
+   - SSE/history replay after restart shows no gaps/duplications
 
-3. Resolution paths
-   - Acknowledge: Accept stale without re-execution
-   - Re-execute: Run step again with updated upstream
+3. Checkpoint integrity
+   - Checkpoints persist artifacts/links/position; reload yields coherent bundle
 
-4. Completion gating
-   - can_complete=false if blocking stale items exist
-   - Workflow cannot complete until staleness resolved
+4. Gating/regression
+   - OCC enforced post-restart; staleness gating (γ4) and γ1 lifecycle unaffected
 ```
 
 ## Decision Authority

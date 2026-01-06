@@ -9,39 +9,38 @@ Graph integration deferred to P4.4.
 
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from infrastructure.db.models import (
-    Artifact,
-    Workflow,
-    StepExecution,
-    Instance,
-    Message,
-    AuditLog,
-    PassType,
-    StepName,
-    StepStatus,
-    StepPhase,
-    WorkflowStatus,
-    MessageRole,
-)
-from infrastructure.db.repositories.workflow import WorkflowRepository
-from infrastructure.db.repositories.step_execution import StepExecutionRepository
-from infrastructure.db.repositories.instance import InstanceRepository
-from infrastructure.db.repositories.message import MessageRepository
-from infrastructure.db.repositories.audit import AuditLogRepository
-from infrastructure.db.repositories.artifact import ArtifactRepository
-from infrastructure.db.repositories.workflow_event import WorkflowEventRepository
-from infrastructure.db.models.workflow_event import WorkflowEvent
 from application.artifact_service import ArtifactService
 from application.traceability_service import (
-    TraceabilityService,
     TraceabilityExtractionError,
+    TraceabilityService,
 )
-
+from infrastructure.db.models import (
+    Artifact,
+    AuditLog,
+    Message,
+    MessageRole,
+    PassType,
+    StepExecution,
+    StepName,
+    StepPhase,
+    StepStatus,
+    Workflow,
+    WorkflowStatus,
+)
+from infrastructure.db.models.workflow_event import WorkflowEvent
+from infrastructure.db.repositories.artifact import ArtifactRepository
+from infrastructure.db.repositories.audit import AuditLogRepository
+from infrastructure.db.repositories.instance import InstanceRepository
+from infrastructure.db.repositories.message import MessageRepository
+from infrastructure.db.repositories.step_execution import StepExecutionRepository
+from infrastructure.db.repositories.traceability import TraceabilityLinkRepository
+from infrastructure.db.repositories.workflow import WorkflowRepository
+from infrastructure.db.repositories.workflow_event import WorkflowEventRepository
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +152,19 @@ class ArtifactNotBelongError(Exception):
         super().__init__(f"Artifact {artifact_id} does not belong to workflow {workflow_id}")
 
 
+class StalenessBlocksApprovalError(Exception):
+    """Raised when approval is blocked due to stale artifacts/links.
+
+    Per Design Intent §1.1/§3.1: Blocking approvals on stale state is mandatory.
+    Results in 422 with StalenessBlocksApprovalResponse containing:
+    - message, blocking_reasons, position, state_version
+    """
+
+    def __init__(self, blocking_reasons: list[str]):
+        self.blocking_reasons = blocking_reasons
+        super().__init__(f"Approval blocked: {', '.join(blocking_reasons)}")
+
+
 class WorkflowService:
     """Service for workflow lifecycle operations.
 
@@ -175,6 +187,7 @@ class WorkflowService:
         self._audit_repo = AuditLogRepository(session)
         self._artifact_repo = ArtifactRepository(session)
         self._event_repo = WorkflowEventRepository(session)
+        self._trace_link_repo = TraceabilityLinkRepository(session)
         self._artifact_service = ArtifactService(session)
         self._traceability_service = TraceabilityService(session)
 
@@ -183,7 +196,7 @@ class WorkflowService:
         problem: str,
         created_by: str,
         instance_number: int = 0,
-        domain: Optional[str] = None,
+        domain: str | None = None,
     ) -> tuple[Workflow, StepExecution, list[WorkflowEvent]]:
         """Create a new workflow with initial step execution.
 
@@ -260,7 +273,7 @@ class WorkflowService:
     async def get_workflow(
         self,
         workflow_id: str,
-    ) -> tuple[Workflow, Optional[StepExecution]]:
+    ) -> tuple[Workflow, StepExecution | None]:
         """Get workflow and its current step execution.
 
         Args:
@@ -288,7 +301,7 @@ class WorkflowService:
     async def resume_workflow(
         self,
         workflow_id: str,
-    ) -> tuple[Workflow, Optional[StepExecution]]:
+    ) -> tuple[Workflow, StepExecution | None]:
         """Resume workflow from persisted state.
 
         P4.1: Returns current DB state only.
@@ -386,7 +399,7 @@ class WorkflowService:
 
         return workflow, step_execution
 
-    def _resolve_actor_id(self, actor_id: Optional[str], workflow: Workflow) -> str:
+    def _resolve_actor_id(self, actor_id: str | None, workflow: Workflow) -> str:
         """Resolve actor ID with fallback to workflow.created_by."""
         return actor_id if actor_id else workflow.created_by
 
@@ -469,10 +482,10 @@ class WorkflowService:
     def _build_event_payload(
         self,
         workflow: Workflow,
-        step_execution: Optional[StepExecution] = None,
-        artifact_id: Optional[str] = None,
-        data: Optional[dict] = None,
-        actor_id: Optional[str] = None,
+        step_execution: StepExecution | None = None,
+        artifact_id: str | None = None,
+        data: dict | None = None,
+        actor_id: str | None = None,
     ) -> dict:
         """Build consistent event payload for SSE events.
 
@@ -524,10 +537,10 @@ class WorkflowService:
         self,
         workflow: Workflow,
         event_type: str,
-        step_execution: Optional[StepExecution] = None,
-        artifact_id: Optional[str] = None,
-        data: Optional[dict] = None,
-        actor_id: Optional[str] = None,
+        step_execution: StepExecution | None = None,
+        artifact_id: str | None = None,
+        data: dict | None = None,
+        actor_id: str | None = None,
     ):
         """Persist workflow event to durable log and return it.
 
@@ -566,7 +579,7 @@ class WorkflowService:
         to_status: StepStatus,
         from_phase: StepPhase,
         to_phase: StepPhase,
-        details: Optional[dict] = None,
+        details: dict | None = None,
     ) -> AuditLog:
         """Create audit log entry with full context for Gate F."""
         audit_log = AuditLog(
@@ -587,9 +600,9 @@ class WorkflowService:
     async def approve_step(
         self,
         workflow_id: str,
-        actor_id: Optional[str] = None,
+        actor_id: str | None = None,
         expected_state_version: int = 0,
-        expected_position: Optional[dict] = None,
+        expected_position: dict | None = None,
     ) -> tuple[Workflow, StepExecution, list[WorkflowEvent]]:
         """Approve current step.
 
@@ -612,6 +625,7 @@ class WorkflowService:
             WorkflowNotFoundError: If workflow doesn't exist
             InvalidStateError: If step is not AWAITING_REVIEW (422)
             StateVersionMismatchError: If expected_state_version or position mismatch (409)
+            StalenessBlocksApprovalError: If stale artifacts/links exist (422)
         """
         events: list[WorkflowEvent] = []
 
@@ -623,6 +637,46 @@ class WorkflowService:
         self._validate_optimistic_concurrency(
             workflow, step_execution, expected_state_version, expected_position or {}
         )
+
+        # Staleness guard: C.5-aware blocking
+        # Per Design Intent §1.1/§3.1: Blocking approvals on stale state is mandatory
+        # Fresh reads inside transaction - no race window
+        stale_artifacts = await self._artifact_repo.list_stale_artifacts(workflow.id)
+        stale_links = await self._trace_link_repo.list_stale_links(workflow.id)
+
+        if stale_artifacts or stale_links:
+            # Check if CURRENT step has stale artifact due to UPSTREAM changes
+            # Note: A step being re-executed has stale_reason "Re-execution requested: ..."
+            # This should NOT block approval - approving creates the new artifact.
+            # Only block if stale due to upstream changes ("upstream_step_X_revised")
+            current_step_upstream_stale = any(
+                a.step_number == workflow.current_step_number
+                and a.stale_reason
+                and "upstream_step" in a.stale_reason
+                for a in stale_artifacts
+            )
+
+            # Check if this is the FINAL step (Pass 2 Step 3)
+            is_final_step = (
+                workflow.current_pass == PassType.EXECUTION
+                and workflow.current_step == StepName.OBJECTIVES
+            )
+
+            # C.5: Check for blocking artifacts (default True if attribute missing)
+            # Per conservative approach: all artifacts are blocking until DB supports non-blocking
+            # TODO: When DB adds blocking column, honor blocking=False artifacts
+            has_blocking_artifacts = any(
+                getattr(a, "blocking", True) for a in stale_artifacts
+            )
+
+            # Block if: current step stale due to upstream OR (final step AND (blocking artifacts OR stale links))
+            if current_step_upstream_stale or (is_final_step and (has_blocking_artifacts or stale_links)):
+                blocking_reasons = []
+                if stale_artifacts:
+                    blocking_reasons.append(f"{len(stale_artifacts)} stale artifact(s)")
+                if stale_links:
+                    blocking_reasons.append(f"{len(stale_links)} stale trace link(s)")
+                raise StalenessBlocksApprovalError(blocking_reasons=blocking_reasons)
 
         actor = self._resolve_actor_id(actor_id, workflow)
 
@@ -672,9 +726,9 @@ class WorkflowService:
         self,
         workflow_id: str,
         feedback: str,
-        actor_id: Optional[str] = None,
+        actor_id: str | None = None,
         expected_state_version: int = 0,
-        expected_position: Optional[dict] = None,
+        expected_position: dict | None = None,
     ) -> tuple[Workflow, StepExecution, list[WorkflowEvent]]:
         """Request revision of current step.
 
@@ -772,7 +826,7 @@ class WorkflowService:
         self,
         workflow_id: str,
         content: str,
-        actor_id: Optional[str] = None,
+        actor_id: str | None = None,
     ) -> tuple[Workflow, StepExecution, Message]:
         """Send message without changing workflow state.
 
@@ -835,9 +889,9 @@ class WorkflowService:
         self,
         workflow_id: str,
         answers: dict,
-        actor_id: Optional[str] = None,
+        actor_id: str | None = None,
         expected_state_version: int = 0,
-        expected_position: Optional[dict] = None,
+        expected_position: dict | None = None,
     ) -> tuple[Workflow, StepExecution, list[WorkflowEvent]]:
         """Submit clarification answers.
 
@@ -935,8 +989,8 @@ class WorkflowService:
         self,
         workflow_id: str,
         result: dict,
-        artifact_output: Optional[str] = None,
-        actor_id: Optional[str] = None,
+        artifact_output: str | None = None,
+        actor_id: str | None = None,
     ) -> list[WorkflowEvent]:
         """Sync DB state from graph execution result.
 
@@ -956,10 +1010,16 @@ class WorkflowService:
             List of persisted events for route to publish after commit.
         """
         from domain.state import (
-            ensure_workflow_state,
-            StepStatus as DomainStepStatus,
             PassType as DomainPassType,
+        )
+        from domain.state import (
             StepName as DomainStepName,
+        )
+        from domain.state import (
+            StepStatus as DomainStepStatus,
+        )
+        from domain.state import (
+            ensure_workflow_state,
         )
         from infrastructure.db.models import WorkflowStatus
 
