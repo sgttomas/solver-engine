@@ -1,4 +1,4 @@
-# SOLVER Engine — Senior Developer Init (Phase 7)
+# SOLVER Engine — Senior Developer Init (Phase 7 — Package 7.2)
 
 ## Role
 
@@ -7,40 +7,44 @@ Development Directive. Stay within the governance chain in docs/spec/.
 
 ## Mission
 
-Implement Package 7.1: Workflow Lifecycle Integration. Deliver a complete workflow flow from
-creation through completion, exercising all gates and transitions.
+Implement Package 7.2: Staleness Integration. Verify staleness propagation when upstream
+artifacts are revised, and deliver acknowledge/re-execute workflows. Spec is UNFROZEN
+(working draft V2.8.4) and will re-freeze at phase end.
 
-## Current Package: 7.1 Workflow Lifecycle Integration
+## Current Package: 7.2 Staleness Integration
 
-**Objective:** Full end-to-end workflow execution.
+**Objective:** Staleness propagation and resolution flows.
 
-**Deliverables:**
-- Full flow: create → execute → gate → approve → advance → complete
-- Pass 1 → Pass 2 transition
-- Multi-step progression (Steps 1-3)
+**Deliverables (Directive §7.2):**
+- Revise at Step 1 → downstream steps marked stale (progress + staleness)
+- `/staleness` endpoint returns stale artifacts and stale trace links
+- Acknowledge stale workflow flow
+- Re-execute step flow clears staleness and allows progression
 
-**Exit Gate:** γ1 (Workflow Lifecycle)
+**Exit Gate:** γ4 (Staleness Flow, Gate E alignment for SSE as needed)
 
 ## Objectives
 
-1. Verify backend workflow execution completes without LLM (mock adapter or stub)
-2. Integrate frontend with live backend for full interactive flow
-3. Test Pass 1 methodology generation through all steps
-4. Test Pass 2 deliverable generation with human review gates
-5. Verify workflow reaches `completed` status after all approvals
+1. Verify revise action propagates staleness to downstream steps
+2. Verify `/staleness` endpoint returns accurate stale artifacts/links
+3. Verify `is_stale` flag in `/progress` response
+4. Test acknowledge stale workflow
+5. Test re-execute step after revision clears staleness and trace blocks
+6. Ensure `can_complete` blocks completion when stale items remain
 
 ## Scope Boundaries
 
 **In scope:**
-- Workflow lifecycle integration (create → complete)
-- Frontend-backend integration testing
-- LLM mock/stub for deterministic testing
-- Gate transitions (approve/revise/message)
+- Staleness propagation (revise → downstream marked stale)
+- `/staleness` endpoint verification
+- `is_stale` flags in `/progress` response
+- Acknowledge and re-execute flows
+- Trace link staleness
 
 **Out of scope:**
-- Staleness flows (Package 7.2)
 - Recovery scenarios (Package 7.3)
-- Spec changes (log deviations if needed)
+- Artifact count/trace validation (Gate A/B; already covered)
+- Spec changes beyond staleness alignment (log deviations if needed)
 
 ## Orientation
 
@@ -54,9 +58,10 @@ Read in order:
 1. README.md
 2. AGENTS.md
 3. CLAUDE.md
-4. docs/spec/5_SOLVER-Development-Directive-v1.5.1.md (Phase 7 section)
-5. docs/spec/4_SOLVER-Technical-Spec-V2.8.3.md (§8 state machines, §9 endpoints)
-6. docs/spec/DECISIONS.md (recent entries for context)
+4. docs/spec/5_SOLVER-Development-Directive-v1.5.1.md (Phase 7, Package 7.2)
+5. docs/spec/4_SOLVER-Technical-Spec-V2.8.4.md (§9.4 staleness, Appendix C.5)
+6. docs/spec/3_SOLVER-Architectural-Contract-v3.4.md (§11.3-11.4 staleness)
+7. docs/spec/DECISIONS.md (P7.1-DEV-001, P7.1-DEV-002, P7.1-DEF-001)
 
 ## Current State
 
@@ -70,30 +75,31 @@ All packages complete:
 - 6.5: Workflow UI (launcher, detail, review, artifact display, message panel) ✓
 - 6.6: SSE Event Handling (γ2 verified) ✓
 
-P6 Closure Notes:
-- Workflow ID mismatch investigation: NO ISSUE FOUND (see DECISIONS.md P6.6-CLOSURE-001)
-- Frontend/backend correctly aligned on `workflow_id` throughout
-- E2E tests passing (3/3)
-
 **Phase 7: Integration — ACTIVE**
 
-Current package: 7.1 Workflow Lifecycle Integration
-- Exit Gate: γ1 (Workflow Lifecycle)
+Completed packages:
+- 7.1: Workflow Lifecycle Integration ✓ (γ1 PASSED)
+  - DECISIONS.md: P7.1-DEV-001 (completed_at documented in V2.8.4), P7.1-DEV-002 (artifact availability), P7.1-DEF-001 (SSE replay coverage deferral)
+  - E2E test: `test_gate_gamma1.py`
+
+Current package: 7.2 Staleness Integration
+- Exit Gate: γ4 (Staleness Flow)
 
 Upcoming packages:
-- 7.2: Staleness Integration (γ4)
 - 7.3: Recovery Scenarios
 
 ## Key Paths
 
 | Path | Focus |
 |------|-------|
-| apps/api/orchestration/graph.py | LangGraph state machine |
-| apps/api/orchestration/nodes.py | Step execution logic |
-| apps/api/application/workflow_service.py | Workflow lifecycle methods |
-| apps/api/routes/workflows.py | Action endpoints (approve/revise) |
-| apps/web/components/workflow-detail.tsx | Frontend workflow UI |
-| apps/web/hooks/use-workflow-queries.ts | API integration |
+| apps/api/routes/workflows.py | Staleness endpoint, revise action |
+| apps/api/application/workflow_service.py | Revise logic, staleness propagation |
+| apps/api/application/traceability_service.py | Trace link management |
+| apps/api/infrastructure/db/repositories/traceability.py | Trace queries |
+| apps/api/infrastructure/db/models/traceability.py | Trace link model |
+| apps/api/infrastructure/db/models/artifact.py | Artifact staleness flags |
+| apps/web/hooks/use-workflow-queries.ts | Frontend staleness queries |
+| apps/web/lib/sse-events.ts | SSE event list (ensure staleness events mapped) |
 
 ## Testing Strategy
 
@@ -110,39 +116,44 @@ cd apps/web && npm run lint
 cd apps/web && npm run build
 ```
 
-**Manual Verification (γ1 Criteria):**
+**Manual Verification (γ4 Criteria):**
 ```
-1. Create workflow with problem statement
-2. Watch Pass 1 Step 1 execute (methodology generation)
-3. Approve at gate
-4. Repeat for Steps 2, 3
-5. Transition to Pass 2
-6. Approve each step with artifact review
-7. Workflow reaches completed status
+1. Create workflow, advance through Pass 1 to Step 2 or 3
+2. Revise Step 1 with feedback
+3. Verify Step 2, 3 show is_stale=true in /progress; can_complete=false
+4. Query /staleness endpoint — verify stale_artifacts and stale_trace_links
+5. Acknowledge or re-execute downstream steps
+6. Verify staleness cleared after resolution; can_complete flips true
+7. Workflow can proceed to completion; SSE/history record staleness events
 ```
 
-## LLM Integration Notes
+## Staleness Architecture
 
-For deterministic testing, consider:
-- Mock LLM adapter returning canned responses
-- Environment variable to switch providers
-- Ensure LLM API key is configured in `apps/api/.env`
+Per Tech Spec §9.4 and Contract §11.3-11.4:
 
-Current LLM config: `DEFAULT_LLM_PROVIDER` (openai/anthropic/google)
+| Concept | Description |
+|---------|-------------|
+| `is_stale` | Step flag in /progress when upstream revised |
+| `stale_artifacts` | Artifacts with outdated upstream dependencies |
+| `stale_trace_links` | Trace links invalidated by revision |
+| `can_complete` | False if blocking stale items exist |
+| `acknowledge` | Accept stale state without re-execution |
+| `reexecute` | Clears stale state and re-runs generation |
 
 ## Anti-Patterns to Avoid
 
 | Pattern | Why |
 |---------|-----|
-| Skipping gate transitions | Contract requires human approval at gates |
-| Hardcoding step logic | Use state machine from graph.py |
-| Ignoring state_version | Optimistic concurrency is required |
+| Skipping staleness propagation | Contract §11.3 requires downstream marking |
+| Ignoring trace links | Trace staleness blocks completion |
 | Breaking existing tests | Verify `make e2e` still passes |
+| Modifying γ1 test behavior | 7.1 is closed; add new tests for 7.2 |
+| Bypassing SSE/audit | Contract §12/§11.3 require visible audit trail |
 
 ## Start
 
 After orientation:
 1. Verify dev environment is running (`make dev-api`, `make dev-web`)
-2. Review current E2E test coverage
-3. Identify gaps in lifecycle flow
-4. Propose implementation approach for γ1 verification
+2. Review existing staleness-related code in traceability_service.py
+3. Identify gaps in staleness propagation flow
+4. Plan implementation for γ4 verification and test coverage (progress, staleness endpoint, SSE/audit)

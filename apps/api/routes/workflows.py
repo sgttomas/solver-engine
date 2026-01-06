@@ -471,6 +471,9 @@ class WorkflowResponse(BaseModel):
     state_version: int = Field(..., description="Optimistic concurrency version (§9.1)")
     created_at: datetime
     updated_at: datetime
+    completed_at: Optional[datetime] = Field(
+        default=None, description="Workflow completion timestamp (Round 4)"
+    )
 
     class Config:
         from_attributes = True
@@ -656,6 +659,7 @@ def build_workflow_response(workflow, step_execution) -> WorkflowResponse:
         state_version=workflow.state_version,
         created_at=workflow.created_at,
         updated_at=workflow.updated_at,
+        completed_at=workflow.completed_at,  # Round 4: expose completion timestamp
     )
 
 
@@ -854,7 +858,7 @@ async def get_workflow_progress(
         if artifact_id:
             from infrastructure.db.repositories.artifact import ArtifactRepository
             artifact_repo = ArtifactRepository(session)
-            artifact = await artifact_repo.get(artifact_id)
+            artifact = await artifact_repo.get_by_id(artifact_id)
             if artifact:
                 is_stale = artifact.stale  # Note: column is 'stale', not 'is_stale'
                 artifact_revision = artifact.revision
@@ -1685,8 +1689,8 @@ async def get_artifact_diff(
     artifact_repo = ArtifactRepository(session)
 
     # Fetch both artifacts
-    artifact_a = await artifact_repo.get(artifact_a_id)
-    artifact_b = await artifact_repo.get(artifact_b_id)
+    artifact_a = await artifact_repo.get_by_id(artifact_a_id)
+    artifact_b = await artifact_repo.get_by_id(artifact_b_id)
 
     if not artifact_a:
         raise HTTPException(
@@ -1817,7 +1821,7 @@ async def acknowledge_stale(
 
     # Get and validate artifact
     artifact_repo = ArtifactRepository(session)
-    artifact = await artifact_repo.get(artifact_id)
+    artifact = await artifact_repo.get_by_id(artifact_id)
     if not artifact or artifact.workflow_id != workflow.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -1999,7 +2003,7 @@ async def re_execute_step(
     if target_step.latest_artifact_id:
         from infrastructure.db.repositories.artifact import ArtifactRepository
         artifact_repo = ArtifactRepository(session)
-        artifact = await artifact_repo.get(target_step.latest_artifact_id)
+        artifact = await artifact_repo.get_by_id(target_step.latest_artifact_id)
         if artifact:
             # Set stale flag on current artifact
             artifact.stale = True
@@ -2231,8 +2235,9 @@ async def approve_step(
         async with session.begin():
             # sync_db_from_state handles ALL events in correct order:
             # step.started -> artifact.delta -> artifact.final -> step.awaiting_review
+            # Pass actor_id for workflow_completed audit entry (Bug 1 fix)
             sync_events = await service.sync_db_from_state(
-                workflow_id, result, artifact_output=artifact_output
+                workflow_id, result, artifact_output=artifact_output, actor_id=request.actor_id
             )
             all_events.extend(sync_events)
 

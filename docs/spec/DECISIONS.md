@@ -290,3 +290,65 @@ workflow_events table, and SSE from_sequence replay are being implemented.
 **Status:** NO ISSUE FOUND - Investigation closed
 **Verified by:** Senior Developer
 **Date:** 2026-01-06
+
+## 2026-01-07 - P7.1-DEV-001: completed_at Field in WorkflowResponse (DEVIATION)
+
+**Type:** DEVIATION from Tech Spec V2.8.3 Appendix C.2 (resolved via V2.8.4 update)
+
+**Spec text:** "C.2 reserved fields removed — Removed pass_1_gate_policy, created_by, last_actor_id, completed_at (not implemented in MVP)"
+
+**Deviation:** `completed_at` field is exposed in `WorkflowResponse` API schema.
+
+**Rationale:**
+- Additive change (backward-compatible)
+- Essential for γ1 verification (workflow completion timestamp)
+- User explicitly approved during Round 4 implementation
+
+**Files Modified:**
+- `apps/api/routes/workflows.py:474-476` (WorkflowResponse schema)
+- `apps/api/routes/workflows.py:662` (build_workflow_response)
+
+**Resolution:** Field remains exposed. Spec amended in V2.8.4 to document `completed_at`.
+**Approved by:** Architect (Ryan Tufts)
+**Date:** 2026-01-07
+
+## 2026-01-07 - P7.1-DEV-002: Artifact Availability at Gates (DEVIATION)
+
+**Type:** DEVIATION from Development Directive v1.5.1 §7.1
+
+**Directive text:** Implies "approve with artifact review" at each gate.
+
+**Deviation:** Artifacts are not available via `/progress` endpoint's `has_artifact` field at `awaiting_review` state.
+
+**Root Cause:**
+- Pass 1 methodology docs tracked via `state.methodology` dict, not `latest_artifact_id`
+- Pass 2 step packages persisted only after approval (`workflow_service.py:1258`)
+- `/progress` endpoint derives `has_artifact` from `step_execution.latest_artifact_id`
+
+**Impact:** γ1 test verifies lifecycle flow only; artifact presence not asserted at gates.
+
+**Mitigation:**
+- Artifacts ARE available via `/history?type=artifact` (audit log)
+- Artifact counts remain Gate A scope (Phase 8)
+- Manual verification can use `/history` endpoint
+
+**Resolution:** Defer artifact persistence timing change to future package. γ1 scope is lifecycle verification.
+**Approved by:** Architect (Ryan Tufts)
+**Date:** 2026-01-07
+
+## 2026-01-07 - P7.1-DEF-001: SSE Replay Coverage Deferral (DEFERRAL)
+
+**Type:** DEFERRAL (Test coverage)
+
+**Context:** Contract §12 / Tech Spec §16 define SSE as canonical event delivery. The γ1 package verifies `workflow.completed` via `/history?type=event` (audit) but does not explicitly assert replay via `/stream?from_sequence=0`.
+
+**Decision:** Defer explicit SSE replay verification for `workflow.completed` to Gate E / Phase 8. Current γ1 scope is satisfied via audit history checks.
+
+**Rationale:**
+- Behavior is correct (event emitted and audited); missing only replay-path test coverage.
+- Gate E already covers SSE infrastructure; defer to avoid scope creep in 7.1.
+
+**Impact:** No functional deviation; coverage gap noted for future package.
+**Resolution Target:** Phase 8 (Gate E enhancements) or earlier if convenient.
+**Approved by:** Architect (Ryan Tufts)
+**Date:** 2026-01-07

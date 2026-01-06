@@ -932,7 +932,11 @@ class WorkflowService:
     # =========================================================================
 
     async def sync_db_from_state(
-        self, workflow_id: str, result: dict, artifact_output: Optional[str] = None
+        self,
+        workflow_id: str,
+        result: dict,
+        artifact_output: Optional[str] = None,
+        actor_id: Optional[str] = None,
     ) -> list[WorkflowEvent]:
         """Sync DB state from graph execution result.
 
@@ -1168,6 +1172,22 @@ class WorkflowService:
                 step_execution=step_execution,
             )
             events.append(event)
+
+            # Create audit entry for workflow completion (Bug 1 fix + Round 4 refinements)
+            # Event name uses dot notation per spec §9.2.1
+            # Actor always resolved to ensure audit entry is written reliably
+            resolved_actor = self._resolve_actor_id(actor_id, workflow)
+            await self._create_audit_entry(
+                workflow=workflow,
+                step_execution=step_execution,
+                event_type="workflow.completed",
+                actor_id=resolved_actor,
+                from_status=StepStatus.APPROVED,
+                to_status=StepStatus.APPROVED,
+                from_phase=StepPhase.COMPLETE,
+                to_phase=StepPhase.COMPLETE,
+                details={"workflow_status": "completed"},
+            )
 
         await self._session.flush()
         return events

@@ -1,4 +1,4 @@
-# SOLVER Technical Specification V2.8.3
+# SOLVER Technical Specification V2.8.4
 ## Consolidated Implementation Guide (Steps 1-3 MVP)
 
 **Purpose:** Implementation-ready specification for building SOLVER, merging contract definitions with executable code.
@@ -9,7 +9,14 @@
 
 ---
 
-## 0. Why V2.8.3 (Changes from V2.8.2)
+## 0. Why V2.8.4 (Changes from V2.8.3)
+
+V2.8.4 captures post-freeze governance updates:
+
+1. **C.2 completion timestamp** — `completed_at` reintroduced to WorkflowResponse (additive, backward-compatible) per DECISIONS.md P7.1-DEV-001; other reserved fields remain removed (`pass_1_gate_policy`, `created_by`, `last_actor_id`).
+2. **Governance status** — Spec unfrozen for Phase 7 work; freeze will be re-applied at package closure.
+
+### V2.8.3 Changes (Preserved)
 
 V2.8.3 is a spec-implementation alignment release resolving C.2 schema discrepancies:
 
@@ -17,8 +24,7 @@ V2.8.3 is a spec-implementation alignment release resolving C.2 schema discrepan
 2. **C.2 original_problem field** — Changed from `problem` to `original_problem` to match implementation (clarifies unmodified input)
 3. **C.2 backward-compatibility fields** — Documented `current_pass`, `current_step`, `current_step_number` fields that mirror `position` for legacy clients
 4. **C.2 step_state field** — Documented optional `step_state` object for detailed step information
-5. **C.2 reserved fields removed** — Removed `pass_1_gate_policy`, `created_by`, `last_actor_id`, `completed_at` (not implemented in MVP)
-6. **C.3 endpoint path** — Changed `{id}` to `{workflow_id}` for consistency
+5. **C.3 endpoint path** — Changed `{id}` to `{workflow_id}` for consistency
 
 ### V2.8.2 Changes (Preserved)
 
@@ -4467,7 +4473,8 @@ Response from `GET /workflows/{workflow_id}`:
   "status": "active",
 
   "created_at": "2025-01-04T10:00:00.000Z",
-  "updated_at": "2025-01-04T12:34:56.789Z"
+  "updated_at": "2025-01-04T12:34:56.789Z",
+  "completed_at": null
 }
 ```
 
@@ -4491,6 +4498,9 @@ Response from `GET /workflows/{workflow_id}`:
 |-------|------|-------------|
 | `domain` | string | Optional domain classification |
 | `step_state` | StepState object | Detailed current step info |
+| `completed_at` | ISO 8601 | Completion timestamp (present when `status = completed`) |
+
+**Note:** `completed_at` was reintroduced as an additive field (see DECISIONS.md entry P7.1-DEV-001) to expose workflow completion time.
 
 **Backward-compatibility fields (mirror `position`):**
 

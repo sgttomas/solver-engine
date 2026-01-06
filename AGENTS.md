@@ -51,7 +51,7 @@ Common workflow (from README/CLAUDE):
 - `docs/spec/1_SOLVER-README-v1.0.md`
 - `docs/spec/2_SOLVER-Design-Intent-v1.1.md`
 - `docs/spec/3_SOLVER-Architectural-Contract-v3.4.md`
-- `docs/spec/4_SOLVER-Technical-Spec-V2.8.3.md`
+- `docs/spec/4_SOLVER-Technical-Spec-V2.8.4.md`
 - `docs/spec/5_SOLVER-Development-Directive-v1.5.1.md`
 - `docs/spec/6_SOLVER-Change-Management-v2.0.1.md`
 - `docs/spec/7_SOLVER-Sr-Dev-init.md`

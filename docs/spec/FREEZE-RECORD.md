@@ -1,8 +1,8 @@
 # SOLVER Specification Freeze Record
 
-**Freeze Status:** FROZEN
-**Freeze Date:** 2026-01-06
-**Baseline Identifier:** `spec-freeze-v2.8.3`
+**Freeze Status:** UNFROZEN (working toward next baseline)
+**Unfreeze Date:** 2026-01-07
+**Baseline Identifier:** `spec-freeze-v2.8.3` (last frozen)
 **Previous Baseline:** `spec-freeze-v2.8.2` (2026-01-06)
 
 ---
@@ -16,11 +16,13 @@
 | `1_SOLVER-README-v1.0.md` | v1.0 | `b83569cb1dd5a495067e56a3e457f9e89ec25ea43f669505eced4013b8b39dae` |
 | `2_SOLVER-Design-Intent-v1.1.md` | v1.1 | `2eacabe1ec3c335d017c0804e7d5d0ff98b6c72dd580feb5364f83b8961cc53b` |
 | `3_SOLVER-Architectural-Contract-v3.4.md` | v3.4 | `f58c1bf057e4361d516ea93de689cf774005bb530d9fdb9344304a6ab1e1254e` |
-| `4_SOLVER-Technical-Spec-V2.8.3.md` | V2.8.3 | `26a4b3ad7f7a0c422861d961af635e75baeacd277811a7159dbf8da8b20a1153` |
+| `4_SOLVER-Technical-Spec-V2.8.4.md` | V2.8.4 (draft, unfrozen) | `fa77440347bdd4c2905926cbfba8ddb3c1720ddec11bb6f7f7ba455140f8cad2` |
 | `5_SOLVER-Development-Directive-v1.5.1.md` | v1.5.1 | `8e76d33d02252675dab81837c916ab5307f458aaff30ef916c190f531f1e2909` |
 | `6_SOLVER-Change-Management-v2.0.1.md` | v2.0.1 | `1b6b563654d1bdde915e7e5fbb3bccee79abf32145b92a717ba1bd117b45a853` |
 
 ---
+
+**Note:** Gate evidence below reflects the last frozen baseline (spec-freeze-v2.8.3). With the spec now UNFROZEN for V2.8.4 work, gates F0–F4 will be re-executed when the new baseline is frozen.
 
 ## Gate Evidence
 
@@ -31,7 +33,7 @@
 - [x] SOLVER-README-v1.0.md exists, version matches manifest
 - [x] SOLVER-Design-Intent-v1.1.md exists, version matches manifest
 - [x] SOLVER-Architectural-Contract-v3.4.md exists, version matches manifest
-- [x] 4_SOLVER-Technical-Spec-V2.8.3.md exists, version matches manifest
+- [x] 4_SOLVER-Technical-Spec-V2.8.3.md exists (baseline snapshot), version matches manifest
 - [x] SOLVER-Development-Directive-v1.5.1.md exists, version matches manifest
 - [x] SOLVER-Change-Management-v2.0.1.md exists, version matches manifest
 
@@ -90,6 +92,24 @@
 ---
 
 ## Change Record
+
+### V2.8.4 (UNFROZEN, in progress - 2026-01-07)
+
+**Change Request:** Governance updates for Phase 7 (γ1) alignment
+
+**Scope:**
+- C.2: Reintroduced `completed_at` in WorkflowResponse (additive/backward-compatible; matches implementation and DECISIONS.md P7.1-DEV-001)
+- Governance: Spec unfrozen for Phase 7 work; new baseline will be recorded at end of phase
+
+**Approval:** Architect (Ryan Tufts)
+
+**Implementation:**
+- Tech Spec V2.8.3 → V2.8.4 (draft)
+- Cross-references updated to new filename and version
+
+**Verification:** Pending re-freeze; F0–F4 will be re-run at next baseline.
+
+---
 
 ### V2.8.3 (2026-01-06)
 
