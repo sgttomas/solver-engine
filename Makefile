@@ -128,9 +128,12 @@ test-gates:
 	@echo "✓ Gate C tests passed"
 
 test-recovery:
-	@echo "Running Gate D tests (restart/recovery)..."
-	PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/integration/test_gate_d.py -v
-	@echo "✓ Gate D tests passed"
+	@echo "Running Recovery Gate tests (Gate D + P7.3 recovery scenarios)..."
+	PYTHONPATH=apps/api .venv/bin/pytest \
+		apps/api/tests/integration/test_gate_d.py \
+		apps/api/tests/e2e/test_recovery_scenarios.py \
+		-v
+	@echo "✓ Recovery Gate tests passed"
 
 e2e:
 	@echo "Running Gate E tests (API + SSE flow)..."

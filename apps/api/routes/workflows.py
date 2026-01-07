@@ -2186,6 +2186,10 @@ async def resume_workflow(
     """Resume workflow from persisted state.
 
     P4.4: Gate D compliance - at interrupt: sync DB only; not at interrupt: continue.
+
+    Note: Transaction handling differs from other endpoints because we need to
+    read workflow data first (to get thread_id), which starts an implicit
+    transaction. We use commit() instead of begin() context manager.
     """
     service = WorkflowService(session)
 
@@ -2201,8 +2205,8 @@ async def resume_workflow(
         if snapshot and snapshot.values.get("__interrupt__"):
             # At gate - sync DB from checkpoint state, don't advance
             # No artifact_output for resume at interrupt (state already persisted)
-            async with session.begin():
-                await service.sync_db_from_state(workflow_id, snapshot.values)
+            await service.sync_db_from_state(workflow_id, snapshot.values)
+            await session.commit()
         else:
             # Not at gate (crashed mid-execution or no checkpoint) - continue
             if snapshot:
@@ -2210,10 +2214,10 @@ async def resume_workflow(
                 # Extract artifact output for correct event ordering
                 # Handle both WorkflowState object and dict representations
                 artifact_output = _extract_artifact_output(result)
-                async with session.begin():
-                    await service.sync_db_from_state(
-                        workflow_id, result, artifact_output=artifact_output
-                    )
+                await service.sync_db_from_state(
+                    workflow_id, result, artifact_output=artifact_output
+                )
+                await session.commit()
 
         # Reload for response
         workflow, step_execution = await service.get_workflow(workflow_id)

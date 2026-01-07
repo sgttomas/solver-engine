@@ -352,3 +352,34 @@ workflow_events table, and SSE from_sequence replay are being implemented.
 **Resolution Target:** Phase 8 (Gate E enhancements) or earlier if convenient.
 **Approved by:** Architect (Ryan Tufts)
 **Date:** 2026-01-07
+
+## 2026-01-07 - P7.3-DEF-001: Lease Recovery Deferral (DEFERRAL)
+
+**Type:** DEFERRAL
+
+**Deliverable:** "Runner crash → lease expiry → recovery" per Directive v1.5.1 §7.3 (deliverable #4)
+
+**Specification References:**
+- Development Directive v1.5.1 §7.3 deliverable #4
+- Architectural Contract v3.4 §15.2 (Exclusive Execution Contract)
+- Design Intent v1.1 §4.8 (Exclusive Execution via Leases)
+
+**Context:** Phase 5 Package 5.1 (Lease Management) was not implemented during backend phases.
+The following artifacts are absent:
+- `workflow_execution_locks` table (Directive §Phase 2)
+- `acquire_workflow_lease()`, `renew_workflow_lease()`, `release_workflow_lease()` functions (Directive §5.1)
+- β4 gate tests (Directive §5.1)
+
+P7.3 deliverable #4 requires lease infrastructure to test; cannot proceed without it.
+
+**Decision:** Defer P7.3 deliverable #4 until Phase 5 Package 5.1 is implemented.
+
+**Impact:**
+- Recovery Gate (P7.3 exit gate) covers deliverables #1–#3 only
+- β4 gate remains unverified
+- Exclusive execution per Contract §15.2 / Design Intent §4.8 is not tested
+- Concurrent runner exclusivity (Design Intent §3.5 scenario) is not exercised
+
+**Resolution Target:** Future package when lease infrastructure is added (recommend Phase 8 or dedicated backlog item).
+**Approved by:** Architect (Ryan Tufts)
+**Date:** 2026-01-07

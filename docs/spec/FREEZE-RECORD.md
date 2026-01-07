@@ -1,9 +1,9 @@
 # SOLVER Specification Freeze Record
 
-**Freeze Status:** UNFROZEN (working toward next baseline)
-**Unfreeze Date:** 2026-01-07
-**Baseline Identifier:** `spec-freeze-v2.8.3` (last frozen)
-**Previous Baseline:** `spec-freeze-v2.8.2` (2026-01-06)
+**Freeze Status:** FROZEN (Phase 7 complete)
+**Freeze Date:** 2026-01-07
+**Baseline Identifier:** `spec-freeze-v2.8.4`
+**Previous Baseline:** `spec-freeze-v2.8.3` (2026-01-06)
 
 ---
 
@@ -11,18 +11,23 @@
 
 | Document | Version | SHA-256 |
 |----------|---------|---------|
-| `README.md` | unversioned | `790f182ba9a95eb0761633773a6781361cf0f6a0038f76bdfeffb3f92d43d8a7` |
-| `0_Document-Type-Specifications-v2.1.1.md` | v2.1.1 | `261208f34c5119d52213c0d39877ff61fc68e6bba21510c3c88a57f1f1cb86d5` |
-| `1_SOLVER-README-v1.0.md` | v1.0 | `b83569cb1dd5a495067e56a3e457f9e89ec25ea43f669505eced4013b8b39dae` |
-| `2_SOLVER-Design-Intent-v1.1.md` | v1.1 | `2eacabe1ec3c335d017c0804e7d5d0ff98b6c72dd580feb5364f83b8961cc53b` |
-| `3_SOLVER-Architectural-Contract-v3.4.md` | v3.4 | `f58c1bf057e4361d516ea93de689cf774005bb530d9fdb9344304a6ab1e1254e` |
-| `4_SOLVER-Technical-Spec-V2.8.4.md` | V2.8.4 (draft, unfrozen) | `fa77440347bdd4c2905926cbfba8ddb3c1720ddec11bb6f7f7ba455140f8cad2` |
-| `5_SOLVER-Development-Directive-v1.5.1.md` | v1.5.1 | `8e76d33d02252675dab81837c916ab5307f458aaff30ef916c190f531f1e2909` |
+| `README.md` | unversioned | `d9a256afdb939e2261762076fe3e6ffd4c2c7e1144da45edba58e4a242e5e918` |
+| `0_Document-Type-Specifications-v2.1.1.md` | v2.1.1 | `9be2905307ad211e0e72c2beeca72afc0151879f08c3e5d9aa3ead719365699d` |
+| `1_SOLVER-README-v1.0.md` | v1.0 | `55a7be970f250330616ffe1b284f5e5bb09bcf1aef3ee868b33b2ed2885f8607` |
+| `2_SOLVER-Design-Intent-v1.1.md` | v1.1 | `f6d248d9a28cf7776c53c6010fc633bdc760bb86cfec2d5f27a51d463af188ff` |
+| `3_SOLVER-Architectural-Contract-v3.4.md` | v3.4 | `e43d4128e443c4d26a5703c4c9bfaf3d3ec964c35661f2a03a469a5398c66b84` |
+| `4_SOLVER-Technical-Spec-V2.8.4.md` | V2.8.4 | `fa77440347bdd4c2905926cbfba8ddb3c1720ddec11bb6f7f7ba455140f8cad2` |
+| `5_SOLVER-Development-Directive-v1.5.1.md` | v1.5.1 | `ce6814b2f447ba881247488936bc895c73a85d5414926d85192a29323f00f08b` |
 | `6_SOLVER-Change-Management-v2.0.1.md` | v2.0.1 | `1b6b563654d1bdde915e7e5fbb3bccee79abf32145b92a717ba1bd117b45a853` |
 
 ---
 
-**Note:** Gate evidence below reflects the last frozen baseline (spec-freeze-v2.8.3). With the spec now UNFROZEN for V2.8.4 work, gates F0–F4 will be re-executed when the new baseline is frozen.
+**Deferrals Active at This Baseline:**
+- P7.3-DEF-001 (Lease recovery deferred; Contract §15.2 / Design Intent §4.8)
+- P7.1-DEF-001 (SSE replay coverage for workflow.completed deferred to Gate E)
+- P6.6-DEFER-001 (Messages list/query deferred)
+- P6.5 (synthetic artifact.delta) — documented in DECISIONS.md
+- P6.4 (mid-step recovery test limitation) — documented in DECISIONS.md
 
 ## Gate Evidence
 
@@ -33,14 +38,13 @@
 - [x] SOLVER-README-v1.0.md exists, version matches manifest
 - [x] SOLVER-Design-Intent-v1.1.md exists, version matches manifest
 - [x] SOLVER-Architectural-Contract-v3.4.md exists, version matches manifest
-- [x] 4_SOLVER-Technical-Spec-V2.8.3.md exists (baseline snapshot), version matches manifest
+- [x] 4_SOLVER-Technical-Spec-V2.8.4.md exists (baseline snapshot), version matches manifest
 - [x] SOLVER-Development-Directive-v1.5.1.md exists, version matches manifest
 - [x] SOLVER-Change-Management-v2.0.1.md exists, version matches manifest
 
 **Result:** PASS
-**Reviewer:** Claude Opus 4.5 (AI Assistant)
-**Date:** 2026-01-06
-**Notes:** V2.8.3 spec created, cross-references updated in README.md, CLAUDE.md, AGENTS.md.
+**Reviewer:** Phase 7 Closure
+**Date:** 2026-01-07
 
 ### F1: Internal Consistency ✓
 
@@ -50,9 +54,9 @@
 - [x] No document references a version newer than itself
 
 **Result:** PASS
-**Reviewer:** Claude Opus 4.5 (AI Assistant)
-**Date:** 2026-01-06
-**Notes:** V2.8.3: C.2 now uses `workflow_id` (consistent with C.3); C.2/C.3 internal inconsistency resolved. All cross-references updated to V2.8.3.
+**Reviewer:** Phase 7 Closure
+**Date:** 2026-01-07
+**Notes:** V2.8.4 cross-references updated to new filename and version; DECISIONS deferrals noted.
 
 ### F2: Terminology Stable ✓
 
@@ -62,9 +66,8 @@
 - [x] All canonical terms used consistently in Spec and Directive
 
 **Result:** PASS
-**Reviewer:** Claude Opus 4.5 (AI Assistant)
-**Date:** 2026-01-06
-**Notes:** Four document types (data_sheet, todo_list, guidance, detailed_procedure) verified consistent. V2.8.2 field names (stale_trace_links, stale_reason, artifact_type, blocking, current_step_number) verified.
+**Reviewer:** Phase 7 Closure
+**Date:** 2026-01-07
 
 ### F3: Contract Alignment ✓
 
@@ -74,40 +77,41 @@
 - [x] No Directive sequence violates Contract dependency
 
 **Result:** PASS
-**Reviewer:** Claude Opus 4.5 (AI Assistant)
-**Date:** 2026-01-06
-**Notes:** V2.8.3: C.2 schema now matches implementation exactly (workflow_id, original_problem, backward-compat fields documented). C.2/C.3 field naming is now consistent.
+**Reviewer:** Phase 7 Closure
+**Date:** 2026-01-07
+**Notes:** V2.8.4 incorporates P7.1-DEV-001 (completed_at field) and deferral notes; lease recovery remains deferred per DECISIONS.
 
 ### F4: Baseline Recorded ✓
 
-- [x] FREEZE-RECORD.md updated with V2.8.3 baseline
-- [x] SHA-256 hash computed for V2.8.3 spec
+- [x] FREEZE-RECORD.md updated with V2.8.4 baseline
+- [x] SHA-256 hash computed for V2.8.4 spec
 - [x] Timestamp recorded
 - [x] All F0-F3 evidence re-verified
 
 **Result:** PASS
-**Reviewer:** Claude Opus 4.5 (AI Assistant)
-**Date:** 2026-01-06
+**Reviewer:** Phase 7 Closure
+**Date:** 2026-01-07
 
 ---
 
 ## Change Record
 
-### V2.8.4 (UNFROZEN, in progress - 2026-01-07)
+### V2.8.4 (2026-01-07)
 
-**Change Request:** Governance updates for Phase 7 (γ1) alignment
+**Change Request:** Governance updates for Phase 7 closure (γ1/γ4/P7.3 alignment)
 
 **Scope:**
 - C.2: Reintroduced `completed_at` in WorkflowResponse (additive/backward-compatible; matches implementation and DECISIONS.md P7.1-DEV-001)
-- Governance: Spec unfrozen for Phase 7 work; new baseline will be recorded at end of phase
+- DECISIONS: Added P7.3-DEF-001 (lease recovery deferred; Contract §15.2 / Design Intent §4.8)
+- Test coverage: Expanded recovery, replay, OCC, canonical bundle tests; Gate D/E/γ1/γ4 passing
 
 **Approval:** Architect (Ryan Tufts)
 
 **Implementation:**
-- Tech Spec V2.8.3 → V2.8.4 (draft)
-- Cross-references updated to new filename and version
+- Tech Spec V2.8.3 → V2.8.4 (frozen baseline)
+- Cross-references updated to new filename and version; FREEZE-RECORD updated
 
-**Verification:** Pending re-freeze; F0–F4 will be re-run at next baseline.
+**Verification:** F0–F4 re-run for V2.8.4; all gates exercised (Gate C/D/E, γ1, γ4, recovery suite)
 
 ---
 

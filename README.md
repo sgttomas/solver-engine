@@ -256,7 +256,7 @@ make migrate
 
 # Verify database
 docker exec solver-db psql -U solver -d solver -c "\dt"
-# → 10 tables (9 schema + alembic_version)
+# → 11 tables (10 schema + alembic_version)
 
 # Start API server
 make dev-api
