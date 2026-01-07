@@ -256,7 +256,7 @@ make migrate
 
 # Verify database
 docker exec solver-db psql -U solver -d solver -c "\dt"
-# → 11 tables (10 schema + alembic_version)
+# → 12 tables (11 schema + alembic_version)
 
 # Start API server
 make dev-api
@@ -300,8 +300,9 @@ make dev-api # Start API server
 ```bash
 make test              # Unit tests
 make e2e               # End-to-end gate checks (starts local SSE server; requires database running)
-make test-gates        # Gate enforcement tests
-make test-recovery     # Restart/resume tests
+make test-gate-b       # Gate B (packages with traces)
+make test-gates        # Gate C (gating enforcement)
+make test-recovery     # Gate D (restart/resume)
 python tools/validate_schemas.py   # Schema validation
 ```
 

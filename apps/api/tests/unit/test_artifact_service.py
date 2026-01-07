@@ -375,17 +375,15 @@ class TestValidateOutputIntegration:
 
     @pytest.mark.asyncio
     async def test_pass1_basic_validation(self):
-        """Pass 1 uses basic key validation."""
+        """Pass 1 validates methodology structure (v1, v2, v3 keys)."""
         from orchestration.nodes import validate_output
         from domain.state import PassType
 
+        # Pass 1 (DEFINITION) expects methodology structure with v1, v2, v3 versions
         content = {
-            "title": "Test",
-            "canonical_problem_definition": {},
-            "stakeholders": [],
-            "constraints": {},
-            "scope": {},
-            "success_criteria": [],
+            "v1": {"approach": "Initial methodology"},
+            "v2": {"approach": "Refined methodology"},
+            "v3": {"approach": "Final methodology"},
         }
 
         result = await validate_output(
@@ -394,7 +392,7 @@ class TestValidateOutputIntegration:
             pass_type=PassType.DEFINITION,
         )
 
-        # Should pass with basic validation (keys exist)
+        # Should pass with methodology structure validation
         assert result.passed is True
 
     @pytest.mark.asyncio

@@ -25,6 +25,7 @@ make dev-web                    # Start Next.js dev server (localhost:3000)
 make test                       # Run API tests
 make test-unit                  # Unit tests only
 make test-integration           # Integration tests only
+make test-gate-b                # Gate B (packages with traces)
 make test-gates                 # Gate C (gating enforcement)
 make test-recovery              # Gate D (restart/recovery)
 make e2e                        # Gate E (API + SSE flow)
@@ -79,7 +80,7 @@ apps/web/
 | ArtifactService | `application/artifact_service.py` | Creates/manages artifact revisions |
 | Graph | `orchestration/graph.py` | LangGraph state machine with interrupt gates |
 | Nodes | `orchestration/nodes.py` | Step execution logic |
-| DB Models | `infrastructure/db/models/` | SQLAlchemy ORM (10 tables) |
+| DB Models | `infrastructure/db/models/` | SQLAlchemy ORM (11 tables) |
 | LLM Adapter | `infrastructure/llm.py` | Multi-provider (Claude, OpenAI, Gemini) |
 
 

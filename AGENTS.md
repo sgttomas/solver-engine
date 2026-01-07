@@ -16,7 +16,7 @@ Common workflow (from README/CLAUDE):
 - `make dev-api` — run API at `http://localhost:8000`.
 - `make dev-web` — run Next.js at `http://localhost:3000`.
 - `make test` / `make test-unit` / `make test-integration` — API pytest suites.
-- `make test-gates`, `make test-recovery`, `make e2e` — gate verification.
+- `make test-gate-b`, `make test-gates`, `make test-recovery`, `make e2e` — gate verification.
 - `make lint` / `make format` — ruff + mypy linting, ruff formatting (API).
 - `make lint-web` / `make format-web` — ESLint/Prettier (frontend).
 - `python tools/validate_schemas.py` — schema validation.

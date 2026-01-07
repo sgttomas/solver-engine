@@ -110,6 +110,8 @@ async def run_with_lease(
 
         # Acquire lease
         if not await lease_repo.acquire(workflow_id, runner_id):
+            # Close the unawaited coroutine to prevent RuntimeWarning
+            coro.close()
             lock_info = await lease_repo.get_lock_info(workflow_id)
             if lock_info:
                 raise WorkflowLockedError(
