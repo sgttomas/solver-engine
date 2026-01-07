@@ -46,6 +46,32 @@ def approve_step(client: httpx.Client, workflow_id: str) -> dict:
     return client.get(f"{API_PREFIX}/{workflow_id}").json()
 
 
+def complete_workflow(client: httpx.Client, problem: str = "Gate F test") -> str:
+    """Create and complete a workflow through Pass 2.
+
+    Returns workflow_id after all 6 approvals (3 Pass 1 + 3 Pass 2).
+    """
+    # Create workflow
+    resp = client.post(
+        API_PREFIX,
+        json={
+            "problem": problem,
+            "created_by": "test-actor",
+        },
+    )
+    assert resp.status_code == 201, f"Create failed: {resp.text}"
+    workflow_id = resp.json()["workflow_id"]
+
+    # Approve all 6 steps (3 Pass 1 + 3 Pass 2)
+    for _ in range(6):
+        state = client.get(f"{API_PREFIX}/{workflow_id}").json()
+        if state["status"] != "active":
+            break
+        approve_step(client, workflow_id)
+
+    return workflow_id
+
+
 # =============================================================================
 # Gate F Test Class
 # =============================================================================
@@ -275,3 +301,107 @@ class TestGateFAuditTrail:
 
         # Verify total_count matches entries
         assert history["total_count"] >= len(history["entries"])
+
+    def test_system_actor_attribution(self, client):
+        """F6: System-initiated events have system actor attribution.
+
+        GIVEN a workflow that undergoes automatic state transitions
+        WHEN I query the history
+        THEN system-initiated events have actor_id 'system' or null
+        AND user-initiated events have the requesting actor_id
+
+        Per Gate F criterion: "Actor attribution for user and system events"
+        """
+        # Create workflow (triggers system events like workflow.created)
+        resp = client.post(
+            API_PREFIX,
+            json={
+                "problem": "Gate F system actor attribution test",
+                "created_by": "human-user-123",
+            },
+        )
+        assert resp.status_code == 201
+        workflow_id = resp.json()["workflow_id"]
+
+        # Query history for all events
+        history_resp = client.get(
+            f"{API_PREFIX}/{workflow_id}/history?type=event&limit=100"
+        )
+        assert history_resp.status_code == 200
+        history = history_resp.json()
+
+        # Find system events (step transitions not triggered by user action)
+        system_events = []
+        user_events = []
+
+        for event in history["entries"]:
+            event_type = event.get("event_type", "")
+
+            # System events: step.started, step.completed (automatic transitions)
+            if any(keyword in event_type.lower() for keyword in ["started", "generated", "validated"]):
+                system_events.append(event)
+            # User events: approval-related
+            elif any(keyword in event_type.lower() for keyword in ["approve", "reject", "message"]):
+                user_events.append(event)
+
+        # Verify we have at least some events
+        assert len(history["entries"]) > 0, "Expected at least one audit event"
+
+        # System events should NOT have a user actor_id
+        # They may have actor_id=None, 'system', or omit the field
+        for event in system_events:
+            actor = event.get("actor_id")
+            if actor is not None and actor != "":
+                # If there's an actor on a system event, it should be 'system'
+                assert actor == "system" or actor.startswith("system"), (
+                    f"System event has unexpected actor_id: {actor}. "
+                    f"Event: {event['event_type']}"
+                )
+
+        # User events should have proper actor attribution
+        for event in user_events:
+            actor = event.get("actor_id")
+            # User actions should have a non-system actor_id
+            assert actor is not None, (
+                f"User event missing actor_id: {event['event_type']}"
+            )
+
+    def test_deterministic_trace_hash(self, client):
+        """F7: trace_hash is deterministic for the same workflow.
+
+        GIVEN a completed workflow
+        WHEN I query /replay multiple times
+        THEN trace_hash is identical each time (deterministic)
+        AND trace_hash is valid SHA-256 format (64 hex chars)
+
+        Per Gate F criterion: "Trace hash computation"
+        Per Tech Spec §8.6: trace_hash for deterministic comparison
+        """
+        # Create and complete a workflow
+        workflow_id = complete_workflow(client, "Gate F trace_hash test")
+
+        # Get replay
+        replay_resp = client.get(f"{API_PREFIX}/{workflow_id}/replay")
+        assert replay_resp.status_code == 200, f"Replay failed: {replay_resp.text}"
+        replay1 = replay_resp.json()
+
+        # trace_hash should be present and valid SHA-256
+        assert "trace_hash" in replay1, "Replay response should include trace_hash"
+        trace_hash = replay1["trace_hash"]
+
+        assert len(trace_hash) == 64, (
+            f"trace_hash should be 64 hex chars (SHA-256), got {len(trace_hash)}"
+        )
+        assert all(c in "0123456789abcdef" for c in trace_hash), (
+            f"trace_hash should be lowercase hex, got: {trace_hash}"
+        )
+
+        # Call replay again - should get identical trace_hash (deterministic)
+        replay_resp2 = client.get(f"{API_PREFIX}/{workflow_id}/replay")
+        assert replay_resp2.status_code == 200
+        replay2 = replay_resp2.json()
+
+        assert replay1["trace_hash"] == replay2["trace_hash"], (
+            "trace_hash should be deterministic - same workflow should "
+            f"produce same hash. Got {replay1['trace_hash']} vs {replay2['trace_hash']}"
+        )

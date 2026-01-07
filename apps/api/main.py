@@ -80,6 +80,36 @@ async def health_check():
     return {"status": "ok", "service": "solver-api"}
 
 
+@app.get("/test-llm")
+async def test_llm():
+    """Test LLM connectivity directly."""
+    import httpx
+    from config import settings
+
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            'https://api.openai.com/v1/responses',
+            headers={
+                'Authorization': f'Bearer {settings.openai_api_key}',
+                'Content-Type': 'application/json'
+            },
+            json={'model': 'gpt-4o', 'input': 'Say hello in 3 words'},
+            timeout=60
+        )
+    return {"status": r.status_code, "ok": r.status_code == 200}
+
+
+@app.get("/test-llm-adapter")
+async def test_llm_adapter():
+    """Test LLM via the actual adapter."""
+    from orchestration.nodes import get_default_adapter
+    adapter = get_default_adapter()
+    response = await adapter.generate([
+        {"role": "user", "content": "Say hi"}
+    ])
+    return {"ok": True, "content": response.content[:50]}
+
+
 @app.get("/")
 async def root():
     """Root endpoint."""

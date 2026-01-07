@@ -89,7 +89,7 @@ dev:
 
 dev-api:
 	@echo "Starting API server..."
-	cd apps/api && uvicorn main:app --reload --host 0.0.0.0 --port 8000
+	PYTHONPATH=apps/api .venv/bin/uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 dev-web:
 	@echo "Starting Next.js dev server..."
@@ -126,6 +126,11 @@ test-gates:
 	@echo "Running Gate C tests (gating enforcement)..."
 	PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/integration/test_gate_c.py -v
 	@echo "✓ Gate C tests passed"
+
+test-gate-b:
+	@echo "Running Gate B tests (packages with traces)..."
+	PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/e2e/test_gate_b.py -v
+	@echo "✓ Gate B tests passed"
 
 test-recovery:
 	@echo "Running Recovery Gate tests (Gate D + P7.3 recovery scenarios)..."

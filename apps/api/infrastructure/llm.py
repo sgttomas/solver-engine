@@ -235,29 +235,26 @@ class OpenAIResponsesAdapter(LLMAdapter):
         if "output_text" in resp_data and resp_data["output_text"]:
             return resp_data["output_text"]
 
-        # Path 2: output array
+        # Path 2: output array - find message type (may have reasoning blocks first)
         output = resp_data.get("output", [])
-        if isinstance(output, list) and len(output) > 0:
-            first_output = output[0]
+        if isinstance(output, list):
+            for output_item in output:
+                if not isinstance(output_item, dict):
+                    continue
 
-            # Check for content field
-            if isinstance(first_output, dict):
-                # Direct text in content
-                if "text" in first_output:
-                    return first_output["text"]
+                # Skip non-message types (e.g., reasoning) unless they have direct text
+                if output_item.get("type") != "message":
+                    # Fallback: check for direct text field
+                    if "text" in output_item:
+                        return output_item["text"]
+                    continue
 
-                # Content array
-                content = first_output.get("content", [])
+                # Found message type - extract from content array
+                content = output_item.get("content", [])
                 if isinstance(content, list):
                     for item in content:
-                        if isinstance(item, dict):
-                            # Look for output_text or text type
-                            if item.get("type") in ("output_text", "text"):
-                                if "text" in item:
-                                    return item["text"]
-                            # Direct text field
-                            if "text" in item:
-                                return item["text"]
+                        if isinstance(item, dict) and "text" in item:
+                            return item["text"]
 
         # No content found
         raise LLMResponseError(
