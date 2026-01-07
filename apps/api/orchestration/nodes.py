@@ -264,8 +264,20 @@ async def validate_output(
             errors=[{"message": "Output is None"}],
         )
 
-    # Pass 1 or no pass_type specified: Basic key validation
-    if pass_type is None or pass_type == PassType.DEFINITION:
+    # Pass 1 (DEFINITION): Validate methodology structure (v1, v2, v3 keys)
+    if pass_type == PassType.DEFINITION:
+        methodology_keys = ["v1", "v2", "v3"]
+        missing_keys = [k for k in methodology_keys if k not in output]
+
+        if missing_keys:
+            return ValidationResult(
+                passed=False,
+                errors=[{"message": f"Missing methodology versions: {', '.join(missing_keys)}"}],
+            )
+        return ValidationResult(passed=True)
+
+    # No pass_type specified: Basic key validation (legacy behavior)
+    if pass_type is None:
         required_keys = get_required_keys(step)
         missing_keys = [k for k in required_keys if k not in output]
 
