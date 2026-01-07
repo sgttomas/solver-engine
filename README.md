@@ -327,13 +327,7 @@ python tools/validate_schemas.py   # Schema validation
 | [Decisions Log](docs/spec/DECISIONS.md) | Approved deviations and notes |
 | [Freeze Record](docs/spec/FREEZE-RECORD.md) | Release freeze history |
 
----
-
-## Status
-
-**MVP Focus:** Steps 1–3 with two-pass workflow, persistence, gates, streaming, and auditability
-
-Deferred items are tracked in `docs/spec/DECISIONS.md`.
+Current development state and operating posture are captured in `docs/spec/7_SOLVER-Sr-Dev-init.md` and `docs/spec/8_SOLVER-Co-Dev-init.md`. This README remains focused on structure, ontology, and purpose.
 
 ---
 

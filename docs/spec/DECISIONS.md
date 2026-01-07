@@ -541,3 +541,157 @@ RUN_LLM_TESTS=1 PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/integration/
 
 **Status:** Documented (test infrastructure)
 **Date:** 2026-01-06
+
+---
+
+## 2026-01-07 - LLM-001: Default Model Change to gpt-5-nano (DEVIATION)
+
+**Type:** DEVIATION from implicit default (runtime configuration change)
+
+**Context:** Default OpenAI model changed from `gpt-5.2` to `gpt-5-nano` per user request.
+
+**Deviation:** `apps/api/config.py` default model changed.
+
+**Rationale:**
+- User-directed change during development session
+- `gpt-5-nano` is a valid OpenAI model with lower latency/cost
+- Contract §2.2 explicitly supports "Claude API, OpenAI API, Gemini API" — model choice is operational, not architectural
+
+**Specification Reference:**
+- Contract v3.4 §2.2: Lists "LLM | Claude API, OpenAI API, Gemini API" as supported providers
+- Tech Spec V2.8.4 Appendix E.2: Shows example config with `anthropic_model` but does not restrict model choices
+
+**Files Modified:**
+- `apps/api/config.py:60` — `openai_model` default changed
+
+**Impact:** Runtime behavior change; no gate criteria affected (LLM choice is operational).
+
+**Status:** Approved by Architect (Ryan Tufts)
+**Date:** 2026-01-07
+
+---
+
+## 2026-01-07 - LLM-002: Response Extraction Fix for Reasoning Models (DEVIATION)
+
+**Type:** DEVIATION (bug fix for new model format)
+
+**Context:** `gpt-5-nano` returns responses with a reasoning block before the message content:
+```json
+{
+  "output": [
+    {"type": "reasoning", "summary": []},
+    {"type": "message", "content": [{"type": "output_text", "text": "..."}]}
+  ]
+}
+```
+
+Previous code assumed message was always in `output[0]`, causing extraction failure.
+
+**Deviation:** `apps/api/infrastructure/llm.py:_extract_content()` modified to iterate through output array and find item with `type: "message"`.
+
+**Rationale:**
+- Required to support `gpt-5-nano` and other reasoning-enabled models
+- Backward compatible — still handles responses without reasoning blocks
+- Unit tests verify both formats
+
+**Files Modified:**
+- `apps/api/infrastructure/llm.py:238-263` — `_extract_content()` method
+
+**Verification:**
+- Unit tests: `test_llm_adapter.py::TestContentExtraction` (4/4 passing)
+- LLM smoke tests: 2/2 passing with real API calls
+
+**Impact:** Runtime behavior change; enables new model support.
+
+**Status:**  Approved by Architect (Ryan Tufts)
+**Date:** 2026-01-07
+
+---
+
+## 2026-01-07 - TEST-001: LLM Test Suite Consolidation (DEVIATION)
+
+**Type:** DEVIATION from frozen test baseline
+
+**Context:** Phase 8 baseline: 346 passed / 5 skipped (LLM) / 1 xfailed.
+Post-session: 346 passed / 2 skipped (LLM) / 1 xfailed.
+
+**Deviation:** 3 LLM tests removed from `test_orchestration_interrupt_resume.py`, replaced with 2 simpler smoke tests.
+
+**Tests Removed:**
+
+| Test | Rationale |
+|------|-----------|
+| `TestGateDStateSurvivesRestart::test_state_survives_restart` | Covered by `test_gate_d.py::test_restart_preserves_state_and_artifacts` (mocked) |
+| `TestGateCCannotAdvanceWithoutApprove::test_message_does_not_advance_state` | Covered by `test_gate_c.py::test_message_does_not_advance` (mocked) |
+| `TestGateCCannotAdvanceWithoutApprove::test_approve_does_advance_state` | Covered by `test_gate_c.py::test_approve_does_advance` (mocked) |
+
+**Tests Added:**
+
+| Test | Purpose |
+|------|---------|
+| `test_llm_adapter_returns_valid_response` | Verifies API key, model name, response parsing |
+| `test_llm_adapter_returns_json_when_requested` | Verifies JSON output capability |
+
+**Coverage Equivalence:**
+- Gate C assertions: Unchanged (mocked tests in `test_gate_c.py`)
+- Gate D assertions: Unchanged (mocked tests in `test_gate_d.py`)
+- LLM integration: Simplified to adapter-level smoke tests (6s vs 3m19s)
+
+**Files Modified:**
+- `apps/api/tests/integration/test_orchestration_interrupt_resume.py` — Complete rewrite
+
+**Impact:**
+- Test count: Unchanged (346 passed)
+- Skipped count: 5 → 2 (fewer slow LLM tests)
+- Gate coverage: Unchanged (same assertions exist in mocked tests)
+- CI time: Reduced (~3 minutes saved when running LLM tests)
+
+**Status:**  Approved by Architect (Ryan Tufts)
+**Date:** 2026-01-07
+
+---
+
+## 2026-01-07 - TEST-002: Pass 1 Validation Test Fix (BUG FIX)
+
+**Type:** BUG FIX (test was failing at session start)
+
+**Context:** `test_artifact_service.py::TestValidateOutputIntegration::test_pass1_basic_validation` was failing because it provided deliverable content structure but expected Pass 1 (DEFINITION) validation to pass.
+
+**Root Cause:** Test used `{"title": "...", "canonical_problem_definition": {...}}` content with `PassType.DEFINITION`, but implementation correctly expects methodology structure `{"v1": {...}, "v2": {...}, "v3": {...}}` for Pass 1.
+
+**Fix:** Updated test content to match Pass 1 methodology structure per two-pass execution model.
+
+**Files Modified:**
+- `apps/api/tests/unit/test_artifact_service.py:377-396`
+
+**Impact:** Bug fix only; aligns test with implementation behavior.
+
+**Status:** Approved (bug fix, no governance required)
+**Date:** 2026-01-07
+
+---
+
+## 2026-01-07 - LLM-INTERP-001: Multi-Provider Model Configuration (CLARIFICATION)
+
+**Type:** CLARIFICATION NOTE (not a spec change or deviation)
+
+**Spec tension:** Tech Spec V2.8.4 Appendix E.2 shows only Anthropic config (`anthropic_model`). Contract v3.4 §2.2 lists "LLM | Claude API, OpenAI API, Gemini API" as supported providers.
+
+**Interpretation:** The Tech Spec config example is illustrative, not restrictive. The implementation correctly supports all three providers per Contract §2.2:
+
+```python
+# apps/api/config.py - Full LLM configuration
+default_llm_provider: str = "openai"  # or "anthropic" or "google"
+anthropic_model: str = "claude-sonnet-4-20250514"
+openai_model: str = "gpt-5-nano"
+google_model: str = "gemini-1.5-pro"
+```
+
+**Model Selection:**
+- Operational choice, not architectural constraint
+- Changed via `DEFAULT_LLM_PROVIDER` environment variable
+- Model defaults are configurable per provider
+
+**Status:** Clarification accepted; no spec change required.
+**Noted by:** Senior Developer
+**Date:** 2026-01-07

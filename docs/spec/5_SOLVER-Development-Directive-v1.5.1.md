@@ -9,7 +9,7 @@
 **Document Hierarchy:**
 - **Design Intent (Why²):** `SOLVER-Design-Intent-v1.1.md` — Design rationale, first principles
 - **Architectural Contract (Why):** `SOLVER-Architectural-Contract-v3.4.md` — What must be true
-- **Technical Specification (What):** `4_SOLVER-Technical-Spec-V2.8.2.md` — Schemas, endpoints, code
+- **Technical Specification (What):** `4_SOLVER-Technical-Spec-V2.8.4.md` — Schemas, endpoints, code
 - **This document (How):** Development Directive — Build phases, packages, execution order
 
 ---

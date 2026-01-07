@@ -242,14 +242,20 @@ class OpenAIResponsesAdapter(LLMAdapter):
                 if not isinstance(output_item, dict):
                     continue
 
-                # Skip non-message types (e.g., reasoning) unless they have direct text
-                if output_item.get("type") != "message":
+                item_type = output_item.get("type")
+
+                # Skip known non-message types (e.g., reasoning)
+                if item_type is not None and item_type != "message":
                     # Fallback: check for direct text field
                     if "text" in output_item:
                         return output_item["text"]
                     continue
 
-                # Found message type - extract from content array
+                # Check direct text field first
+                if "text" in output_item:
+                    return output_item["text"]
+
+                # Extract from content array (for message type or untyped items)
                 content = output_item.get("content", [])
                 if isinstance(content, list):
                     for item in content:
