@@ -29,6 +29,11 @@ from application.workflow_service import (
     StateVersionMismatchError,
     WorkflowNotFoundError,
     WorkflowService,
+    # Lease management (Phase 7R P7.3-DEF-001)
+    WorkflowLockedError,
+    LeaseLostError,
+    generate_runner_id,
+    run_with_lease,
 )
 from domain.state import (
     GatePolicy,
@@ -760,8 +765,10 @@ async def create_workflow(
         all_events.clear()
 
         # P4.4: Invoke graph with initial state
+        # Per Contract §15.2: Acquire lease before graph execution
         graph = get_graph()
         config = {"configurable": {"thread_id": workflow.thread_id}}
+        runner_id = generate_runner_id()
 
         initial_state = WorkflowState(
             workflow_id=workflow.workflow_id,
@@ -780,7 +787,13 @@ async def create_workflow(
             ),
         )
 
-        result = await graph.ainvoke(initial_state, config)
+        result = await run_with_lease(
+            workflow.id, runner_id, session,
+            graph.ainvoke(initial_state, config)
+        )
+
+        # Commit lease operations before starting new transaction
+        await session.commit()
 
         # Sync DB with graph result (Fix 1: events persisted in transaction)
         # Extract artifact output to pass to sync_db_from_state for correct event ordering
@@ -811,6 +824,27 @@ async def create_workflow(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Instance not found: {e.instance_number}",
+        )
+    except WorkflowLockedError as e:
+        # 409: Workflow is locked by another runner (Contract §15.2)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "WORKFLOW_LOCKED",
+                "message": "Workflow is currently being processed by another runner",
+                "locked_by": e.locked_by,
+                "expires_at": e.expires_at.isoformat() if e.expires_at else None,
+            },
+        )
+    except LeaseLostError as e:
+        # 409: Lease was lost during execution
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "LEASE_LOST",
+                "message": "Lease was lost during execution; operation aborted",
+                "workflow_id": str(e.workflow_id),
+            },
         )
 
 
@@ -2119,8 +2153,10 @@ async def re_execute_step(
     all_events.clear()
 
     # Update LangGraph checkpoint state to reset to target step and trigger execution
+    # Per Contract §15.2: Acquire lease before graph execution
     graph = get_graph()
     config = {"configurable": {"thread_id": workflow.thread_id}}
+    runner_id = generate_runner_id()
 
     # Build reset step state with preserved feedback if requested
     reset_step_state = StepState(
@@ -2143,8 +2179,36 @@ async def re_execute_step(
         as_node="receive",  # Start from receive node to process the step
     )
 
-    # Invoke graph to trigger re-execution
-    result = await graph.ainvoke(None, config)
+    # Invoke graph to trigger re-execution with lease protection
+    try:
+        result = await run_with_lease(
+            workflow.id, runner_id, session,
+            graph.ainvoke(None, config)
+        )
+    except WorkflowLockedError as e:
+        # 409: Workflow is locked by another runner (Contract §15.2)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "WORKFLOW_LOCKED",
+                "message": "Workflow is currently being processed by another runner",
+                "locked_by": e.locked_by,
+                "expires_at": e.expires_at.isoformat() if e.expires_at else None,
+            },
+        )
+    except LeaseLostError as e:
+        # 409: Lease was lost during execution
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "LEASE_LOST",
+                "message": "Lease was lost during execution; operation aborted",
+                "workflow_id": str(e.workflow_id),
+            },
+        )
+
+    # Commit lease operations before starting new transaction
+    await session.commit()
 
     # Sync DB with graph result
     artifact_output = _extract_artifact_output(result)
@@ -2198,6 +2262,7 @@ async def resume_workflow(
 
         graph = get_graph()
         config = {"configurable": {"thread_id": workflow.thread_id}}
+        runner_id = generate_runner_id()
 
         # Check if at interrupt (Gate D: state survives restart, don't auto-advance)
         snapshot = await graph.aget_state(config)
@@ -2209,8 +2274,12 @@ async def resume_workflow(
             await session.commit()
         else:
             # Not at gate (crashed mid-execution or no checkpoint) - continue
+            # Per Contract §15.2: Acquire lease before graph execution
             if snapshot:
-                result = await graph.ainvoke(None, config)
+                result = await run_with_lease(
+                    workflow.id, runner_id, session,
+                    graph.ainvoke(None, config)
+                )
                 # Extract artifact output for correct event ordering
                 # Handle both WorkflowState object and dict representations
                 artifact_output = _extract_artifact_output(result)
@@ -2227,6 +2296,27 @@ async def resume_workflow(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Workflow not found: {workflow_id}",
+        )
+    except WorkflowLockedError as e:
+        # 409: Workflow is locked by another runner (Contract §15.2)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "WORKFLOW_LOCKED",
+                "message": "Workflow is currently being processed by another runner",
+                "locked_by": e.locked_by,
+                "expires_at": e.expires_at.isoformat() if e.expires_at else None,
+            },
+        )
+    except LeaseLostError as e:
+        # 409: Lease was lost during execution
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "LEASE_LOST",
+                "message": "Lease was lost during execution; operation aborted",
+                "workflow_id": str(e.workflow_id),
+            },
         )
 
 
@@ -2270,8 +2360,10 @@ async def approve_step(
         all_events.clear()
 
         # P4.4: Update graph state and resume
+        # Per Contract §15.2: Acquire lease before graph execution
         graph = get_graph()
         config = {"configurable": {"thread_id": workflow.thread_id}}
+        runner_id = generate_runner_id()
 
         await graph.aupdate_state(
             config,
@@ -2279,7 +2371,13 @@ async def approve_step(
             as_node="review",  # Critical: tells LangGraph review is complete
         )
 
-        result = await graph.ainvoke(None, config)
+        result = await run_with_lease(
+            workflow.id, runner_id, session,
+            graph.ainvoke(None, config)
+        )
+
+        # Commit lease operations before starting new transaction
+        await session.commit()
 
         # Sync DB with graph result (Fix 1: events persisted in transaction)
         # Extract artifact output to pass to sync_db_from_state for correct event ordering
@@ -2351,6 +2449,27 @@ async def approve_step(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid state: {e.current_status}, expected {e.expected_status}",
         )
+    except WorkflowLockedError as e:
+        # 409: Workflow is locked by another runner (Contract §15.2)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "WORKFLOW_LOCKED",
+                "message": "Workflow is currently being processed by another runner",
+                "locked_by": e.locked_by,
+                "expires_at": e.expires_at.isoformat() if e.expires_at else None,
+            },
+        )
+    except LeaseLostError as e:
+        # 409: Lease was lost during execution
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "LEASE_LOST",
+                "message": "Lease was lost during execution; operation aborted",
+                "workflow_id": str(e.workflow_id),
+            },
+        )
 
 
 @router.post("/{workflow_id}/actions/revise", response_model=WorkflowResponse)
@@ -2389,8 +2508,10 @@ async def revise_step(
         all_events.clear()
 
         # P4.4: Update graph state and resume
+        # Per Contract §15.2: Acquire lease before graph execution
         graph = get_graph()
         config = {"configurable": {"thread_id": workflow.thread_id}}
+        runner_id = generate_runner_id()
 
         await graph.aupdate_state(
             config,
@@ -2401,7 +2522,13 @@ async def revise_step(
             as_node="review",  # Critical: tells LangGraph review is complete
         )
 
-        result = await graph.ainvoke(None, config)
+        result = await run_with_lease(
+            workflow.id, runner_id, session,
+            graph.ainvoke(None, config)
+        )
+
+        # Commit lease operations before starting new transaction
+        await session.commit()
 
         # Sync DB with graph result (Fix 1: events persisted in transaction)
         # Extract artifact output to pass to sync_db_from_state for correct event ordering
@@ -2448,6 +2575,27 @@ async def revise_step(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid state: {e.current_status}, expected {e.expected_status}",
+        )
+    except WorkflowLockedError as e:
+        # 409: Workflow is locked by another runner (Contract §15.2)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "WORKFLOW_LOCKED",
+                "message": "Workflow is currently being processed by another runner",
+                "locked_by": e.locked_by,
+                "expires_at": e.expires_at.isoformat() if e.expires_at else None,
+            },
+        )
+    except LeaseLostError as e:
+        # 409: Lease was lost during execution
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "LEASE_LOST",
+                "message": "Lease was lost during execution; operation aborted",
+                "workflow_id": str(e.workflow_id),
+            },
         )
 
 
@@ -2529,8 +2677,10 @@ async def submit_clarification(
         all_events.clear()
 
         # P4.4: Update graph state and resume
+        # Per Contract §15.2: Acquire lease before graph execution
         graph = get_graph()
         config = {"configurable": {"thread_id": workflow.thread_id}}
+        runner_id = generate_runner_id()
 
         await graph.aupdate_state(
             config,
@@ -2540,7 +2690,13 @@ async def submit_clarification(
             as_node="elicit",  # Critical: tells LangGraph elicit is complete
         )
 
-        result = await graph.ainvoke(None, config)
+        result = await run_with_lease(
+            workflow.id, runner_id, session,
+            graph.ainvoke(None, config)
+        )
+
+        # Commit lease operations before starting new transaction
+        await session.commit()
 
         # Sync DB with graph result (Fix 1: events persisted in transaction)
         # Extract artifact output to pass to sync_db_from_state for correct event ordering
@@ -2587,6 +2743,27 @@ async def submit_clarification(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid state: {e.current_status}, expected {e.expected_status}",
+        )
+    except WorkflowLockedError as e:
+        # 409: Workflow is locked by another runner (Contract §15.2)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "WORKFLOW_LOCKED",
+                "message": "Workflow is currently being processed by another runner",
+                "locked_by": e.locked_by,
+                "expires_at": e.expires_at.isoformat() if e.expires_at else None,
+            },
+        )
+    except LeaseLostError as e:
+        # 409: Lease was lost during execution
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error_code": "LEASE_LOST",
+                "message": "Lease was lost during execution; operation aborted",
+                "workflow_id": str(e.workflow_id),
+            },
         )
 
 

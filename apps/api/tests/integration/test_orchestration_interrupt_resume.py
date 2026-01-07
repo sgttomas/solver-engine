@@ -6,8 +6,12 @@ P3.4 scope: Verify Gates C and D
 - Gate D: State survives restart
 
 Uses real PostgreSQL via SolverCheckpointSaver.
+
+NOTE: These tests require a valid LLM API key (OpenAI, Anthropic, or Google).
+They will be skipped if no valid API key is configured.
 """
 
+import os
 import pytest
 import pytest_asyncio
 from uuid import uuid4
@@ -15,6 +19,15 @@ from uuid import uuid4
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from config import settings
+
+
+# Skip entire module unless RUN_LLM_TESTS=1 is set
+# These tests require a VALID LLM API key (calls real OpenAI/Anthropic/Google APIs)
+pytestmark = pytest.mark.skipif(
+    os.environ.get("RUN_LLM_TESTS", "0") != "1",
+    reason="LLM tests require RUN_LLM_TESTS=1 and valid API key"
+)
+
 from domain.state import (
     WorkflowState,
     StepState,

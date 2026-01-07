@@ -18,6 +18,11 @@ from infrastructure.db.repositories.checkpoint import (
     CheckpointWriteRepository,
 )
 from infrastructure.db.repositories.workflow_event import WorkflowEventRepository
+from infrastructure.db.repositories.execution_lock import (
+    LeaseRepository,
+    LEASE_DURATION_SECONDS,
+    RENEWAL_INTERVAL_SECONDS,
+)
 
 __all__ = [
     "BaseRepository",
@@ -31,4 +36,7 @@ __all__ = [
     "CheckpointRepository",
     "CheckpointWriteRepository",
     "WorkflowEventRepository",
+    "LeaseRepository",
+    "LEASE_DURATION_SECONDS",
+    "RENEWAL_INTERVAL_SECONDS",
 ]

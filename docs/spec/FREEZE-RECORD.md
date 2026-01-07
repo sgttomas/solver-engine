@@ -1,9 +1,9 @@
 # SOLVER Specification Freeze Record
 
-**Freeze Status:** FROZEN (Phase 7 complete)
-**Freeze Date:** 2026-01-07
-**Baseline Identifier:** `spec-freeze-v2.8.4`
-**Previous Baseline:** `spec-freeze-v2.8.3` (2026-01-06)
+**Freeze Status:** FROZEN (Phase 7R complete)
+**Freeze Date:** 2026-01-06
+**Baseline Identifier:** `spec-freeze-v2.8.5`
+**Previous Baseline:** `spec-freeze-v2.8.4` (2026-01-07)
 
 ---
 
@@ -23,15 +23,23 @@
 ---
 
 **Deferrals Active at This Baseline:**
-- P7.3-DEF-001 (Lease recovery deferred; Contract §15.2 / Design Intent §4.8)
-- P7.1-DEF-001 (SSE replay coverage for workflow.completed deferred to Gate E)
-- P6.6-DEFER-001 (Messages list/query deferred)
-- P6.5 (synthetic artifact.delta) — documented in DECISIONS.md
-- P6.4 (mid-step recovery test limitation) — documented in DECISIONS.md
+- P6.6-DEFER-001 (Messages list/query) — permanent MVP deferral
+- P6.5 (synthetic artifact.delta) — documented in DECISIONS.md; re-eval if streaming becomes critical path
+- P6.4 (mid-step recovery test limitation) — documented in DECISIONS.md; re-eval if mid-step crash reports emerge
+
+**Resolved in V2.8.5:**
+- P7.3-DEF-001 (Lease infrastructure) — RESOLVED: ExecutionLock model, LeaseRepository, lease_manager.py implemented with transaction isolation fix
+- P7.1-DEF-001 (SSE replay coverage) — RESOLVED: test_workflow_completed_event_replay added in test_sse_replay.py
 
 ## Gate Evidence
 
+**Gate Types:**
+- F0-F3: Manual review checklist (verified by human reviewer against document manifest)
+- F1 (make test): Automated test gate (see P7R DECISIONS entry for LLM test requirements)
+
 ### F0: Canonical Set Locked ✓
+
+*Manual verification: documents exist at stated paths with matching versions*
 
 - [x] README.md exists at stated path
 - [x] 0_Document-Type-Specifications-v2.1.1.md exists, version matches manifest
@@ -95,6 +103,39 @@
 ---
 
 ## Change Record
+
+### V2.8.5 (2026-01-06)
+
+**Change Request:** Phase 7R Remediation - Lease infrastructure and deferral cleanup
+
+**Scope:**
+- Lease infrastructure implemented (P7.3-DEF-001 resolved):
+  - ExecutionLock model, LeaseRepository with acquire/renew/release
+  - lease_manager.py with run_with_lease wrapper
+  - Transaction isolation fix per Co-Developer-1 review: dedicated session with immediate commits
+- SSE replay test for workflow.completed added (P7.1-DEF-001 resolved)
+- P6.6-DEFER-001 reclassified as permanent MVP deferral
+- P6.5/P6.4 updated with re-evaluation triggers
+- β4 gate tests (3 e2e, 7 integration) all passing
+- Makefile test targets fixed to use `.venv/bin/pytest` (gate tooling reproducibility)
+
+**Approval:** Architect (Ryan Tufts)
+
+**Implementation:**
+- `apps/api/infrastructure/db/models/execution_lock.py` — ExecutionLock ORM model
+- `apps/api/infrastructure/db/repositories/execution_lock.py` — LeaseRepository
+- `apps/api/application/lease_manager.py` — run_with_lease with dedicated session/commits
+- `apps/api/tests/e2e/test_gate_beta4.py` — β4 e2e tests
+- `apps/api/tests/integration/test_lease_repository.py` — lease repository tests
+- `apps/api/tests/e2e/test_sse_replay.py` — workflow.completed replay test
+- `Makefile` — test targets use venv pytest with PYTHONPATH
+
+**Verification:**
+- `make e2e`: 3/3 passed (Gate E)
+- `make test-recovery`: 21/21 passed (Gate D)
+- `make test`: 333 passed, 5 skipped (LLM tests, require `RUN_LLM_TESTS=1`), 1 xfailed (asyncio isolation, see DECISIONS.md P7R entry)
+
+---
 
 ### V2.8.4 (2026-01-07)
 

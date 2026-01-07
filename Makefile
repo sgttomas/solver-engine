@@ -108,19 +108,19 @@ test: test-api
 
 test-api:
 	@echo "Running API tests..."
-	cd apps/api && pytest tests/ -v
+	PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/ -v
 
 test-unit:
 	@echo "Running unit tests..."
-	cd apps/api && pytest tests/unit/ -v
+	PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/unit/ -v
 
 test-integration:
 	@echo "Running integration tests..."
-	cd apps/api && pytest tests/integration/ -v
+	PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/integration/ -v
 
 test-e2e:
 	@echo "Running end-to-end tests..."
-	cd apps/api && pytest tests/e2e/ -v
+	PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/e2e/ -v
 
 test-gates:
 	@echo "Running Gate C tests (gating enforcement)..."
@@ -142,7 +142,7 @@ e2e:
 
 test-coverage:
 	@echo "Running tests with coverage..."
-	cd apps/api && pytest tests/ --cov=. --cov-report=html --cov-report=term
+	PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/ --cov=apps/api --cov-report=html --cov-report=term
 	@echo "✓ Coverage report generated in apps/api/htmlcov/index.html"
 
 # ============================================================================

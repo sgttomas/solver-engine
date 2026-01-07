@@ -52,6 +52,7 @@ from infrastructure.db.models.message import Message
 from infrastructure.db.models.audit import AuditLog
 from infrastructure.db.models.checkpoint import Checkpoint, CheckpointWrite
 from infrastructure.db.models.workflow_event import WorkflowEvent
+from infrastructure.db.models.execution_lock import ExecutionLock
 
 __all__ = [
     # Base
@@ -95,4 +96,5 @@ __all__ = [
     "Checkpoint",
     "CheckpointWrite",
     "WorkflowEvent",
+    "ExecutionLock",
 ]

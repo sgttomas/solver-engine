@@ -15,6 +15,13 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from application.artifact_service import ArtifactService
+# Re-export lease exceptions for routes that import from workflow_service
+from application.lease_manager import (  # noqa: F401
+    WorkflowLockedError,
+    LeaseLostError,
+    generate_runner_id,
+    run_with_lease,
+)
 from application.traceability_service import (
     TraceabilityExtractionError,
     TraceabilityService,

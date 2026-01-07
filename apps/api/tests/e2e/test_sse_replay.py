@@ -354,3 +354,100 @@ class TestSSEReplay:
             assert event_workflow_id == workflow_id, (
                 f"Event {event_type} has wrong workflow_id: {event_workflow_id} != {workflow_id}"
             )
+
+    def test_workflow_completed_event_replay(self, client):
+        """workflow.completed event is replayed correctly.
+
+        Per P7.1-DEF-001: Explicit test for workflow.completed event replay.
+
+        GIVEN a workflow is created and completed (all 6 steps approved)
+        WHEN I connect to the SSE stream with from_sequence=0
+        THEN the workflow.completed event is present
+        AND it has the correct sequence number (monotonic with all other events)
+
+        Per Contract §12: Replay via /stream?from_sequence includes all events
+        with sequence > from_sequence, in gap-free monotonic order.
+        """
+        # Create workflow
+        resp = client.post(
+            API_PREFIX,
+            json={
+                "problem": "Test workflow.completed event replay (P7.1-DEF-001)",
+                "created_by": "test-actor",
+            },
+        )
+        assert resp.status_code == 201, f"Create failed: {resp.text}"
+        workflow_id = resp.json()["workflow_id"]
+
+        # Approve all 6 steps to reach completion
+        for step_num in range(6):
+            state = client.get(f"{API_PREFIX}/{workflow_id}").json()
+
+            # Check if already completed
+            if state["status"] == "completed":
+                break
+
+            approve_resp = client.post(
+                f"{API_PREFIX}/{workflow_id}/actions/approve",
+                json={
+                    "actor_id": "test-actor",
+                    "expected_state_version": state["state_version"],
+                    "expected_position": {
+                        "pass_type": state["current_pass"],
+                        "step_name": state["current_step"],
+                        "step_number": state["current_step_number"],
+                        "status": state["step_state"]["status"],
+                    },
+                },
+            )
+            assert approve_resp.status_code == 200, (
+                f"Approve step {step_num + 1} failed: {approve_resp.text}"
+            )
+
+        # Verify workflow is completed
+        final_state = client.get(f"{API_PREFIX}/{workflow_id}").json()
+        assert final_state["status"] == "completed", (
+            f"Workflow should be completed, got: {final_state['status']}"
+        )
+
+        # Collect all events via replay (from_sequence=0)
+        try:
+            events = collect_sse_events(
+                client,
+                f"{API_PREFIX}/{workflow_id}/stream?from_sequence=0",
+                stop_on="workflow.completed",
+                timeout=10.0,
+                max_events=500,  # Completed workflow has many events
+            )
+        except httpx.ReadTimeout:
+            pytest.fail("SSE stream timed out waiting for workflow.completed event")
+
+        # Extract event types and sequences
+        event_types = [e[0] for e in events]
+        sequences = [e[1].get("sequence") for e in events]
+
+        # Verify workflow.completed event is present
+        assert "workflow.completed" in event_types, (
+            f"workflow.completed event not found in replay. Events: {event_types}"
+        )
+
+        # Verify workflow.completed is the last event
+        completed_idx = event_types.index("workflow.completed")
+        assert completed_idx == len(events) - 1, (
+            f"workflow.completed should be the last event, but found at index {completed_idx} "
+            f"out of {len(events)} events"
+        )
+
+        # Verify all sequences are monotonically increasing (gap-free)
+        assert all(s is not None for s in sequences), "Some events missing sequence"
+        for i in range(1, len(sequences)):
+            assert sequences[i] == sequences[i - 1] + 1, (
+                f"Gap in sequence at index {i}: {sequences[i - 1]} -> {sequences[i]}"
+            )
+
+        # Verify workflow.completed event has expected fields
+        completed_event = events[completed_idx][1]
+        assert completed_event.get("workflow_id") == workflow_id
+        assert completed_event.get("event_type") == "workflow.completed"
+        assert "timestamp" in completed_event
+        assert "sequence" in completed_event

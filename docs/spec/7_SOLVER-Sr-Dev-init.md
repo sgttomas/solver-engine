@@ -1,107 +1,86 @@
-# SOLVER Engine — Senior Developer Init (Phase 7R — Remediation)
+# SOLVER Engine — Senior Developer Init (Phase 8 — Verification)
 
 ## Role
 
-Senior developer for Phase 7R remediation. Resolve or reclassify open DECISIONS entries and
-deferrals, then prepare for re-freeze. Stay within the governance chain in docs/spec/.
+Senior developer for Phase 8 verification. Implement acceptance gate tests that prove the
+system meets its stated criteria. Stay within the governance chain in docs/spec/.
 
 ## Mission
 
-Implement Phase 7R: Intermediary Remediation. Resolve outstanding deferrals from prior packages,
-implement deferred functionality where feasible, or reclassify with clear rationale. Prepare
-codebase and governance docs for next freeze cycle.
+Implement Phase 8: Verification. Create test suites that verify all acceptance gates pass.
+Start with Package 8.1 (Gate A — Methodology Exists), then proceed through remaining gates.
+Ensure comprehensive coverage of gate criteria per Development Directive.
 
-## Phase 7R Scope
+## Phase 8 Scope
 
-**Objective:** Resolve or reclassify open DECISIONS entries/deferrals, then re-freeze.
+**Objective:** All acceptance gates pass with automated verification.
 
-**Workstreams:**
+**Packages:**
 
-| # | Workstream | DECISIONS Entry | Spec Reference |
-|---|------------|-----------------|----------------|
-| 1 | Lease/Exclusive Execution | P7.3-DEF-001 | Contract §15.2, Design Intent §4.8 |
-| 2 | SSE Replay Coverage | P7.1-DEF-001 | Contract §12 |
-| 3 | Messages List/Query | P6.6-DEFER-001 | Tech Spec §8.x |
-| 4 | Streaming Delta / Mid-step Recovery | P6.5/P6.4 synthetic deltas | Tech Spec §9 |
+| # | Package | Gate | Criterion |
+|---|---------|------|-----------|
+| 8.1 | Gate A — Methodology Exists | A | Steps 1-3 Pass 1 produces 36 methodology documents (3 steps × 4 types × 3 versions) |
+| 8.2 | Gate B — Packages with Traces | B | Steps 1-3 Pass 2 produces packages with correct schema and trace links |
+| 8.3 | Gate C — Gating Enforcement | C | Pass 2 cannot advance without `approve`; `revise` loops; `message` doesn't bypass |
+| 8.4 | Gate D — Restart/Resume | D | Mid-step and `awaiting_review` recovery with no lost artifacts |
+| 8.5 | Gate E — API + SSE Flow | E | End-to-end API and streaming verification |
+| 8.6 | Gate F — Human-in-the-Loop | F | Manual verification of human oversight guarantees |
 
-**Exit Gate:** All workstreams resolved (implemented or reclassified) + F0–F4 freeze checks pass
+**Current Focus:** Close Phase 7R regression risks (F1 failures) and start Package 8.1 once F1 is green.
 
-## Workstream Details
+**Exit Gate:** All acceptance gates (A, B, C, D, E, F) pass with automated tests and reproducible Makefile targets.
 
-### 1. Lease/Exclusive Execution (P7.3-DEF-001)
+## Package 8.1: Gate A — Methodology Exists
 
-**Goal:** Implement exclusive execution via leases per Contract §15.2 and Design Intent §4.8.
+**Goal:** Verify that Pass 1 produces all 36 methodology documents.
 
-**Deliverables:**
-- `workflow_execution_locks` table (schema + migration)
-- `acquire_workflow_lease()`, `renew_workflow_lease()`, `release_workflow_lease()` functions
-- Lease expiry and reacquisition logic
-- β4 gate tests (acquire, renew, expire/reacquire, crash recovery)
-- DECISIONS resolution entry removing P7.3-DEF-001 deferral
-
-**Verification:** `make test-recovery` includes β4 lease tests; no regression of γ1/γ4
-
-### 2. SSE Replay Coverage (P7.1-DEF-001)
-
-**Goal:** Complete SSE replay coverage for `workflow.completed` events.
+**Gate A Criterion:** Steps 1-3 Pass 1 produces 36 methodology documents:
+- 3 steps × 4 document types × 3 versions = 36 documents
+- Document types: Data Sheet, To Do List, Guidance, Detailed Procedure
+- Versions: V1, V2, V3
+- Pass type: `definition` (Pass 1)
+- Artifact type: `methodology_doc`
 
 **Deliverables:**
-- Replay test for `workflow.completed` via `/stream?from_sequence`
-- Ensure Contract §12 monotonic/gap-free replay coverage for completion events
-- DECISIONS resolution entry removing P7.1-DEF-001 deferral
+- Test script that runs complete Pass 1 for a workflow
+- Verification query confirming 36 methodology documents
+- Gate A test in `apps/api/tests/e2e/test_gate_a.py`
+- DECISIONS entry if any deviations
 
-**Verification:** Gate E includes completion event replay test
-
-### 3. Messages List/Query (P6.6-DEFER-001)
-
-**Goal:** Decide implementation vs permanent deferral for messages list endpoint.
-
-**Options:**
-- A: Implement list endpoint + hook + tests; update Tech Spec if shape changes
-- B: Reclassify as permanent deferral with rationale (e.g., history endpoint sufficient)
-
-**Deliverables:**
-- Implementation OR reclassification rationale
-- Tech Spec update if behavior changes
-- DECISIONS resolution or reclassification entry
-
-### 4. Streaming Delta / Mid-step Recovery (P6.5/P6.4)
-
-**Goal:** Decide implementation vs permanent deferral for synthetic deltas and mid-step recovery.
-
-**Context:**
-- P6.5 synthetic deltas: SSE delta events during step execution
-- P6.4 mid-step recovery: Resume from mid-generation (limited by LangGraph checkpoint semantics)
-
-**Options:**
-- A: Implement with tests
-- B: Keep deferred with updated rationale and timeline
-
-**Deliverables:**
-- Implementation OR updated deferral rationale
-- DECISIONS resolution or updated deferral entry
+**Verification Query (per Development Directive):**
+```sql
+SELECT step_name, document_type, document_version, COUNT(*)
+FROM artifacts
+WHERE workflow_id = $1
+  AND pass_type = 'definition'
+  AND artifact_type = 'methodology_doc'
+  AND step_number <= 3
+GROUP BY step_name, document_type, document_version
+HAVING COUNT(*) = 1;
+-- Should return 36 rows
+```
 
 ## Objectives
 
-1. Close all Phase 6/7 deferrals via implementation or reclassification
-2. Maintain governance integrity (every change logged in DECISIONS)
-3. Update Tech Spec for any behavior changes
-4. Pass F0–F4 freeze checks for next baseline
-5. No regression of existing gates (γ1, γ4, Gate D, Gate E)
+1. Restore clean F1 gate: fix Makefile-driven `make test` failures (OpenAI API key gaps, asyncio fixture errors).
+2. Create automated Gate A test that verifies 36 methodology documents.
+3. Ensure tests run in CI/CD via Makefile targets (`.venv/bin/pytest` + `PYTHONPATH`).
+4. Document any deviations in DECISIONS.md.
+5. Maintain governance integrity; no regression of existing gates (Gate C, D, E, γ1, γ4, β4).
 
 ## Scope Boundaries
 
 **In scope:**
-- Implementing deferred functionality (leases, SSE replay, messages, deltas)
-- Reclassifying deferrals with clear rationale
-- Updating Tech Spec for implemented features
-- Adding/adjusting tests for each workstream
-- Preparing FREEZE-RECORD for next baseline
+- Fixing F1 gate failures (env/config/fixtures)
+- Gate A test implementation
+- Verification of methodology document production
+- Test infrastructure for running complete Pass 1
+- Documentation of test approach
 
 **Out of scope:**
-- New features beyond resolving deferrals
-- Phase 8+ work
-- Spec changes unrelated to deferral resolution
+- Gates B-F (subsequent packages)
+- Production optimizations
+- New features beyond gate verification
 
 ## Orientation
 
@@ -115,93 +94,101 @@ Read in order:
 1. README.md
 2. AGENTS.md
 3. CLAUDE.md
-4. docs/spec/DECISIONS.md (focus on P7.3-DEF-001, P7.1-DEF-001, P6.6-DEFER-001, P6.5/P6.4 entries)
-5. docs/spec/5_SOLVER-Development-Directive-v1.5.1.md (Phase 5.1 for lease requirements)
-6. docs/spec/3_SOLVER-Architectural-Contract-v3.4.md (§15.2 Exclusive Execution, §12 Replay)
-7. docs/spec/2_SOLVER-Design-Intent-v1.1.md (§4.8 Exclusive Execution via Leases)
-8. docs/spec/4_SOLVER-Technical-Spec-V2.8.4.md (current schema baseline)
+4. docs/spec/5_SOLVER-Development-Directive-v1.5.1.md (Phase 8, Package 8.1)
+5. docs/spec/4_SOLVER-Technical-Spec-V2.8.4.md (artifact schema, methodology docs)
+6. docs/spec/3_SOLVER-Architectural-Contract-v3.4.md (Gate definitions)
+7. docs/spec/DECISIONS.md (prior gate-related decisions)
+8. docs/spec/FREEZE-RECORD.md (current baseline V2.8.5)
 
 ## Current State
 
-**Phase 7: Integration — CLOSED (spec-freeze-v2.8.4)**
+**Phase 7R: Remediation — COMPLETE (spec-freeze-v2.8.5)**
 
-All packages complete:
-- 7.1: Workflow Lifecycle Integration ✓ (γ1 PASSED)
-- 7.3: Recovery Scenarios ✓ (Recovery Gate PASSED, 21 tests; Gate C/E/γ1/γ4 passing)
-- Baseline frozen at `spec-freeze-v2.8.4` (see FREEZE-RECORD.md)
+Completed:
+- Lease infrastructure implemented (P7.3-DEF-001 resolved)
+- SSE replay test for workflow.completed (P7.1-DEF-001 resolved)
+- Transaction isolation fix per Co-Developer-1 review
+- Makefile test targets fixed to use `.venv/bin/pytest`
+- Baseline frozen at `spec-freeze-v2.8.5`
 
-Open deferrals from prior phases:
-- P7.3-DEF-001: Lease recovery (Phase 5 infrastructure absent)
-- P7.1-DEF-001: SSE replay coverage for workflow.completed
-- P6.6-DEFER-001: Messages list/query endpoint
-- P6.5/P6.4: Synthetic deltas, mid-step recovery
+Remaining deferrals (permanent/re-eval triggers):
+- P6.6-DEFER-001: Messages list/query (permanent MVP deferral)
+- P6.5: Synthetic deltas (re-eval if streaming becomes critical)
+- P6.4: Mid-step recovery (re-eval if crash reports emerge)
 
-**Phase 7R: Remediation — NEXT**
+**Gate status:** `make e2e` and `make test-recovery` pass. `make test` now runs but reports 6 failures (OpenAI API 401) and 6 errors (asyncio fixtures). F1 is not green until these are resolved.
 
-- Unfreeze per Change Management §3.5 before semantic changes
-- Resolve/reclassify deferrals above, then re-freeze (new baseline post-Phase 7R)
+**Phase 8: Verification — NEXT**
 
-**Spec Status:** FROZEN at spec-freeze-v2.8.4 until unfreeze for Phase 7R work
+Starting with Package 8.1: Gate A — Methodology Exists
 
 ## Key Paths
 
 | Path | Focus |
 |------|-------|
-| infra/db/migrations/ | New migration for workflow_execution_locks |
-| apps/api/infrastructure/db/models/ | Lease model |
-| apps/api/application/workflow_service.py | Lease acquire/renew/release |
-| apps/api/routes/workflows.py | SSE replay, messages endpoint |
-| apps/api/tests/integration/test_beta4.py | Lease gate tests (new) |
-| apps/api/tests/e2e/ | SSE replay tests, messages tests |
-| docs/spec/DECISIONS.md | Resolution entries |
-| docs/spec/FREEZE-RECORD.md | Next freeze record |
+| apps/api/tests/e2e/test_gate_a.py | Gate A test (new) |
+| apps/api/orchestration/graph.py | Pass 1 execution flow |
+| apps/api/orchestration/nodes.py | Methodology document generation |
+| apps/api/infrastructure/db/models/artifact.py | Artifact model (methodology_doc) |
+| apps/api/infrastructure/db/repositories/artifact.py | Artifact queries |
+| docs/spec/DECISIONS.md | Deviation logging |
 
 ## Testing Strategy
 
-**Per Workstream:**
-```bash
-# Workstream 1: Leases
-PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/integration/test_beta4.py -v
+**Pre-work (F1 hygiene):**
+- Provide required OpenAI API key (or mark/skip impacted tests with documented DECISIONS entry) to eliminate 401 failures.
+- Fix asyncio fixture errors in integration tests so `make test` is green.
 
-# Workstream 2: SSE Replay
-make e2e  # Gate E includes completion replay
+**Gate A Test Structure:**
+```python
+class TestGateAMethodologyExists:
+    """Gate A: Verify Pass 1 produces 36 methodology documents."""
 
-# Workstream 3: Messages (if implemented)
-PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/e2e/test_messages.py -v
+    def test_pass1_produces_36_methodology_docs(self, client):
+        """Complete Pass 1 produces all methodology documents.
 
-# Regression
-make test-recovery   # Gate D + recovery scenarios
-make e2e             # Gate E
-make test-gates      # Gate C
-PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/e2e/test_gate_gamma1.py apps/api/tests/e2e/test_gate_gamma4.py -v
+        GIVEN a new workflow is created
+        WHEN Pass 1 completes for Steps 1-3
+        THEN 36 methodology documents exist:
+          - 3 steps × 4 document types × 3 versions
+          - All with pass_type='definition', artifact_type='methodology_doc'
+        """
+        # Create workflow and run through Pass 1
+        # Verify 36 documents via query
 ```
 
-**Freeze Verification:**
+**Verification Commands:**
 ```bash
-# F0–F4 checks before freeze
-python tools/validate_schemas.py
+# F1 canonical
 make test
-make e2e
-make test-recovery
-# Verify DECISIONS entries complete
-# Update FREEZE-RECORD.md and tag new baseline
+
+# Gate A test
+PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/e2e/test_gate_a.py -v
+
+# Regression check
+make e2e                # Gate E
+make test-recovery      # Gate D
+make test-gates         # Gate C
+PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests/e2e/test_gate_gamma1.py apps/api/tests/e2e/test_gate_gamma4.py apps/api/tests/e2e/test_gate_beta4.py -v
 ```
 
 ## Anti-Patterns to Avoid
 
 | Pattern | Why |
 |---------|-----|
-| Implementing without DECISIONS resolution | Governance requires closure |
-| Deferring without rationale | Change Management requires justification |
-| Skipping regression tests | Prior gates must remain green |
-| Changing spec without logging | Violates change control |
-| Partial implementation | Each workstream should be complete or clearly deferred |
+| Mocking methodology generation | Gate requires real document production |
+| Partial verification (< 36 docs) | Gate criterion is explicit: 36 documents |
+| Skipping version progression | Must verify V1→V2→V3 for each type |
+| Ignoring pass_type/artifact_type | These fields define methodology docs |
+| No database verification | Gate requires persistence proof |
 
 ## Start
 
 After orientation develop a comprehensive plan to do the following:
-1. Verify dev environment is running (`make dev-api`)
-2. Review DECISIONS.md for all open deferrals
-3. Prioritize workstreams (recommend: leases first as foundational)
-4. For each workstream: implement or reclassify, add tests, log resolution
-5. Prepare for re-freeze (F0–F4, FREEZE-RECORD update)
+1. Restore F1 to green (`make test`), addressing API key and asyncio fixture issues.
+2. Verify dev environment is running (`make dev-api`) and DB ready.
+3. Review existing artifact tests for patterns.
+4. Design Gate A test structure.
+5. Implement test that runs complete Pass 1.
+6. Verify 36 methodology documents exist.
+7. Run regression tests to ensure no breakage.
