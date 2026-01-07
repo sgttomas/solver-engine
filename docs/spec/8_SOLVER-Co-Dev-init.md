@@ -168,5 +168,4 @@ Governance:
 
 ## Start
 
-After orientation, await review requests. If none pending, verify system health by checking
-that `make test` shows all gates passing.
+After orientation, await further instructions.
