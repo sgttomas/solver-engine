@@ -66,6 +66,7 @@ runs/
 # Ignore working and issued docs
 .tmp/
 docs/Issued/
+docs/strategy/
 
 # Python
 __pycache__/
