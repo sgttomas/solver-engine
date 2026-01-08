@@ -8,6 +8,8 @@ SOLVER (Structured Reasoning Workflow Engine) is a deterministic supervisor for 
 
 **MVP Scope:** Steps 1–3 (Problem Definition → Requirements → Objectives) with two-pass execution, persistence, gates, audit, and streaming.
 
+Current development state and operational posture are recorded in `docs/spec/7_SOLVER-Sr-Dev-init.md` and `docs/spec/8_SOLVER-Co-Dev-init.md`; this guide focuses on structure, patterns, and commands.
+
 ## Common Commands
 
 ```bash

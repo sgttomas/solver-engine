@@ -110,6 +110,38 @@ make lint
 make format
 ```
 
+## Recommended Operational Enhancements
+
+These are non-blocking improvements that would benefit the system:
+
+| Enhancement | Benefit | Priority |
+|-------------|---------|----------|
+| **LangSmith tracing** | Debug LLM calls, identify slow prompts, track token usage | High |
+| **Structured logging** | Better observability, easier debugging | Medium |
+| **Health check endpoint** | Container orchestration readiness | Medium |
+| **Metrics export** | Prometheus/Grafana integration | Low |
+
+### LangSmith Integration
+
+LangSmith provides tracing for LangGraph workflows. To enable:
+
+1. Set environment variables:
+   ```bash
+   LANGCHAIN_TRACING_V2=true
+   LANGCHAIN_API_KEY=<your-key>
+   LANGCHAIN_PROJECT=solver-engine
+   ```
+
+2. LangGraph calls will automatically trace to LangSmith dashboard
+
+3. Benefits:
+   - Visualize workflow execution
+   - Debug prompt/response pairs
+   - Track token usage and latency
+   - Identify failing nodes
+
+**Note:** This is operational tooling, not a gating requirement.
+
 ## Anti-Patterns to Avoid
 
 | Pattern | Why |

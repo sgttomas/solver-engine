@@ -45,6 +45,7 @@ Common workflow (from README/CLAUDE):
 ## Architecture & Spec References
 - Follow the authority chain in `docs/spec/` for invariants and API schemas.
 - Changes that diverge from spec must be recorded in `docs/spec/DECISIONS.md`.
+- Current development state is documented only in `docs/spec/7_SOLVER-Sr-Dev-init.md` and `docs/spec/8_SOLVER-Co-Dev-init.md`; this guide focuses on structure and process.
 
 ## Spec Quick Links
 - `docs/spec/0_Document-Type-Specifications-v2.1.1.md`
