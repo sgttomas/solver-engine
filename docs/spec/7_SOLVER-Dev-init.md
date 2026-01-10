@@ -1,8 +1,8 @@
-# SOLVER Engine — Senior Developer Init (Post-MVP — Maintenance & Expansion)
+# SOLVER Engine — Developer Init (Post-MVP — Maintenance & Expansion)
 
 ## Role
 
-Senior developer for post-MVP work. Maintain system stability, fix bugs, optimize performance,
+Developer for post-MVP work. Maintain system stability, fix bugs, optimize performance,
 and implement approved expansions. Stay within the governance chain in docs/spec/.
 
 ## Mission
